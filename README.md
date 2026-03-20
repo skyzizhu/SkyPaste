@@ -48,21 +48,21 @@ SkyPaste 使用本地 SQLite 数据库存储历史记录：
 ### 开发运行
 
 ```bash
-cd /Users/fushan/Desktop/wenxiaowei-1/mac-pastenow-clone
+cd SkyPaste
 swift run
 ```
 
 ### 打包 `.app`
 
 ```bash
-cd /Users/fushan/Desktop/wenxiaowei-1/mac-pastenow-clone
+cd SkyPaste
 ./build_app.sh
 ```
 
 输出路径：
 
 ```text
-/Users/fushan/Desktop/wenxiaowei-1/mac-pastenow-clone/dist/SkyPaste.app
+SkyPaste/dist/SkyPaste.app
 ```
 
 ### 偏好设置
@@ -136,21 +136,21 @@ Clipboard history is stored locally in SQLite:
 ### Run in Development
 
 ```bash
-cd /Users/fushan/Desktop/wenxiaowei-1/mac-pastenow-clone
+cd SkyPaste
 swift run
 ```
 
 ### Build the `.app`
 
 ```bash
-cd /Users/fushan/Desktop/wenxiaowei-1/mac-pastenow-clone
+cd SkyPaste
 ./build_app.sh
 ```
 
 Output:
 
 ```text
-/Users/fushan/Desktop/wenxiaowei-1/mac-pastenow-clone/dist/SkyPaste.app
+SkyPaste/dist/SkyPaste.app
 ```
 
 ### Preferences
