@@ -10,6 +10,18 @@ In `Signing & Capabilities` for the `SkyPaste` target:
 - Use your Apple Developer Team
 - Keep the app category set to `Utilities`
 
+If Xcode is not already selected as the active developer directory on your machine, switch it once with:
+
+```bash
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+```
+
+Verify the switch with:
+
+```bash
+xcode-select -p
+```
+
 ## Recommended sandbox settings
 
 Keep the following unset unless you add a feature that truly needs them:
@@ -37,3 +49,8 @@ The Release configuration already sets the `APP_STORE_BUILD` compilation conditi
 2. Check the archive in Organizer
 3. Upload to App Store Connect
 4. Fill out screenshots, privacy details, review notes, and category
+
+## Submission Materials
+
+See [docs/APP_STORE_CHECKLIST.md](APP_STORE_CHECKLIST.md) for the exact metadata and screenshot checklist.
+See [docs/PRIVACY_POLICY.md](PRIVACY_POLICY.md) for a privacy policy template you can publish as a public URL.

@@ -87,6 +87,8 @@ See [docs/RELEASING.md](docs/RELEASING.md) for the Xcode release checklist and v
 ## App Store Preparation
 
 See [docs/APP_STORE.md](docs/APP_STORE.md) for the sandbox, signing, and App Store submission checklist.
+See [docs/APP_STORE_CHECKLIST.md](docs/APP_STORE_CHECKLIST.md) for metadata, screenshot, and review-note prep.
+See [docs/PRIVACY_POLICY.md](docs/PRIVACY_POLICY.md) for a privacy policy template you can publish at a public URL.
 
 ## Preferences
 
