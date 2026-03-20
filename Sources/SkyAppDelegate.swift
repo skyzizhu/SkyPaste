@@ -109,8 +109,7 @@ final class AppCoordinator {
     }
 
     func showSettingsWindow() {
-        let view = SettingsView(settings: settings)
-        let hostingView = NSHostingView(rootView: view)
+        let controller = NSHostingController(rootView: SettingsView(settings: settings))
 
         if settingsWindow == nil {
             let window = NSWindow(
@@ -120,12 +119,13 @@ final class AppCoordinator {
                 defer: false
             )
             window.minSize = NSSize(width: 620, height: 620)
+            window.isReleasedWhenClosed = false
             window.center()
             settingsWindow = window
         }
 
         settingsWindow?.title = L10n.tr("menu.preferences")
-        settingsWindow?.contentView = hostingView
+        settingsWindow?.contentViewController = controller
         NSApp.activate(ignoringOtherApps: true)
         settingsWindow?.makeKeyAndOrderFront(nil)
     }

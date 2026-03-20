@@ -259,7 +259,7 @@ struct MenuBarClipboardView: View {
                 .lineLimit(1)
                 .minimumScaleFactor(0.65)
                 .frame(maxWidth: .infinity)
-                .frame(height: 30)
+                .frame(height: 27)
         }
         .buttonStyle(.bordered)
         .controlSize(.regular)
