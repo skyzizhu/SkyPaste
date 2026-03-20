@@ -1,5 +1,9 @@
 # SkyPaste
 
+<p align="left">
+  <img src="skypaste/Assets.xcassets/AppIcon.appiconset/icon_512x512.png" alt="SkyPaste app icon" width="120">
+</p>
+
 [中文](#中文) | English
 
 SkyPaste is a macOS clipboard manager for text, images, and file URLs, with menu bar access, searchable history, filters, favorites, and keyboard-driven workflows.
