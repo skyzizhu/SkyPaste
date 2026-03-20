@@ -1,12 +1,17 @@
 # SkyPaste
 
-<p align="left">
+<p align="center">
   <img src="skypaste/Assets.xcassets/AppIcon.appiconset/icon_512x512.png" alt="SkyPaste app icon" width="120">
 </p>
 
-[中文](#中文) | English
+<p align="center">
+  <strong>简洁的剪切板内容管理工具</strong>
+</p>
+<p align="center">
+  <strong>A clean clipboard content manager</strong>
+</p>
 
-简洁的剪切板内容管理工具
+<p align="center">[中文](#中文) | English</p>
 
 SkyPaste is a macOS clipboard manager for text, images, and file URLs, with menu bar access, searchable history, filters, favorites, and keyboard-driven workflows.
 
@@ -104,7 +109,13 @@ To support automatic paste back into the previous app, macOS may request Accessi
 
 ## 中文
 
-简洁的剪切板内容管理工具
+<p align="center">
+  <strong>简洁的剪切板内容管理工具</strong>
+</p>
+
+<p align="center">
+  <strong>A clean clipboard content manager</strong>
+</p>
 
 SkyPaste 是一个 macOS 剪贴板管理工具，支持文本、图片、文件地址的历史记录、快速检索、菜单栏操作和快捷键调用。
 
