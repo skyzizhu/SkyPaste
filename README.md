@@ -1,7 +1,7 @@
 # SkyPaste
 
 <p align="center">
-  <img src="skypaste/Assets.xcassets/AppIcon.appiconset/icon_512x512.png" alt="SkyPaste app icon" width="120">
+  <img src="docs/images/logo.png" alt="SkyPaste app icon" width="120">
 </p>
 
 <p align="center">
@@ -79,6 +79,14 @@ open skypaste.xcodeproj
 From there you can run the app with `Product -> Run`, or archive it with `Product -> Archive`.
 
 For App Store submission, use Xcode's archive/distribution flow and App Store Connect.
+
+## Release Process
+
+See [docs/RELEASING.md](docs/RELEASING.md) for the Xcode release checklist and versioning flow.
+
+## App Store Preparation
+
+See [docs/APP_STORE.md](docs/APP_STORE.md) for the sandbox, signing, and App Store submission checklist.
 
 ## Preferences
 
