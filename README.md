@@ -8,7 +8,7 @@
   <strong>简洁的剪切板内容管理工具</strong>
 </p>
 <p align="center">
-  <strong>A clean clipboard content manager</strong>
+  <strong>A simple clipboard content manager</strong>
 </p>
 
 <p align="center">[中文](#中文) | English</p>
@@ -114,7 +114,7 @@ To support automatic paste back into the previous app, macOS may request Accessi
 </p>
 
 <p align="center">
-  <strong>A clean clipboard content manager</strong>
+  <strong>A simple clipboard content manager</strong>
 </p>
 
 SkyPaste 是一个 macOS 剪贴板管理工具，支持文本、图片、文件地址的历史记录、快速检索、菜单栏操作和快捷键调用。
