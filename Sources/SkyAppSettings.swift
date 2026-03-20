@@ -149,6 +149,12 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    @Published var autoPasteEnabled: Bool {
+        didSet {
+            defaults.set(autoPasteEnabled, forKey: Keys.autoPasteEnabled)
+        }
+    }
+
     @Published var languageCode: String {
         didSet {
             if !LanguageCatalog.isSupported(languageCode) {
@@ -192,6 +198,7 @@ final class AppSettings: ObservableObject {
         static let hotKeyControl = "settings.hotKeyControl"
         static let ignoredAppsInput = "settings.ignoredAppsInput"
         static let launchAtLogin = "settings.launchAtLogin"
+        static let autoPasteEnabled = "settings.autoPasteEnabled"
         static let languageCode = LanguageCatalog.defaultsKey
     }
 
@@ -208,6 +215,7 @@ final class AppSettings: ObservableObject {
         self.hotKeyControl = defaults.object(forKey: Keys.hotKeyControl) as? Bool ?? false
         self.ignoredAppsInput = defaults.string(forKey: Keys.ignoredAppsInput) ?? ""
         self.launchAtLogin = defaults.object(forKey: Keys.launchAtLogin) as? Bool ?? false
+        self.autoPasteEnabled = defaults.object(forKey: Keys.autoPasteEnabled) as? Bool ?? !AppDistribution.isAppStoreBuild
         let savedLanguage = defaults.string(forKey: Keys.languageCode) ?? LanguageCatalog.system
         self.languageCode = LanguageCatalog.isSupported(savedLanguage) ? savedLanguage : LanguageCatalog.system
 

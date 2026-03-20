@@ -45,7 +45,7 @@ final class AppCoordinator {
     }
 
     private func makePanelView() -> PanelView {
-        let rootView = PanelView(store: store, onPick: { [weak self] item in
+        let rootView = PanelView(store: store, settings: settings, onPick: { [weak self] item in
             self?.paste(item)
         }, onCopy: { [weak self] item in
             self?.copyOnly(item)
@@ -158,6 +158,8 @@ final class AppCoordinator {
         store.copyToPasteboard(item)
         closePanel()
         previousApp?.activate(options: [.activateIgnoringOtherApps])
+
+        guard settings.autoPasteEnabled else { return }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
             self?.sendCommandV()

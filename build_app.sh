@@ -5,15 +5,21 @@ ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_NAME="SkyPaste"
 BUNDLE_ID="com.huaibor.skypaste"
 APP_VERSION="$(cat "$ROOT_DIR/VERSION")"
+APP_STORE_BUILD="${APP_STORE_BUILD:-0}"
 APP_DIR="$ROOT_DIR/dist/${APP_NAME}.app"
 LEGACY_APP_DIR="$ROOT_DIR/dist/PasteNowClone.app"
 ICON_PNG="$ROOT_DIR/Resources/AppIcon.png"
 ICONSET_DIR="$ROOT_DIR/Resources/AppIcon.iconset"
 ICON_ICNS="$ROOT_DIR/Resources/AppIcon.icns"
+ENTITLEMENTS_FILE="$ROOT_DIR/SkyPaste.entitlements"
 
 cd "$ROOT_DIR"
 
-swift build -c release
+swift_build_args=(build -c release)
+if [[ "$APP_STORE_BUILD" == "1" ]]; then
+  swift_build_args+=(-Xswiftc -DAPP_STORE_BUILD)
+fi
+swift "${swift_build_args[@]}"
 
 mkdir -p "$ICONSET_DIR"
 swift "$ROOT_DIR/scripts/generate_app_icon.swift" "$ICON_PNG"
@@ -79,6 +85,10 @@ cat > "$APP_DIR/Contents/Info.plist" <<PLIST
 </plist>
 PLIST
 
-codesign --force --deep --sign - "$APP_DIR"
+codesign_args=(codesign --force --deep --sign -)
+if [[ -f "$ENTITLEMENTS_FILE" ]]; then
+  codesign_args+=(--entitlements "$ENTITLEMENTS_FILE")
+fi
+"${codesign_args[@]}" "$APP_DIR"
 
 echo "Built app: $APP_DIR"

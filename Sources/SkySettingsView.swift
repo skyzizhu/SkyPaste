@@ -71,6 +71,15 @@ struct SettingsView: View {
                     }
                 }
 
+                SettingsCard(title: L10n.tr("settings.clipboard")) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Toggle(L10n.tr("settings.auto_paste"), isOn: $settings.autoPasteEnabled)
+                            .toggleStyle(.switch)
+
+                        HintText(L10n.tr("settings.auto_paste_hint"))
+                    }
+                }
+
                 SettingsCard(title: L10n.tr("settings.ignore_apps")) {
                     VStack(alignment: .leading, spacing: 12) {
                         HintText(L10n.tr("settings.ignore_apps_hint"))

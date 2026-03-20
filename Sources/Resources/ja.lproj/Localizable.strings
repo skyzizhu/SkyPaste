@@ -21,6 +21,9 @@
 "settings.startup" = "起動";
 "settings.launch_at_login" = "ログイン時に起動";
 "settings.launch_at_login_hint" = "パッケージ化された App が必要です。swift run では動作しない場合があります。";
+"settings.clipboard" = "クリップボード";
+"settings.auto_paste" = "コピー後に自動ペースト";
+"settings.auto_paste_hint" = "有効にすると、SkyPaste は選択項目をコピーしたあとに Cmd+V を送信します。";
 "settings.ignore_apps" = "除外アプリ";
 "settings.ignore_apps_hint" = "bundle ID をカンマまたは改行で区切って入力します。";
 "settings.ignore_apps_example" = "例: com.1password.1password, com.apple.Terminal";
@@ -45,6 +48,7 @@
 "menu.delete_day_message" = "%@ のクリップボード履歴をすべて削除します。";
 "panel.search_placeholder" = "クリップボードを検索";
 "panel.shortcut_hint" = "Enter: 貼り付け  ·  ↑/↓: 移動  ·  Esc: 閉じる  ·  Cmd+1...9: クイック貼り付け";
+"panel.shortcut_hint_copy_only" = "Enter: コピー  ·  ↑/↓: 移動  ·  Esc: 閉じる  ·  Cmd+1...9: クイック貼り付け";
 "panel.paste_selected" = "選択項目を貼り付け";
 "filter.all" = "すべて";
 "filter.text" = "テキスト";

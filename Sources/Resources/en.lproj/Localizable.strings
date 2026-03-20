@@ -21,6 +21,9 @@
 "settings.startup" = "Startup";
 "settings.launch_at_login" = "Launch at login";
 "settings.launch_at_login_hint" = "Requires packaged app; may not work when running via swift run.";
+"settings.clipboard" = "Clipboard";
+"settings.auto_paste" = "Auto paste after copy";
+"settings.auto_paste_hint" = "When enabled, SkyPaste sends Cmd+V after copying a selected item.";
 "settings.ignore_apps" = "Ignore Apps";
 "settings.ignore_apps_hint" = "Comma or newline separated bundle IDs.";
 "settings.ignore_apps_example" = "Example: com.1password.1password, com.apple.Terminal";
@@ -45,6 +48,7 @@
 "menu.delete_day_message" = "This will delete all clipboard records for %@.";
 "panel.search_placeholder" = "Search clipboard";
 "panel.shortcut_hint" = "Enter: Paste  ·  ↑/↓: Navigate  ·  Esc: Close  ·  Cmd+1...9: Quick Paste";
+"panel.shortcut_hint_copy_only" = "Enter: Copy  ·  ↑/↓: Navigate  ·  Esc: Close  ·  Cmd+1...9: Quick Paste";
 "panel.paste_selected" = "Paste Selected";
 "filter.all" = "All";
 "filter.text" = "Text";

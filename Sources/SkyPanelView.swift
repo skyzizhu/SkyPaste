@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PanelView: View {
     @ObservedObject var store: ClipboardStore
+    @ObservedObject var settings: AppSettings
     let onPick: (ClipboardItem) -> Void
     let onCopy: (ClipboardItem) -> Void
     let onClose: () -> Void
@@ -125,12 +126,12 @@ struct PanelView: View {
             .onMoveCommand(perform: moveSelection)
 
             HStack {
-                Text(L10n.tr("panel.shortcut_hint"))
+                Text(settings.autoPasteEnabled ? L10n.tr("panel.shortcut_hint") : L10n.tr("panel.shortcut_hint_copy_only"))
                     .font(.system(size: 11))
                     .foregroundStyle(.secondary)
                 Spacer()
-                Button(L10n.tr("panel.paste_selected")) {
-                    pasteSelected()
+                Button(settings.autoPasteEnabled ? L10n.tr("panel.paste_selected") : L10n.tr("menu.copy_selected")) {
+                    performPrimaryAction()
                 }
                 .keyboardShortcut(.return, modifiers: [])
                 .disabled(selectedID == nil)
@@ -203,9 +204,14 @@ struct PanelView: View {
         }
     }
 
-    private func pasteSelected() {
+    private func performPrimaryAction() {
         guard let selected = orderedFilteredItems.first(where: { $0.id == selectedID }) else { return }
-        onPick(selected)
+        if settings.autoPasteEnabled {
+            onPick(selected)
+        } else {
+            onCopy(selected)
+            onClose()
+        }
     }
 
     private func copySelected() {

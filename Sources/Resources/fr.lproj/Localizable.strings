@@ -21,6 +21,9 @@
 "settings.startup" = "Démarrage";
 "settings.launch_at_login" = "Lancer à la connexion";
 "settings.launch_at_login_hint" = "Nécessite une application empaquetée ; peut ne pas fonctionner avec swift run.";
+"settings.clipboard" = "Presse-papiers";
+"settings.auto_paste" = "Coller automatiquement après copie";
+"settings.auto_paste_hint" = "Lorsque cette option est activée, SkyPaste envoie Cmd+V après la copie d'un élément sélectionné.";
 "settings.ignore_apps" = "Applications ignorées";
 "settings.ignore_apps_hint" = "Séparez les bundle ID par des virgules ou des retours à la ligne.";
 "settings.ignore_apps_example" = "Exemple : com.1password.1password, com.apple.Terminal";
@@ -45,6 +48,7 @@
 "menu.delete_day_message" = "Cela supprimera tout l'historique du presse-papiers pour %@.";
 "panel.search_placeholder" = "Rechercher dans le presse-papiers";
 "panel.shortcut_hint" = "Entrée : coller  ·  ↑/↓ : naviguer  ·  Esc : fermer  ·  Cmd+1...9 : collage rapide";
+"panel.shortcut_hint_copy_only" = "Entrée : copier  ·  ↑/↓ : naviguer  ·  Esc : fermer  ·  Cmd+1...9 : collage rapide";
 "panel.paste_selected" = "Coller la sélection";
 "filter.all" = "Tout";
 "filter.text" = "Texte";
