@@ -57,35 +57,17 @@ Clipboard history is stored locally in SQLite:
 ~/Library/Application Support/SkyPaste/history.sqlite
 ```
 
-## Run in Development
+## Open in Xcode
 
-```bash
-cd SkyPaste
-swift run
-```
-
-## Build the `.app`
-
-```bash
-cd SkyPaste
-./build_app.sh
-```
-
-Output:
+The repo now uses the Xcode project in `skypaste.xcodeproj`.
 
 ```text
-SkyPaste/dist/SkyPaste.app
+open skypaste.xcodeproj
 ```
 
-Version:
+From there you can run the app with `Product -> Run`, or archive it with `Product -> Archive`.
 
-```text
-SkyPaste/VERSION
-```
-
-## Release Process
-
-See [docs/RELEASING.md](docs/RELEASING.md) for the release checklist and versioning flow.
+For App Store submission, use Xcode's archive/distribution flow and App Store Connect.
 
 ## Preferences
 
@@ -109,6 +91,7 @@ To support automatic paste back into the previous app, macOS may request Accessi
 - No cloud sync in the current version
 - No tag system or end-to-end encryption yet
 - Data is stored locally by default
+- The old SwiftPM packaging scripts were removed in favor of the Xcode project
 - License: [MIT](LICENSE)
 
 ---
@@ -165,35 +148,17 @@ SkyPaste 使用本地 SQLite 数据库存储历史记录：
 ~/Library/Application Support/SkyPaste/history.sqlite
 ```
 
-### 开发运行
+### 在 Xcode 中打开
 
-```bash
-cd SkyPaste
-swift run
-```
-
-### 打包 `.app`
-
-```bash
-cd SkyPaste
-./build_app.sh
-```
-
-输出路径：
+仓库现在以 `skypaste.xcodeproj` 为主工程。
 
 ```text
-SkyPaste/dist/SkyPaste.app
+open skypaste.xcodeproj
 ```
 
-版本号：
+然后可以直接在 Xcode 中使用 `Product -> Run` 运行，或使用 `Product -> Archive` 打包。
 
-```text
-SkyPaste/VERSION
-```
-
-### 发布流程
-
-版本号和发布步骤见 [docs/RELEASING.md](docs/RELEASING.md)。
+如果要上架 App Store，请使用 Xcode 的归档和发布流程，再到 App Store Connect 提交。
 
 ### 偏好设置
 
@@ -217,4 +182,5 @@ SkyPaste/VERSION
 - 当前版本不包含云同步
 - 当前版本不包含标签系统和端到端加密
 - 数据默认仅保存在本地设备
+- 旧的 SwiftPM 打包脚本已移除，仓库以 Xcode 工程为主
 - 协议： [MIT](LICENSE)
