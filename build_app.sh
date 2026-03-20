@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_NAME="SkyPaste"
 BUNDLE_ID="com.huaibor.skypaste"
+APP_VERSION="$(cat "$ROOT_DIR/VERSION")"
 APP_DIR="$ROOT_DIR/dist/${APP_NAME}.app"
 LEGACY_APP_DIR="$ROOT_DIR/dist/PasteNowClone.app"
 ICON_PNG="$ROOT_DIR/Resources/AppIcon.png"
@@ -65,7 +66,7 @@ cat > "$APP_DIR/Contents/Info.plist" <<PLIST
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>0.1.0</string>
+  <string>${APP_VERSION}</string>
   <key>CFBundleVersion</key>
   <string>1</string>
   <key>LSMinimumSystemVersion</key>

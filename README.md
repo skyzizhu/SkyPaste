@@ -4,6 +4,10 @@
 
 SkyPaste is a macOS clipboard manager for text, images, and file URLs, with menu bar access, searchable history, filters, favorites, and keyboard-driven workflows.
 
+## Screenshots
+
+Screenshots for the menu bar popover, main panel, and preferences window will be added under `docs/images/`.
+
 ## Features
 
 - Clipboard history for text, images, and file URLs
@@ -63,6 +67,16 @@ Output:
 SkyPaste/dist/SkyPaste.app
 ```
 
+Version:
+
+```text
+SkyPaste/VERSION
+```
+
+## Release Process
+
+See [docs/RELEASING.md](docs/RELEASING.md) for the release checklist and versioning flow.
+
 ## Preferences
 
 Open `Preferences` from the menu bar app to configure:
@@ -85,12 +99,17 @@ To support automatic paste back into the previous app, macOS may request Accessi
 - No cloud sync in the current version
 - No tag system or end-to-end encryption yet
 - Data is stored locally by default
+- License: [MIT](LICENSE)
 
 ---
 
 ## 中文
 
 SkyPaste 是一个 macOS 剪贴板管理工具，支持文本、图片、文件地址的历史记录、快速检索、菜单栏操作和快捷键调用。
+
+### 截图
+
+菜单栏弹窗、主面板和偏好设置截图后续会放到 `docs/images/` 目录。
 
 ### 功能特性
 
@@ -151,6 +170,16 @@ cd SkyPaste
 SkyPaste/dist/SkyPaste.app
 ```
 
+版本号：
+
+```text
+SkyPaste/VERSION
+```
+
+### 发布流程
+
+版本号和发布步骤见 [docs/RELEASING.md](docs/RELEASING.md)。
+
 ### 偏好设置
 
 可在菜单栏中打开 `偏好设置`，支持配置：
@@ -173,3 +202,4 @@ SkyPaste/dist/SkyPaste.app
 - 当前版本不包含云同步
 - 当前版本不包含标签系统和端到端加密
 - 数据默认仅保存在本地设备
+- 协议： [MIT](LICENSE)
