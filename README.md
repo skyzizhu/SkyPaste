@@ -13,7 +13,7 @@
 
 <p align="center">[中文](#中文) | English</p>
 
-SkyPaste is a macOS clipboard manager for text, images, and file URLs, with menu bar access, searchable history, filters, favorites, and keyboard-driven workflows.
+SkyPaste is a simple macOS clipboard manager for text, images, and file URLs, designed for fast menu bar access, searchable history, filters, favorites, and keyboard-driven workflows.
 
 ## Screenshots
 
