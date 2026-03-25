@@ -1,6 +1,19 @@
 import SwiftUI
 
 struct PanelView: View {
+    private struct DaySection: Identifiable {
+        let day: Date
+        let items: [ClipboardItem]
+
+        var id: Date { day }
+    }
+
+    private struct Presentation {
+        let orderedItems: [ClipboardItem]
+        let favoriteItems: [ClipboardItem]
+        let daySections: [DaySection]
+    }
+
     @ObservedObject var store: ClipboardStore
     @ObservedObject var settings: AppSettings
     let onPick: (ClipboardItem) -> Void
@@ -13,49 +26,41 @@ struct PanelView: View {
     @State private var showToast = false
     @State private var toastTask: DispatchWorkItem?
 
-    private var filteredItems: [ClipboardItem] {
-        store.filteredItems.filter { selectedFilter.matches($0) }
-    }
+    private var presentation: Presentation {
+        let filteredItems = store.filteredItems.filter { selectedFilter.matches($0) }
+        let orderedItems: [ClipboardItem]
+        let favoriteItems: [ClipboardItem]
+        let daySource: [ClipboardItem]
 
-    private var orderedFilteredItems: [ClipboardItem] {
         if selectedFilter == .favorites {
-            return filteredItems
+            orderedItems = filteredItems
+            favoriteItems = []
+            daySource = filteredItems
+        } else {
+            favoriteItems = filteredItems
+                .filter(\.isFavorite)
+                .sorted { $0.createdAt > $1.createdAt }
+            daySource = filteredItems.filter { !$0.isFavorite }
+            orderedItems = favoriteItems + daySource
         }
-        return favoriteItems + nonFavoriteItems
-    }
 
-    private struct DaySection: Identifiable {
-        let day: Date
-        let items: [ClipboardItem]
-
-        var id: Date { day }
-    }
-
-    private var daySections: [DaySection] {
         let calendar = Calendar.current
-        let grouped = Dictionary(grouping: nonFavoriteItems) { item in
+        let grouped = Dictionary(grouping: daySource) { item in
             calendar.startOfDay(for: item.createdAt)
         }
 
-        let sortedDays = grouped.keys.sorted(by: >)
-        return sortedDays.map { day in
-            let items = (grouped[day] ?? []).sorted { $0.createdAt > $1.createdAt }
-            return DaySection(day: day, items: items)
+        let daySections = grouped.keys.sorted(by: >).map { day in
+            DaySection(
+                day: day,
+                items: (grouped[day] ?? []).sorted { $0.createdAt > $1.createdAt }
+            )
         }
-    }
 
-    private var favoriteItems: [ClipboardItem] {
-        guard selectedFilter != .favorites else { return [] }
-        return filteredItems.filter(\.isFavorite).sorted { $0.createdAt > $1.createdAt }
-    }
-
-    private var nonFavoriteItems: [ClipboardItem] {
-        guard selectedFilter != .favorites else { return filteredItems }
-        return filteredItems.filter { !$0.isFavorite }
-    }
-
-    private var filteredIDs: [ClipboardItem.ID] {
-        orderedFilteredItems.map(\.id)
+        return Presentation(
+            orderedItems: orderedItems,
+            favoriteItems: favoriteItems,
+            daySections: daySections
+        )
     }
 
     private func copyTimeText(_ date: Date) -> String {
@@ -63,81 +68,12 @@ struct PanelView: View {
     }
 
     var body: some View {
-        VStack(spacing: 10) {
-            TextField(L10n.tr("panel.search_placeholder"), text: $store.searchText)
-                .textFieldStyle(.roundedBorder)
-                .padding(.top, 10)
-                .padding(.horizontal, 12)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(ClipboardFilter.allCases) { filter in
-                        Button {
-                            selectedFilter = filter
-                        } label: {
-                            Text(filter.title)
-                                .font(.system(size: 12, weight: .medium))
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 7)
-                                .background(
-                                    Capsule()
-                                        .fill(selectedFilter == filter ? Color.accentColor.opacity(0.16) : Color.secondary.opacity(0.1))
-                                )
-                                .overlay {
-                                    Capsule()
-                                        .stroke(selectedFilter == filter ? Color.accentColor.opacity(0.3) : Color.clear, lineWidth: 1)
-                                }
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.horizontal, 12)
-            }
-
-            List {
-                if !favoriteItems.isEmpty {
-                    Section(L10n.tr("filter.favorites")) {
-                        ForEach(Array(favoriteItems.enumerated()), id: \.element.id) { index, item in
-                            rowView(for: item, hidesBottomSeparator: index == favoriteItems.count - 1)
-                        }
-                    }
-                }
-
-                ForEach(daySections) { section in
-                    Section {
-                        ForEach(Array(section.items.enumerated()), id: \.element.id) { index, item in
-                            rowView(for: item, hidesBottomSeparator: index == section.items.count - 1)
-                        }
-                    } header: {
-                        HStack(spacing: 8) {
-                            Text(L10n.sectionTitle(for: section.day))
-                            Spacer()
-                            Button {
-                                pendingDeleteDay = section.day
-                            } label: {
-                                Image(systemName: "trash")
-                            }
-                            .buttonStyle(.borderless)
-                        }
-                    }
-                }
-            }
-            .listStyle(.plain)
-            .onMoveCommand(perform: moveSelection)
-
-            HStack {
-                Text(settings.autoPasteEnabled ? L10n.tr("panel.shortcut_hint") : L10n.tr("panel.shortcut_hint_copy_only"))
-                    .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
-                Spacer()
-                Button(settings.autoPasteEnabled ? L10n.tr("panel.paste_selected") : L10n.tr("menu.copy_selected")) {
-                    performPrimaryAction()
-                }
-                .keyboardShortcut(.return, modifiers: [])
-                .disabled(selectedID == nil)
-            }
-            .padding(.horizontal, 12)
-            .padding(.bottom, 10)
+        VStack(spacing: 14) {
+            header
+            searchBar
+            filterBar
+            contentArea
+            footer
 
             QuickPasteShortcuts(onPickAtIndex: pasteItemAtIndex)
                 .frame(width: 0, height: 0)
@@ -151,31 +87,52 @@ struct PanelView: View {
             .opacity(0.01)
             .allowsHitTesting(false)
         }
-        .frame(minWidth: 560, minHeight: 480)
+        .padding(16)
+        .frame(minWidth: 700, minHeight: 620)
+        .background(
+            ZStack {
+                Color(nsColor: .windowBackgroundColor)
+                LinearGradient(
+                    colors: [
+                        Color.accentColor.opacity(0.08),
+                        Color.clear,
+                        Color.primary.opacity(0.03)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            }
+        )
         .overlay(alignment: .top) {
             if showToast {
                 Text(L10n.tr("menu.copy_success"))
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
+                    .padding(.vertical, 7)
                     .background(.ultraThinMaterial)
                     .clipShape(Capsule())
                     .padding(.top, 8)
+                    .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
                     .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
         .onAppear {
-            selectedID = orderedFilteredItems.first?.id
+            selectedID = presentation.orderedItems.first?.id
         }
-        .onChange(of: filteredIDs) { _, ids in
-            if let selectedID, ids.contains(selectedID) {
+        .onChange(of: presentation.orderedItems.map(\.id)) { _, ids in
+            guard let selectedID else {
+                self.selectedID = ids.first
                 return
             }
-            self.selectedID = ids.first
+
+            if !ids.contains(selectedID) {
+                self.selectedID = ids.first
+            }
         }
         .onChange(of: selectedFilter) { _, _ in
-            selectedID = orderedFilteredItems.first?.id
+            selectedID = presentation.orderedItems.first?.id
         }
+        .onMoveCommand(perform: moveSelection)
         .onExitCommand {
             onClose()
         }
@@ -204,8 +161,183 @@ struct PanelView: View {
         }
     }
 
+    private var header: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(L10n.tr("app.title"))
+                    .font(.system(size: 24, weight: .semibold, design: .rounded))
+                Text(settings.autoPasteEnabled ? L10n.tr("panel.shortcut_hint") : L10n.tr("panel.shortcut_hint_copy_only"))
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Button {
+                onClose()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .semibold))
+                    .frame(width: 28, height: 28)
+                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private var searchBar: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+
+            TextField(L10n.tr("panel.search_placeholder"), text: $store.searchText)
+                .textFieldStyle(.plain)
+                .font(.system(size: 15, weight: .medium))
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(.thinMaterial)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        }
+    }
+
+    private var filterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(ClipboardFilter.allCases) { filter in
+                    Button {
+                        withAnimation(.snappy(duration: 0.18)) {
+                            selectedFilter = filter
+                        }
+                    } label: {
+                        Text(filter.title)
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundStyle(selectedFilter == filter ? Color.accentColor : Color.primary.opacity(0.82))
+                            .padding(.horizontal, 13)
+                            .padding(.vertical, 8)
+                            .background(
+                                Capsule(style: .continuous)
+                                    .fill(selectedFilter == filter ? Color.accentColor.opacity(0.14) : Color.white.opacity(0.54))
+                            )
+                            .overlay {
+                                Capsule(style: .continuous)
+                                    .stroke(
+                                        selectedFilter == filter ? Color.accentColor.opacity(0.32) : Color.primary.opacity(0.08),
+                                        lineWidth: 1
+                                    )
+                            }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 2)
+        }
+    }
+
+    private var contentArea: some View {
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 16) {
+                if !presentation.favoriteItems.isEmpty {
+                    sectionCard(
+                        title: L10n.tr("filter.favorites"),
+                        items: presentation.favoriteItems,
+                        allowDeleteDay: false
+                    )
+                }
+
+                ForEach(presentation.daySections) { section in
+                    sectionCard(
+                        title: L10n.sectionTitle(for: section.day),
+                        items: section.items,
+                        allowDeleteDay: true,
+                        onDeleteDay: {
+                            pendingDeleteDay = section.day
+                        }
+                    )
+                }
+            }
+            .padding(12)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color.white.opacity(0.76))
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+        }
+    }
+
+    private var footer: some View {
+        HStack(spacing: 10) {
+            actionButton(title: settings.autoPasteEnabled ? L10n.tr("panel.paste_selected") : L10n.tr("menu.copy_selected")) {
+                performPrimaryAction()
+            }
+            .keyboardShortcut(.return, modifiers: [])
+            .disabled(selectedID == nil)
+
+            actionButton(title: L10n.tr("menu.copy")) {
+                copySelected()
+            }
+            .disabled(selectedID == nil)
+
+            Spacer(minLength: 0)
+        }
+    }
+
+    private func sectionCard(
+        title: String,
+        items: [ClipboardItem],
+        allowDeleteDay: Bool,
+        onDeleteDay: (() -> Void)? = nil
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Text(title)
+                    .font(.system(size: 13, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+
+                if allowDeleteDay, let onDeleteDay {
+                    Button(action: onDeleteDay) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            VStack(spacing: 3) {
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                    rowView(for: item)
+
+                    if index < items.count - 1 {
+                        Divider()
+                            .padding(.leading, item.isImage ? 64 : 12)
+                    }
+                }
+            }
+            .padding(6)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.white.opacity(0.84))
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Color.primary.opacity(0.04), lineWidth: 1)
+            }
+        }
+    }
+
     private func performPrimaryAction() {
-        guard let selected = orderedFilteredItems.first(where: { $0.id == selectedID }) else { return }
+        guard let selected = presentation.orderedItems.first(where: { $0.id == selectedID }) else { return }
         if settings.autoPasteEnabled {
             onPick(selected)
         } else {
@@ -215,53 +347,44 @@ struct PanelView: View {
     }
 
     private func copySelected() {
-        guard let selected = orderedFilteredItems.first(where: { $0.id == selectedID }) else { return }
+        guard let selected = presentation.orderedItems.first(where: { $0.id == selectedID }) else { return }
         onCopy(selected)
-        toastTask?.cancel()
-        withAnimation(.easeOut(duration: 0.15)) {
-            showToast = true
-        }
-
-        let dismissTask = DispatchWorkItem {
-            withAnimation(.easeIn(duration: 0.2)) {
-                showToast = false
-            }
-        }
-        toastTask = dismissTask
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: dismissTask)
+        showCopyToast()
     }
 
     private func pasteItemAtIndex(_ index: Int) {
-        guard index >= 0, index < orderedFilteredItems.count else { return }
-        onPick(orderedFilteredItems[index])
+        guard index >= 0, index < presentation.orderedItems.count else { return }
+        onPick(presentation.orderedItems[index])
     }
 
     private func moveSelection(_ direction: MoveCommandDirection) {
-        guard !orderedFilteredItems.isEmpty else {
+        guard !presentation.orderedItems.isEmpty else {
             selectedID = nil
             return
         }
 
-        guard let selectedID, let currentIndex = orderedFilteredItems.firstIndex(where: { $0.id == selectedID }) else {
-            self.selectedID = orderedFilteredItems.first?.id
+        guard let selectedID, let currentIndex = presentation.orderedItems.firstIndex(where: { $0.id == selectedID }) else {
+            self.selectedID = presentation.orderedItems.first?.id
             return
         }
 
         switch direction {
         case .up:
-            self.selectedID = orderedFilteredItems[max(0, currentIndex - 1)].id
+            self.selectedID = presentation.orderedItems[max(0, currentIndex - 1)].id
         case .down:
-            self.selectedID = orderedFilteredItems[min(orderedFilteredItems.count - 1, currentIndex + 1)].id
+            self.selectedID = presentation.orderedItems[min(presentation.orderedItems.count - 1, currentIndex + 1)].id
         default:
             break
         }
     }
 
-    private func rowView(for item: ClipboardItem, hidesBottomSeparator: Bool = false) -> some View {
+    private func rowView(for item: ClipboardItem) -> some View {
         ClipboardRowView(
             item: item,
             timeText: copyTimeText(item.createdAt),
-            isSelected: selectedID == item.id
+            isSelected: selectedID == item.id,
+            style: .popover,
+            iconSize: 44
         )
         .contentShape(Rectangle())
         .onTapGesture {
@@ -280,13 +403,14 @@ struct PanelView: View {
                 store.deleteItem(item.id)
             }
         }
-        .listRowInsets(EdgeInsets(top: 2, leading: 0, bottom: 2, trailing: 0))
-        .listRowBackground(Color.clear)
-        .listRowSeparator(hidesBottomSeparator ? .hidden : .visible, edges: .bottom)
     }
 
     private func copySelected(_ item: ClipboardItem) {
         onCopy(item)
+        showCopyToast()
+    }
+
+    private func showCopyToast() {
         toastTask?.cancel()
         withAnimation(.easeOut(duration: 0.15)) {
             showToast = true
@@ -299,6 +423,27 @@ struct PanelView: View {
         }
         toastTask = dismissTask
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: dismissTask)
+    }
+
+    private func actionButton(title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .foregroundStyle(Color.primary.opacity(0.84))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color.white.opacity(0.56))
+                )
+                .overlay {
+                    Capsule(style: .continuous)
+                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                }
+        }
+        .buttonStyle(.plain)
     }
 }
 

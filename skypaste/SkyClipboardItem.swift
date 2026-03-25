@@ -54,10 +54,20 @@ enum ClipboardContent: Equatable {
 }
 
 struct ClipboardItem: Identifiable, Equatable {
+    struct Classification: Equatable {
+        let isPlainText: Bool
+        let isImage: Bool
+        let isURL: Bool
+        let isCode: Bool
+    }
+
     let id: UUID
     let createdAt: Date
     let content: ClipboardContent
     let fingerprint: String
+    let classification: Classification
+    let title: String
+    let subtitle: String
     var isFavorite: Bool
 
     init(content: ClipboardContent, fingerprint: String) {
@@ -65,14 +75,36 @@ struct ClipboardItem: Identifiable, Equatable {
     }
 
     init(id: UUID, createdAt: Date, content: ClipboardContent, fingerprint: String, isFavorite: Bool = false) {
+        let derivedClassification = Self.makeClassification(for: content)
         self.id = id
         self.createdAt = createdAt
         self.content = content
         self.fingerprint = fingerprint
+        self.classification = derivedClassification
+        self.title = Self.makeTitle(for: content)
+        self.subtitle = Self.makeSubtitle(for: content)
         self.isFavorite = isFavorite
     }
 
-    var title: String {
+    var isPlainText: Bool { classification.isPlainText }
+
+    var isImage: Bool { classification.isImage }
+
+    var isURL: Bool { classification.isURL }
+
+    var isCode: Bool { classification.isCode }
+
+    var previewImage: NSImage? {
+        guard case .image(let data, _, _, _) = content else { return nil }
+        return NSImage(data: data)
+    }
+
+    var previewImageData: Data? {
+        guard case .image(let data, _, _, _) = content else { return nil }
+        return data
+    }
+
+    private static func makeTitle(for content: ClipboardContent) -> String {
         switch content {
         case .text(let value):
             let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -92,7 +124,7 @@ struct ClipboardItem: Identifiable, Equatable {
         }
     }
 
-    var subtitle: String {
+    private static func makeSubtitle(for content: ClipboardContent) -> String {
         switch content {
         case .text(let value):
             return L10n.format("clipboard.subtitle.text", value.count)
@@ -106,36 +138,22 @@ struct ClipboardItem: Identifiable, Equatable {
         }
     }
 
-    var previewImage: NSImage? {
-        guard case .image(let data, _, _, _) = content else { return nil }
-        return NSImage(data: data)
-    }
-
-    var previewImageData: Data? {
-        guard case .image(let data, _, _, _) = content else { return nil }
-        return data
-    }
-
-    var isPlainText: Bool {
-        guard case .text = content else { return false }
-        return !isURL
-    }
-
-    var isImage: Bool {
-        if case .image = content {
-            return true
+    private static func makeClassification(for content: ClipboardContent) -> Classification {
+        switch content {
+        case .image:
+            return Classification(isPlainText: false, isImage: true, isURL: false, isCode: false)
+        case .fileURLs:
+            return Classification(isPlainText: false, isImage: false, isURL: false, isCode: false)
+        case .text(let value):
+            let isURL = looksLikeURL(value)
+            let isCode = looksLikeCode(value, isKnownURL: isURL)
+            return Classification(
+                isPlainText: !isURL,
+                isImage: false,
+                isURL: isURL,
+                isCode: isCode
+            )
         }
-        return false
-    }
-
-    var isURL: Bool {
-        guard case .text(let value) = content else { return false }
-        return Self.looksLikeURL(value)
-    }
-
-    var isCode: Bool {
-        guard case .text(let value) = content else { return false }
-        return Self.looksLikeCode(value)
     }
 
     private static func looksLikeURL(_ value: String) -> Bool {
@@ -152,10 +170,10 @@ struct ClipboardItem: Identifiable, Equatable {
         return match.range.location == 0 && match.range.length == trimmed.utf16.count
     }
 
-    private static func looksLikeCode(_ value: String) -> Bool {
+    private static func looksLikeCode(_ value: String, isKnownURL: Bool) -> Bool {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
-        guard !looksLikeURL(trimmed) else { return false }
+        guard !isKnownURL else { return false }
         guard trimmed.count >= 8 else { return false }
 
         let lines = trimmed.components(separatedBy: .newlines).filter { !$0.isEmpty }

@@ -9,6 +9,7 @@ final class AppCoordinator {
     private var panelWindow: NSWindow?
     private var debugWindow: NSWindow?
     private var settingsWindow: NSWindow?
+    private var settingsWindowController: NSWindowController?
     private var previousApp: NSRunningApplication?
 
     init(settings: AppSettings) {
@@ -37,6 +38,9 @@ final class AppCoordinator {
         panel.level = .floating
         panel.hidesOnDeactivate = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        panel.titleVisibility = .hidden
+        panel.titlebarAppearsTransparent = true
+        panel.isMovableByWindowBackground = true
         panel.center()
         panel.contentView = hostingView
         panel.orderOut(nil)
@@ -109,25 +113,37 @@ final class AppCoordinator {
     }
 
     func showSettingsWindow() {
-        let controller = NSHostingController(rootView: SettingsView(settings: settings))
-
         if settingsWindow == nil {
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 660, height: 680),
+                contentRect: NSRect(x: 0, y: 0, width: 760, height: 720),
                 styleMask: [.titled, .closable, .miniaturizable, .resizable],
                 backing: .buffered,
                 defer: false
             )
-            window.minSize = NSSize(width: 620, height: 620)
+            window.minSize = NSSize(width: 700, height: 680)
             window.isReleasedWhenClosed = false
+            window.tabbingMode = .disallowed
+            window.titleVisibility = .hidden
+            window.titlebarAppearsTransparent = true
+            window.titlebarSeparatorStyle = .none
+            window.toolbarStyle = .preference
+            window.isMovableByWindowBackground = true
+            window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
             window.center()
+            settingsWindowController = NSWindowController(window: window)
             settingsWindow = window
         }
 
+        let controller = NSHostingController(rootView: SettingsView(settings: settings))
         settingsWindow?.title = L10n.tr("menu.preferences")
         settingsWindow?.contentViewController = controller
+
+        guard let settingsWindowController else { return }
+
         NSApp.activate(ignoringOtherApps: true)
+        settingsWindowController.showWindow(nil)
         settingsWindow?.makeKeyAndOrderFront(nil)
+        settingsWindow?.orderFrontRegardless()
     }
 
     private func captureFrontApp() {
@@ -302,7 +318,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             },
             onOpenPreferences: { [weak self] in
                 self?.statusPopover?.performClose(nil)
-                self?.openPreferences()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    self?.openPreferences()
+                }
             },
             onQuit: { [weak self] in
                 self?.quitApp()

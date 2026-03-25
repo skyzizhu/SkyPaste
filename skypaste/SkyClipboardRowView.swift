@@ -2,11 +2,18 @@ import AppKit
 import SwiftUI
 
 struct ClipboardRowView: View {
+    enum Style {
+        case popover
+        case panel
+    }
+
     let item: ClipboardItem
     let timeText: String
     var isSelected: Bool = false
+    var style: Style = .panel
     var iconSize: CGFloat = 40
     @State private var loadedPreview: NSImage?
+    @State private var isHovered = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -16,12 +23,12 @@ struct ClipboardRowView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.title)
-                    .font(.system(size: item.isCode ? 11.5 : 12, weight: .medium, design: item.isCode ? .monospaced : .default))
+                    .font(.system(size: item.isCode ? 12 : 13, weight: .semibold, design: item.isCode ? .monospaced : .default))
                     .lineLimit(item.isCode ? 2 : 1)
                     .fixedSize(horizontal: false, vertical: item.isCode)
 
                 Text("\(item.subtitle) • \(timeText)")
-                    .font(.system(size: 10))
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }
@@ -34,11 +41,18 @@ struct ClipboardRowView: View {
                     .foregroundStyle(Color.yellow)
             }
         }
-        .padding(.horizontal, 1)
-        .padding(.vertical, 6)
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, verticalPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(selectionBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .stroke(borderColor, lineWidth: 1)
+        }
+        .onHover { hovering in
+            isHovered = hovering
+        }
         .onAppear {
             loadPreviewIfNeeded()
         }
@@ -54,12 +68,11 @@ struct ClipboardRowView: View {
     @ViewBuilder
     private var selectionBackground: some View {
         if isSelected {
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(Color.accentColor.opacity(0.16))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .stroke(Color.accentColor.opacity(0.24), lineWidth: 1)
-                }
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(Color.accentColor.opacity(style == .popover ? 0.11 : 0.10))
+        } else if isHovered {
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(Color.white.opacity(style == .popover ? 0.52 : 0.42))
         } else {
             Color.clear
         }
@@ -86,8 +99,27 @@ struct ClipboardRowView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(Color.black.opacity(0.08), lineWidth: 1)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
         }
+    }
+
+    private var cornerRadius: CGFloat {
+        style == .popover ? 12 : 8
+    }
+
+    private var horizontalPadding: CGFloat {
+        style == .popover ? 10 : 1
+    }
+
+    private var verticalPadding: CGFloat {
+        style == .popover ? 9 : 6
+    }
+
+    private var borderColor: Color {
+        if isSelected {
+            return Color.accentColor.opacity(style == .popover ? 0.18 : 0.16)
+        }
+        return isHovered ? Color.primary.opacity(0.05) : .clear
     }
 
     private func loadPreviewIfNeeded() {
