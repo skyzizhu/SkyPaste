@@ -31,18 +31,18 @@ enum ClipboardFilter: String, CaseIterable, Identifiable {
 
     func matches(_ item: ClipboardItem) -> Bool {
         switch self {
-        case .all:
-            return true
-        case .text:
-            return item.isPlainText
-        case .image:
-            return item.isImage
-        case .url:
-            return item.isURL
-        case .code:
-            return item.isCode
         case .favorites:
             return item.isFavorite
+        case .all:
+            return !item.isFavorite
+        case .text:
+            return !item.isFavorite && item.isPlainText
+        case .image:
+            return !item.isFavorite && item.isImage
+        case .url:
+            return !item.isFavorite && item.isURL
+        case .code:
+            return !item.isFavorite && item.isCode
         }
     }
 }
