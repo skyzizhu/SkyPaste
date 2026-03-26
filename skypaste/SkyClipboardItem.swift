@@ -34,15 +34,15 @@ enum ClipboardFilter: String, CaseIterable, Identifiable {
         case .favorites:
             return item.isFavorite
         case .all:
-            return !item.isFavorite
+            return true
         case .text:
-            return !item.isFavorite && item.isPlainText
+            return item.isPlainText
         case .image:
-            return !item.isFavorite && item.isImage
+            return item.isImage
         case .url:
-            return !item.isFavorite && item.isURL
+            return item.isURL
         case .code:
-            return !item.isFavorite && item.isCode
+            return item.isCode
         }
     }
 }

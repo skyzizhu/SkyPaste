@@ -10,7 +10,6 @@ struct PanelView: View {
 
     private struct Presentation {
         let orderedItems: [ClipboardItem]
-        let favoriteItems: [ClipboardItem]
         let daySections: [DaySection]
     }
 
@@ -28,21 +27,8 @@ struct PanelView: View {
 
     private var presentation: Presentation {
         let filteredItems = store.filteredItems.filter { selectedFilter.matches($0) }
-        let orderedItems: [ClipboardItem]
-        let favoriteItems: [ClipboardItem]
-        let daySource: [ClipboardItem]
-
-        if selectedFilter == .favorites {
-            orderedItems = filteredItems
-            favoriteItems = []
-            daySource = filteredItems
-        } else {
-            favoriteItems = filteredItems
-                .filter(\.isFavorite)
-                .sorted { $0.createdAt > $1.createdAt }
-            daySource = filteredItems.filter { !$0.isFavorite }
-            orderedItems = favoriteItems + daySource
-        }
+        let orderedItems = filteredItems
+        let daySource = filteredItems
 
         let calendar = Calendar.current
         let grouped = Dictionary(grouping: daySource) { item in
@@ -58,7 +44,6 @@ struct PanelView: View {
 
         return Presentation(
             orderedItems: orderedItems,
-            favoriteItems: favoriteItems,
             daySections: daySections
         )
     }
@@ -242,14 +227,6 @@ struct PanelView: View {
     private var contentArea: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
-                if !presentation.favoriteItems.isEmpty {
-                    sectionCard(
-                        title: L10n.tr("filter.favorites"),
-                        items: presentation.favoriteItems,
-                        allowDeleteDay: false
-                    )
-                }
-
                 ForEach(presentation.daySections) { section in
                     sectionCard(
                         title: L10n.sectionTitle(for: section.day),
