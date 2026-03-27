@@ -146,7 +146,7 @@ struct SettingsView: View {
     private var historySection: some View {
         SettingsSection(title: L10n.tr("settings.history")) {
             SettingsRow(title: L10n.format("settings.max_records", settings.historyLimit)) {
-                Stepper("", value: $settings.historyLimit, in: 20...1000, step: 20)
+                Stepper("", value: historyLimitBinding, in: 20...1000, step: 20)
                     .labelsHidden()
                     .frame(width: 120, alignment: .trailing)
             }
@@ -180,6 +180,13 @@ struct SettingsView: View {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
         return "Version \(version) (\(build))"
+    }
+
+    private var historyLimitBinding: Binding<Int> {
+        Binding(
+            get: { settings.historyLimit },
+            set: { settings.setHistoryLimit($0) }
+        )
     }
 
     private func modifierToggle(_ title: String, isOn: Binding<Bool>) -> some View {

@@ -84,9 +84,8 @@ struct HotKeyBinding: Equatable {
 final class AppSettings: ObservableObject {
     static let shared = AppSettings()
 
-    @Published var historyLimit: Int {
+    @Published private(set) var historyLimit: Int {
         didSet {
-            historyLimit = Self.clampHistoryLimit(historyLimit)
             defaults.set(historyLimit, forKey: Keys.historyLimit)
         }
     }
@@ -175,6 +174,12 @@ final class AppSettings: ObservableObject {
         if hotKeyControl { modifiers |= UInt32(controlKey) }
 
         return HotKeyBinding(keyCode: hotKeyCode, modifiers: modifiers)
+    }
+
+    func setHistoryLimit(_ newValue: Int) {
+        let clamped = Self.clampHistoryLimit(newValue)
+        guard historyLimit != clamped else { return }
+        historyLimit = clamped
     }
 
     var ignoredBundleIDs: Set<String> {
