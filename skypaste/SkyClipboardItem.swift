@@ -53,6 +53,24 @@ enum ClipboardContent: Equatable {
     case fileURLs([URL])
 }
 
+enum ClipboardSource: Int, Equatable {
+    case local = 0
+    case universalClipboard = 1
+
+    var isUniversalClipboard: Bool {
+        self == .universalClipboard
+    }
+
+    var badgeText: String? {
+        switch self {
+        case .local:
+            return nil
+        case .universalClipboard:
+            return L10n.tr("clipboard.source.universal")
+        }
+    }
+}
+
 struct ClipboardItem: Identifiable, Equatable {
     struct Classification: Equatable {
         let isPlainText: Bool
@@ -68,13 +86,18 @@ struct ClipboardItem: Identifiable, Equatable {
     let classification: Classification
     let title: String
     let subtitle: String
+    let source: ClipboardSource
     var isFavorite: Bool
 
     init(content: ClipboardContent, fingerprint: String) {
-        self.init(id: UUID(), createdAt: Date(), content: content, fingerprint: fingerprint, isFavorite: false)
+        self.init(id: UUID(), createdAt: Date(), content: content, fingerprint: fingerprint, source: .local, isFavorite: false)
     }
 
-    init(id: UUID, createdAt: Date, content: ClipboardContent, fingerprint: String, isFavorite: Bool = false) {
+    init(content: ClipboardContent, fingerprint: String, source: ClipboardSource) {
+        self.init(id: UUID(), createdAt: Date(), content: content, fingerprint: fingerprint, source: source, isFavorite: false)
+    }
+
+    init(id: UUID, createdAt: Date, content: ClipboardContent, fingerprint: String, source: ClipboardSource = .local, isFavorite: Bool = false) {
         let derivedClassification = Self.makeClassification(for: content)
         self.id = id
         self.createdAt = createdAt
@@ -83,6 +106,7 @@ struct ClipboardItem: Identifiable, Equatable {
         self.classification = derivedClassification
         self.title = Self.makeTitle(for: content)
         self.subtitle = Self.makeSubtitle(for: content)
+        self.source = source
         self.isFavorite = isFavorite
     }
 
@@ -104,11 +128,23 @@ struct ClipboardItem: Identifiable, Equatable {
         return data
     }
 
+    var previewText: String? {
+        guard case .text(let value) = content else { return nil }
+        return value
+    }
+
+    var supportsTextPreview: Bool {
+        previewText != nil
+    }
+
     private static func makeTitle(for content: ClipboardContent) -> String {
         switch content {
         case .text(let value):
             let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmed.isEmpty { return L10n.tr("clipboard.empty_text") }
+            if looksLikeURL(trimmed) {
+                return prettyURLTitle(trimmed)
+            }
             if trimmed.count <= 90 { return trimmed }
             return String(trimmed.prefix(90)) + "..."
 
@@ -127,6 +163,10 @@ struct ClipboardItem: Identifiable, Equatable {
     private static func makeSubtitle(for content: ClipboardContent) -> String {
         switch content {
         case .text(let value):
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            if looksLikeURL(trimmed) {
+                return trimmed
+            }
             return L10n.format("clipboard.subtitle.text", value.count)
 
         case .image(_, _, let originalByteCount, _):
@@ -168,6 +208,25 @@ struct ClipboardItem: Identifiable, Equatable {
         }
 
         return match.range.location == 0 && match.range.length == trimmed.utf16.count
+    }
+
+    private static func prettyURLTitle(_ value: String) -> String {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: trimmed), let host = url.host, !host.isEmpty else {
+            return trimmed
+        }
+
+        let path = url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        if path.isEmpty {
+            return host
+        }
+
+        let condensedPath = path
+            .split(separator: "/")
+            .prefix(3)
+            .joined(separator: "/")
+
+        return "\(host)/\(condensedPath)"
     }
 
     private static func looksLikeCode(_ value: String, isKnownURL: Bool) -> Bool {
@@ -255,8 +314,38 @@ enum ClipboardCaptureResult {
 }
 
 struct ClipboardDecoder {
+    private static let remoteClipboardType = NSPasteboard.PasteboardType("com.apple.is-remote-clipboard")
+    private static let sourceMarkerFragments = [
+        "remote-clipboard",
+        "universal-clipboard"
+    ]
+
     static func decode(from pasteboard: NSPasteboard) -> ClipboardCaptureResult {
         guard let first = pasteboard.pasteboardItems?.first else { return .none }
+        let source = detectSource(from: pasteboard)
+
+        if let image = extractImagePayload(first: first, pasteboard: pasteboard) {
+            let digest = image.data.prefix(64).base64EncodedString()
+            return .item(
+                ClipboardItem(
+                    content: .image(data: image.data, name: image.name, originalByteCount: image.data.count, previewOnly: false),
+                    fingerprint: "img:\(digest):\(image.data.count)",
+                    source: source
+                )
+            )
+        }
+
+        if let urlText = extractURLText(from: pasteboard, first: first) {
+            let text = urlText.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty else { return .none }
+            return .item(ClipboardItem(content: .text(text), fingerprint: "txt:\(text)", source: source))
+        }
+
+        if let raw = first.string(forType: .string) {
+            let text = raw.trimmingCharacters(in: .newlines)
+            guard !text.isEmpty else { return .none }
+            return .item(ClipboardItem(content: .text(text), fingerprint: "txt:\(text)", source: source))
+        }
 
         let fileURLs = extractFileURLs(from: pasteboard, first: first)
         if !fileURLs.isEmpty {
@@ -265,30 +354,15 @@ struct ClipboardDecoder {
                 return .item(
                     ClipboardItem(
                         content: .image(data: image.data, name: image.name, originalByteCount: image.data.count, previewOnly: false),
-                        fingerprint: "img:\(digest):\(image.data.count)"
+                        fingerprint: "img:\(digest):\(image.data.count)",
+                        source: source
                     )
                 )
             }
 
             let joined = fileURLs.map(\.path).joined(separator: "|")
-            let item = ClipboardItem(content: .fileURLs(fileURLs), fingerprint: "file:\(joined)")
+            let item = ClipboardItem(content: .fileURLs(fileURLs), fingerprint: "file:\(joined)", source: source)
             return .item(item)
-        }
-
-        if let image = extractImagePayload(first: first, pasteboard: pasteboard) {
-            let digest = image.data.prefix(64).base64EncodedString()
-            return .item(
-                ClipboardItem(
-                    content: .image(data: image.data, name: image.name, originalByteCount: image.data.count, previewOnly: false),
-                    fingerprint: "img:\(digest):\(image.data.count)"
-                )
-            )
-        }
-
-        if let raw = first.string(forType: .string) {
-            let text = raw.trimmingCharacters(in: .newlines)
-            guard !text.isEmpty else { return .none }
-            return .item(ClipboardItem(content: .text(text), fingerprint: "txt:\(text)"))
         }
 
         return .none
@@ -313,15 +387,50 @@ struct ClipboardDecoder {
 
     private static func extractFileURLs(from pasteboard: NSPasteboard, first: NSPasteboardItem) -> [URL] {
         if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL], !urls.isEmpty {
-            return urls
+            return urls.filter(\.isFileURL)
         }
 
         if let raw = first.propertyList(forType: .fileURL) as? String,
-           let url = URL(string: raw) {
+           let url = URL(string: raw),
+           url.isFileURL {
             return [url]
         }
 
         return []
+    }
+
+    private static func extractURLText(from pasteboard: NSPasteboard, first: NSPasteboardItem) -> String? {
+        if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL],
+           let url = urls.first(where: { !$0.isFileURL }) {
+            return url.absoluteString
+        }
+
+        if let raw = first.string(forType: .URL) {
+            let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let url = URL(string: trimmed), !url.isFileURL {
+                return trimmed
+            }
+        }
+
+        if let raw = first.propertyList(forType: .URL) as? String {
+            let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let url = URL(string: trimmed), !url.isFileURL {
+                return trimmed
+            }
+        }
+
+        return nil
+    }
+
+    private static func detectSource(from pasteboard: NSPasteboard) -> ClipboardSource {
+        let allTypes = Set((pasteboard.types ?? []) + (pasteboard.pasteboardItems ?? []).flatMap(\.types))
+        let hasRemoteMarker = allTypes.contains(remoteClipboardType) ||
+            allTypes.contains(where: { type in
+                let rawValue = type.rawValue.lowercased()
+                return sourceMarkerFragments.contains(where: rawValue.contains)
+            })
+
+        return hasRemoteMarker ? .universalClipboard : .local
     }
 
     private static func imagePayloadFromFileURL(_ url: URL) -> (data: Data, name: String)? {

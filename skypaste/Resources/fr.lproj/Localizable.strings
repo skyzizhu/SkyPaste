@@ -4,6 +4,7 @@
 "clipboard.file_count" = "%d fichiers";
 "clipboard.subtitle.text" = "Texte • %d caractères";
 "clipboard.subtitle.image" = "Image • %d KB";
+"clipboard.source.universal" = "Universal Clipboard";
 "section.today" = "Aujourd'hui";
 "section.yesterday" = "Hier";
 "settings.hotkey" = "Raccourci";
@@ -81,3 +82,9 @@
 "language.ja" = "Japonais";
 "language.ko" = "Coréen";
 "language.fr" = "Français";
+"preview.open" = "Aperçu de l’image";
+"preview.title" = "Aperçu de l’image";
+"preview.text_open" = "Aperçu du texte";
+"preview.text_title" = "Aperçu du texte";
+"preview.unavailable" = "Aperçu indisponible";
+"preview.unavailable_message" = "SkyPaste n’a pas pu charger l’aperçu de cette image.";

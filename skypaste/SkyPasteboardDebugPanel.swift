@@ -25,11 +25,11 @@ final class PasteboardDebugModel: ObservableObject {
         case .item(let item):
             switch item.content {
             case .text(let value):
-                decodedSummary = L10n.tr("debug.text")
+                decodedSummary = debugSummary(for: item, base: L10n.tr("debug.text"))
                 preview = value
 
             case .image(let data, let name, let originalByteCount, let previewOnly):
-                decodedSummary = L10n.tr("debug.image")
+                decodedSummary = debugSummary(for: item, base: L10n.tr("debug.image"))
                 let namePart: String
                 if let name, !name.isEmpty {
                     namePart = L10n.format("debug.name_prefix", name)
@@ -41,10 +41,15 @@ final class PasteboardDebugModel: ObservableObject {
                 preview = previewOnly ? "\(namePart)\(currentKB) KB preview / \(originalKB) KB original" : "\(namePart)\(originalKB) KB"
 
             case .fileURLs(let urls):
-                decodedSummary = L10n.tr("debug.file_urls")
+                decodedSummary = debugSummary(for: item, base: L10n.tr("debug.file_urls"))
                 preview = urls.map(\.path).joined(separator: "\n")
             }
         }
+    }
+
+    private func debugSummary(for item: ClipboardItem, base: String) -> String {
+        guard let badgeText = item.source.badgeText else { return base }
+        return "\(base) • \(badgeText)"
     }
 }
 

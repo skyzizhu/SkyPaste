@@ -12,6 +12,7 @@ struct ClipboardRowView: View {
     var isSelected: Bool = false
     var style: Style = .panel
     var iconSize: CGFloat = 40
+    var onPreview: (() -> Void)? = nil
     @State private var loadedPreview: NSImage?
     @State private var isHovered = false
 
@@ -27,10 +28,19 @@ struct ClipboardRowView: View {
                     .lineLimit(item.isCode ? 2 : 1)
                     .fixedSize(horizontal: false, vertical: item.isCode)
 
-                Text("\(item.subtitle) • \(timeText)")
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Text(metadataText)
+                        .lineLimit(1)
+
+                    if item.source.isUniversalClipboard {
+                        Image(systemName: "iphone.gen3")
+                            .font(.system(size: 10.5, weight: .semibold))
+                            .foregroundStyle(Color.accentColor.opacity(0.9))
+                            .help(item.source.badgeText ?? "")
+                    }
+                }
+                .font(.system(size: 11, weight: .medium, design: .rounded))
+                .foregroundStyle(.secondary)
             }
 
             Spacer(minLength: 0)
@@ -80,7 +90,7 @@ struct ClipboardRowView: View {
 
     @ViewBuilder
     private var previewThumbnail: some View {
-        Group {
+        let thumbnail = Group {
             if let loadedPreview {
                 Image(nsImage: loadedPreview)
                     .resizable()
@@ -101,6 +111,16 @@ struct ClipboardRowView: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(Color.primary.opacity(0.08), lineWidth: 1)
         }
+
+        if let onPreview {
+            Button(action: onPreview) {
+                thumbnail
+            }
+            .buttonStyle(.plain)
+            .help(L10n.tr("preview.open"))
+        } else {
+            thumbnail
+        }
     }
 
     private var cornerRadius: CGFloat {
@@ -120,6 +140,10 @@ struct ClipboardRowView: View {
             return Color.accentColor.opacity(style == .popover ? 0.18 : 0.16)
         }
         return isHovered ? Color.primary.opacity(0.05) : .clear
+    }
+
+    private var metadataText: String {
+        [item.subtitle, timeText].joined(separator: " • ")
     }
 
     private func loadPreviewIfNeeded() {

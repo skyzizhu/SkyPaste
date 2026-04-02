@@ -4,6 +4,7 @@
 "clipboard.file_count" = "%d개 파일";
 "clipboard.subtitle.text" = "텍스트 • %d자";
 "clipboard.subtitle.image" = "이미지 • %d KB";
+"clipboard.source.universal" = "Universal Clipboard";
 "section.today" = "오늘";
 "section.yesterday" = "어제";
 "settings.hotkey" = "단축키";
@@ -81,3 +82,9 @@
 "language.ja" = "일본어";
 "language.ko" = "한국어";
 "language.fr" = "프랑스어";
+"preview.open" = "이미지 미리보기";
+"preview.title" = "이미지 미리보기";
+"preview.text_open" = "텍스트 미리보기";
+"preview.text_title" = "텍스트 미리보기";
+"preview.unavailable" = "미리보기를 사용할 수 없음";
+"preview.unavailable_message" = "SkyPaste가 이 이미지 미리보기를 불러오지 못했습니다.";

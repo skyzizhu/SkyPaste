@@ -4,6 +4,7 @@
 "clipboard.file_count" = "%d 个文件";
 "clipboard.subtitle.text" = "文本 • %d 字符";
 "clipboard.subtitle.image" = "图片 • %d KB";
+"clipboard.source.universal" = "Universal Clipboard";
 "section.today" = "今天";
 "section.yesterday" = "昨天";
 "settings.hotkey" = "快捷键";
@@ -81,3 +82,9 @@
 "language.ja" = "日语";
 "language.ko" = "韩语";
 "language.fr" = "法语";
+"preview.open" = "预览图片";
+"preview.title" = "图片预览";
+"preview.text_open" = "预览文字";
+"preview.text_title" = "文字预览";
+"preview.unavailable" = "无法预览";
+"preview.unavailable_message" = "SkyPaste 无法加载这张图片的预览。";

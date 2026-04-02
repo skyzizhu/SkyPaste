@@ -44,13 +44,18 @@ final class ClipboardStore: ObservableObject {
         var item = item
         item.isFavorite = preservedFavoriteState(for: item)
 
-        if items.first?.fingerprint == item.fingerprint {
+        let memoryItem = ClipboardImageOptimizer.memoryOptimizedItem(item)
+
+        if let first = items.first, first.fingerprint == item.fingerprint {
+            if shouldRefreshTopItem(current: first, incoming: memoryItem) {
+                persist(item)
+                items[0] = memoryItem
+            }
             return
         }
 
         persist(item)
 
-        let memoryItem = ClipboardImageOptimizer.memoryOptimizedItem(item)
         items.removeAll { $0.fingerprint == memoryItem.fingerprint }
         items.insert(memoryItem, at: 0)
 
@@ -60,14 +65,13 @@ final class ClipboardStore: ObservableObject {
     }
 
     func captureCurrentPasteboardIfNeeded() {
-        if shouldIgnoreCurrentFrontApp() {
-            return
-        }
-
         switch ClipboardDecoder.decode(from: NSPasteboard.general) {
         case .none:
             return
         case .item(let item):
+            if item.source == .local, shouldIgnoreCurrentFrontApp() {
+                return
+            }
             add(item)
         }
     }
@@ -79,6 +83,10 @@ final class ClipboardStore: ObservableObject {
         }
 
         ClipboardDecoder.write(item, to: NSPasteboard.general)
+    }
+
+    func itemForPreview(_ item: ClipboardItem) -> ClipboardItem {
+        fullResolutionItemIfNeeded(for: item) ?? item
     }
 
     func toggleFavorite(for itemID: ClipboardItem.ID) {
@@ -172,6 +180,13 @@ final class ClipboardStore: ObservableObject {
             print("[ClipboardStore] Failed to load favorite state: \(error)")
             return item.isFavorite
         }
+    }
+
+    private func shouldRefreshTopItem(current: ClipboardItem, incoming: ClipboardItem) -> Bool {
+        current.source != incoming.source ||
+            current.title != incoming.title ||
+            current.subtitle != incoming.subtitle ||
+            current.isFavorite != incoming.isFavorite
     }
 
     private func fullResolutionItemIfNeeded(for item: ClipboardItem) -> ClipboardItem? {

@@ -4,6 +4,7 @@
 "clipboard.file_count" = "%d 個のファイル";
 "clipboard.subtitle.text" = "テキスト • %d 文字";
 "clipboard.subtitle.image" = "画像 • %d KB";
+"clipboard.source.universal" = "Universal Clipboard";
 "section.today" = "今日";
 "section.yesterday" = "昨日";
 "settings.hotkey" = "ホットキー";
@@ -81,3 +82,9 @@
 "language.ja" = "日本語";
 "language.ko" = "韓国語";
 "language.fr" = "フランス語";
+"preview.open" = "画像をプレビュー";
+"preview.title" = "画像プレビュー";
+"preview.text_open" = "テキストをプレビュー";
+"preview.text_title" = "テキストプレビュー";
+"preview.unavailable" = "プレビューできません";
+"preview.unavailable_message" = "SkyPaste はこの画像のプレビューを読み込めませんでした。";
