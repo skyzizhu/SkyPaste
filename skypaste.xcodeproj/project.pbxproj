@@ -738,7 +738,7 @@
 				CODE_SIGN_ENTITLEMENTS = skypaste/skypaste.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 4;
+					CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_ASSET_PATHS = "\"skypaste/Preview Content\"";
 				DEVELOPMENT_TEAM = CS52G5Z35S;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -750,7 +750,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.4;
+					MARKETING_VERSION = 0.1.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.huaibor.skypaste;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "APP_STORE_BUILD $(inherited)";
@@ -767,7 +767,7 @@
 				CODE_SIGN_ENTITLEMENTS = skypaste/skypaste.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-				CURRENT_PROJECT_VERSION = 4;
+					CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_ASSET_PATHS = "\"skypaste/Preview Content\"";
 				DEVELOPMENT_TEAM = CS52G5Z35S;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -779,7 +779,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-				MARKETING_VERSION = 0.1.4;
+					MARKETING_VERSION = 0.1.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.huaibor.skypaste;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

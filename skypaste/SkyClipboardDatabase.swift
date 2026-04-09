@@ -41,10 +41,7 @@ final class ClipboardDatabase {
             """
         )
 
-        // Migration for existing local DBs created before image_name existed.
-        _ = try? execute("ALTER TABLE clipboard_items ADD COLUMN image_name TEXT;")
-        _ = try? execute("ALTER TABLE clipboard_items ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0;")
-        _ = try? execute("ALTER TABLE clipboard_items ADD COLUMN source_kind INTEGER NOT NULL DEFAULT 0;")
+        try migrateSchemaIfNeeded()
 
         try execute("CREATE INDEX IF NOT EXISTS idx_clipboard_created_at ON clipboard_items(created_at DESC);")
         try validateIntegrity()
@@ -368,6 +365,39 @@ final class ClipboardDatabase {
         guard sqlite3_exec(db, sql, nil, nil, nil) == SQLITE_OK else {
             throw ClipboardDatabaseError.stepFailed(String(cString: sqlite3_errmsg(db)))
         }
+    }
+
+    private func migrateSchemaIfNeeded() throws {
+        if !hasColumn(named: "image_name") {
+            try execute("ALTER TABLE clipboard_items ADD COLUMN image_name TEXT;")
+        }
+
+        if !hasColumn(named: "is_favorite") {
+            try execute("ALTER TABLE clipboard_items ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0;")
+        }
+
+        if !hasColumn(named: "source_kind") {
+            try execute("ALTER TABLE clipboard_items ADD COLUMN source_kind INTEGER NOT NULL DEFAULT 0;")
+        }
+    }
+
+    private func hasColumn(named columnName: String) -> Bool {
+        var statement: OpaquePointer?
+        let sql = "PRAGMA table_info(clipboard_items);"
+
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+            return false
+        }
+        defer { sqlite3_finalize(statement) }
+
+        while sqlite3_step(statement) == SQLITE_ROW {
+            guard let name = sqlite3_column_text(statement, 1) else { continue }
+            if String(cString: name) == columnName {
+                return true
+            }
+        }
+
+        return false
     }
 
     private func validateIntegrity() throws {

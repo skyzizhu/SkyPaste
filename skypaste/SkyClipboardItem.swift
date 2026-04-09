@@ -457,7 +457,7 @@ struct ClipboardDecoder {
         }
 
         guard let image = NSImage(contentsOf: url) else { return nil }
-        guard let data = pngData(from: image) ?? image.tiffRepresentation else { return nil }
+        guard let data = safeImageData(from: image) else { return nil }
 
         return (data, url.lastPathComponent)
     }
@@ -487,13 +487,13 @@ struct ClipboardDecoder {
         }
 
         if let image = NSImage(pasteboard: pasteboard),
-           let data = pngData(from: image) ?? image.tiffRepresentation {
+           let data = safeImageData(from: image) {
             return (data, inferImageName(from: pasteboard, first: first))
         }
 
         if let images = pasteboard.readObjects(forClasses: [NSImage.self], options: nil) as? [NSImage],
            let firstImage = images.first,
-           let data = pngData(from: firstImage) ?? firstImage.tiffRepresentation {
+           let data = safeImageData(from: firstImage) {
             return (data, inferImageName(from: pasteboard, first: first))
         }
 
@@ -511,17 +511,75 @@ struct ClipboardDecoder {
 
     private static func normalizeImageData(_ data: Data) -> Data? {
         guard let image = NSImage(data: data) else { return nil }
-        return pngData(from: image) ?? image.tiffRepresentation
+        return safeImageData(from: image)
+    }
+
+    private static func safeImageData(from image: NSImage) -> Data? {
+        if let png = pngData(from: image), !png.isEmpty {
+            return png
+        }
+
+        if let tiff = image.tiffRepresentation, !tiff.isEmpty {
+            return tiff
+        }
+
+        return nil
     }
 
     private static func pngData(from image: NSImage) -> Data? {
+        if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            let rep = NSBitmapImageRep(cgImage: cgImage)
+            if let data = rep.representation(using: .png, properties: [:]), !data.isEmpty {
+                return data
+            }
+        }
+
+        let size = bestRasterSize(for: image)
+        guard size.width > 0, size.height > 0 else {
+            return nil
+        }
+
         guard
-            let tiff = image.tiffRepresentation,
-            let rep = NSBitmapImageRep(data: tiff)
+            let rep = NSBitmapImageRep(
+                bitmapDataPlanes: nil,
+                pixelsWide: Int(size.width),
+                pixelsHigh: Int(size.height),
+                bitsPerSample: 8,
+                samplesPerPixel: 4,
+                hasAlpha: true,
+                isPlanar: false,
+                colorSpaceName: .deviceRGB,
+                bytesPerRow: 0,
+                bitsPerPixel: 0
+            ),
+            let context = NSGraphicsContext(bitmapImageRep: rep)
         else {
             return nil
         }
-        return rep.representation(using: .png, properties: [:])
+
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = context
+        context.imageInterpolation = .high
+        image.draw(in: NSRect(origin: .zero, size: size), from: .zero, operation: .copy, fraction: 1)
+        NSGraphicsContext.restoreGraphicsState()
+
+        guard let data = rep.representation(using: .png, properties: [:]), !data.isEmpty else {
+            return nil
+        }
+
+        return data
+    }
+
+    private static func bestRasterSize(for image: NSImage) -> NSSize {
+        if image.size.width > 0, image.size.height > 0 {
+            return image.size
+        }
+
+        if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            return NSSize(width: max(1, cgImage.width), height: max(1, cgImage.height))
+        }
+
+        return .zero
     }
 }
 
@@ -564,10 +622,11 @@ enum ClipboardImageOptimizer {
 
     private static func previewData(from data: Data) -> Data? {
         guard let image = NSImage(data: data) else { return nil }
-        if image.size.width <= 0 || image.size.height <= 0 { return data }
+        let originalSize = bestRenderSize(for: image)
+        guard originalSize.width > 0, originalSize.height > 0 else { return nil }
 
-        let originalSize = image.size
         let maxDimension = max(originalSize.width, originalSize.height)
+        guard maxDimension > 0 else { return nil }
 
         let scale = min(1, previewMaxDimension / maxDimension)
         let targetSize = NSSize(
@@ -575,21 +634,48 @@ enum ClipboardImageOptimizer {
             height: max(1, round(originalSize.height * scale))
         )
 
-        let rendered = NSImage(size: targetSize)
-        rendered.lockFocus()
-        defer { rendered.unlockFocus() }
+        guard
+            let rep = NSBitmapImageRep(
+                bitmapDataPlanes: nil,
+                pixelsWide: Int(targetSize.width),
+                pixelsHigh: Int(targetSize.height),
+                bitsPerSample: 8,
+                samplesPerPixel: 4,
+                hasAlpha: true,
+                isPlanar: false,
+                colorSpaceName: .deviceRGB,
+                bytesPerRow: 0,
+                bitsPerPixel: 0
+            ),
+            let context = NSGraphicsContext(bitmapImageRep: rep)
+        else {
+            return nil
+        }
 
-        NSGraphicsContext.current?.imageInterpolation = .high
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = context
+        context.imageInterpolation = .high
         image.draw(in: NSRect(origin: .zero, size: targetSize), from: .zero, operation: .copy, fraction: 1.0)
+        NSGraphicsContext.restoreGraphicsState()
 
         guard
-            let tiff = rendered.tiffRepresentation,
-            let rep = NSBitmapImageRep(data: tiff),
             let png = rep.representation(using: .png, properties: [:])
         else {
             return nil
         }
 
         return png
+    }
+
+    private static func bestRenderSize(for image: NSImage) -> NSSize {
+        if image.size.width > 0, image.size.height > 0 {
+            return image.size
+        }
+
+        if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            return NSSize(width: max(1, cgImage.width), height: max(1, cgImage.height))
+        }
+
+        return .zero
     }
 }
