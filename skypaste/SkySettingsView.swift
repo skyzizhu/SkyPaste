@@ -159,8 +159,6 @@ struct SettingsView: View {
                     .labelsHidden()
                     .toggleStyle(.switch)
             }
-
-            hint(L10n.tr("settings.icloud_sync_hint"))
         }
     }
 
