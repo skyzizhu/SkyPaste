@@ -5,14 +5,18 @@ enum ClipboardDatabaseError: Error {
     case openFailed(String)
     case prepareFailed(String)
     case stepFailed(String)
+    case corruptionDetected(String)
 }
 
 private let sqliteTransient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
 
 final class ClipboardDatabase {
     private var db: OpaquePointer?
+    let fileURL: URL
 
     init(fileURL: URL) throws {
+        self.fileURL = fileURL
+
         if sqlite3_open(fileURL.path, &db) != SQLITE_OK {
             let message = String(cString: sqlite3_errmsg(db))
             throw ClipboardDatabaseError.openFailed(message)
@@ -43,6 +47,7 @@ final class ClipboardDatabase {
         _ = try? execute("ALTER TABLE clipboard_items ADD COLUMN source_kind INTEGER NOT NULL DEFAULT 0;")
 
         try execute("CREATE INDEX IF NOT EXISTS idx_clipboard_created_at ON clipboard_items(created_at DESC);")
+        try validateIntegrity()
     }
 
     deinit {
@@ -365,6 +370,40 @@ final class ClipboardDatabase {
         }
     }
 
+    private func validateIntegrity() throws {
+        var statement: OpaquePointer?
+        let sql = "PRAGMA quick_check(1);"
+
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+            let message = String(cString: sqlite3_errmsg(db))
+            if Self.looksLikeCorruption(message) {
+                throw ClipboardDatabaseError.corruptionDetected(message)
+            }
+            throw ClipboardDatabaseError.prepareFailed(message)
+        }
+        defer { sqlite3_finalize(statement) }
+
+        switch sqlite3_step(statement) {
+        case SQLITE_ROW:
+            if let result = sqlite3_column_text(statement, 0) {
+                let text = String(cString: result)
+                guard text == "ok" else {
+                    throw ClipboardDatabaseError.corruptionDetected(text)
+                }
+            } else {
+                throw ClipboardDatabaseError.corruptionDetected("quick_check returned no result")
+            }
+        case SQLITE_DONE:
+            throw ClipboardDatabaseError.corruptionDetected("quick_check returned no rows")
+        default:
+            let message = String(cString: sqlite3_errmsg(db))
+            if Self.looksLikeCorruption(message) {
+                throw ClipboardDatabaseError.corruptionDetected(message)
+            }
+            throw ClipboardDatabaseError.stepFailed(message)
+        }
+    }
+
     private func bindText(_ value: String, statement: OpaquePointer?, index: Int32) {
         _ = value.withCString { pointer in
             sqlite3_bind_text(statement, index, pointer, -1, sqliteTransient)
@@ -386,5 +425,15 @@ final class ClipboardDatabase {
         }
 
         return values.compactMap(URL.init(string:))
+    }
+
+    static func looksLikeCorruption(_ message: String) -> Bool {
+        let lowered = message.lowercased()
+        return lowered.contains("database disk image is malformed") ||
+            lowered.contains("database corruption") ||
+            lowered.contains("malformed") ||
+            lowered.contains("not a database") ||
+            lowered.contains("file is not a database") ||
+            lowered.contains("corrupt")
     }
 }

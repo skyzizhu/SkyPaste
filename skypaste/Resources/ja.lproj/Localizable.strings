@@ -5,6 +5,7 @@
 "clipboard.subtitle.text" = "テキスト • %d 文字";
 "clipboard.subtitle.image" = "画像 • %d KB";
 "clipboard.source.universal" = "Universal Clipboard";
+"clipboard.source.icloud" = "iCloud 同期";
 "section.today" = "今日";
 "section.yesterday" = "昨日";
 "settings.hotkey" = "ホットキー";
@@ -23,6 +24,11 @@
 "settings.launch_at_login" = "ログイン時に起動";
 "settings.launch_at_login_hint" = "パッケージ化された App が必要です。swift run では動作しない場合があります。";
 "settings.clipboard" = "クリップボード";
+"settings.sync" = "同期";
+"settings.universal_clipboard" = "ユニバーサルクリップボードを受信";
+"settings.universal_clipboard_hint" = "有効にすると、SkyPaste は Universal Clipboard 経由でこの Mac に届いた内容の取り込みを試みます。";
+"settings.icloud_sync" = "iCloud 同期";
+"settings.icloud_sync_hint" = "有効にすると、SkyPaste は SkyPaste iPhone アプリから保存されたクリップボード項目をプライベート iCloud データベースから取得します。";
 "settings.auto_paste" = "コピー後に自動ペースト";
 "settings.auto_paste_hint" = "有効にすると、SkyPaste は選択項目をコピーしたあとに Cmd+V を送信します。";
 "settings.ignore_apps" = "除外アプリ";
@@ -88,3 +94,4 @@
 "preview.text_title" = "テキストプレビュー";
 "preview.unavailable" = "プレビューできません";
 "preview.unavailable_message" = "SkyPaste はこの画像のプレビューを読み込めませんでした。";
+"notice.database_recovered" = "ローカル履歴データベースを自動復旧し、破損ファイルはバックアップされました。";

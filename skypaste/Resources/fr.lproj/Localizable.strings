@@ -5,6 +5,7 @@
 "clipboard.subtitle.text" = "Texte • %d caractères";
 "clipboard.subtitle.image" = "Image • %d KB";
 "clipboard.source.universal" = "Universal Clipboard";
+"clipboard.source.icloud" = "Synchronisation iCloud";
 "section.today" = "Aujourd'hui";
 "section.yesterday" = "Hier";
 "settings.hotkey" = "Raccourci";
@@ -23,6 +24,11 @@
 "settings.launch_at_login" = "Lancer à la connexion";
 "settings.launch_at_login_hint" = "Nécessite une application empaquetée ; peut ne pas fonctionner avec swift run.";
 "settings.clipboard" = "Presse-papiers";
+"settings.sync" = "Synchronisation";
+"settings.universal_clipboard" = "Recevoir le Presse-papiers universel";
+"settings.universal_clipboard_hint" = "Lorsqu'il est activé, SkyPaste essaie de capturer les éléments que macOS reçoit via le Presse-papiers universel.";
+"settings.icloud_sync" = "Synchronisation iCloud";
+"settings.icloud_sync_hint" = "Lorsque cette option est activée, SkyPaste récupère depuis votre base iCloud privée les éléments enregistrés par l’app iPhone SkyPaste.";
 "settings.auto_paste" = "Coller automatiquement après copie";
 "settings.auto_paste_hint" = "Lorsque cette option est activée, SkyPaste envoie Cmd+V après la copie d'un élément sélectionné.";
 "settings.ignore_apps" = "Applications ignorées";
@@ -88,3 +94,4 @@
 "preview.text_title" = "Aperçu du texte";
 "preview.unavailable" = "Aperçu indisponible";
 "preview.unavailable_message" = "SkyPaste n’a pas pu charger l’aperçu de cette image.";
+"notice.database_recovered" = "La base d’historique locale a été réparée automatiquement et les fichiers endommagés ont été sauvegardés.";

@@ -5,6 +5,7 @@
 "clipboard.subtitle.text" = "텍스트 • %d자";
 "clipboard.subtitle.image" = "이미지 • %d KB";
 "clipboard.source.universal" = "Universal Clipboard";
+"clipboard.source.icloud" = "iCloud 동기화";
 "section.today" = "오늘";
 "section.yesterday" = "어제";
 "settings.hotkey" = "단축키";
@@ -23,6 +24,11 @@
 "settings.launch_at_login" = "로그인 시 실행";
 "settings.launch_at_login_hint" = "패키징된 App이 필요하며 swift run에서는 동작하지 않을 수 있습니다.";
 "settings.clipboard" = "클립보드";
+"settings.sync" = "동기화";
+"settings.universal_clipboard" = "Universal Clipboard 받기";
+"settings.universal_clipboard_hint" = "활성화하면 SkyPaste가 Universal Clipboard를 통해 이 Mac으로 들어온 내용을 수집하려고 시도합니다.";
+"settings.icloud_sync" = "iCloud 동기화";
+"settings.icloud_sync_hint" = "켜면 SkyPaste가 SkyPaste iPhone 앱에서 저장한 클립보드 항목을 개인 iCloud 데이터베이스에서 가져옵니다.";
 "settings.auto_paste" = "복사 후 자동 붙여넣기";
 "settings.auto_paste_hint" = "활성화하면 SkyPaste가 선택 항목을 복사한 뒤 Cmd+V를 전송합니다.";
 "settings.ignore_apps" = "무시할 앱";
@@ -88,3 +94,4 @@
 "preview.text_title" = "텍스트 미리보기";
 "preview.unavailable" = "미리보기를 사용할 수 없음";
 "preview.unavailable_message" = "SkyPaste가 이 이미지 미리보기를 불러오지 못했습니다.";
+"notice.database_recovered" = "로컬 기록 데이터베이스를 자동으로 복구했고 손상된 파일은 백업했습니다.";

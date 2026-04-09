@@ -10,6 +10,7 @@ struct SettingsView: View {
                 generalSection
                 hotKeySection
                 behaviorSection
+                syncSection
                 historySection
                 privacySection
             }
@@ -79,7 +80,6 @@ struct SettingsView: View {
                 .frame(width: 220, alignment: .trailing)
             }
 
-            hint(L10n.tr("settings.language_hint"))
         }
     }
 
@@ -128,8 +128,6 @@ struct SettingsView: View {
                     .toggleStyle(.switch)
             }
 
-            hint(L10n.tr("settings.launch_at_login_hint"))
-
             Divider()
                 .padding(.vertical, 2)
 
@@ -143,6 +141,29 @@ struct SettingsView: View {
         }
     }
 
+    private var syncSection: some View {
+        SettingsSection(title: L10n.tr("settings.sync")) {
+            SettingsRow(title: L10n.tr("settings.universal_clipboard")) {
+                Toggle("", isOn: $settings.receiveUniversalClipboardEnabled)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
+
+            hint(L10n.tr("settings.universal_clipboard_hint"))
+
+            Divider()
+                .padding(.vertical, 2)
+
+            SettingsRow(title: L10n.tr("settings.icloud_sync")) {
+                Toggle("", isOn: $settings.iCloudSyncEnabled)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
+
+            hint(L10n.tr("settings.icloud_sync_hint"))
+        }
+    }
+
     private var historySection: some View {
         SettingsSection(title: L10n.tr("settings.history")) {
             SettingsRow(title: L10n.format("settings.max_records", settings.historyLimit)) {
@@ -151,7 +172,6 @@ struct SettingsView: View {
                     .frame(width: 120, alignment: .trailing)
             }
 
-            hint(L10n.tr("settings.history_hint"))
         }
     }
 

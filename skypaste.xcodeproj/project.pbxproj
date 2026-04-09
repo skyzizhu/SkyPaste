@@ -7,6 +7,20 @@
 	objects = {
 
 /* Begin PBXContainerItemProxy section */
+		5675830A2F85E91000B63DCC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 56D059832F6D03B4005DC14F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 567582F92F85E90F00B63DCC;
+			remoteInfo = SkyPasteiOS;
+		};
+		567583142F85E91000B63DCC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 56D059832F6D03B4005DC14F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 567582F92F85E90F00B63DCC;
+			remoteInfo = SkyPasteiOS;
+		};
 		56D0599D2F6D03B7005DC14F /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 56D059832F6D03B4005DC14F /* Project object */;
@@ -24,12 +38,30 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		567582FA2F85E90F00B63DCC /* SkyPasteiOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SkyPasteiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		567583092F85E91000B63DCC /* SkyPasteiOSTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SkyPasteiOSTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		567583132F85E91000B63DCC /* SkyPasteiOSUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = SkyPasteiOSUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		56D0598B2F6D03B4005DC14F /* SkyPaste.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SkyPaste.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		56D0599C2F6D03B7005DC14F /* skypasteTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = skypasteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		56D059A62F6D03B7005DC14F /* skypasteUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = skypasteUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		567582FB2F85E90F00B63DCC /* SkyPasteiOS */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SkyPasteiOS;
+			sourceTree = "<group>";
+		};
+		5675830C2F85E91000B63DCC /* SkyPasteiOSTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SkyPasteiOSTests;
+			sourceTree = "<group>";
+		};
+		567583162F85E91000B63DCC /* SkyPasteiOSUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = SkyPasteiOSUITests;
+			sourceTree = "<group>";
+		};
 		56D0598D2F6D03B4005DC14F /* skypaste */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = skypaste;
@@ -48,6 +80,27 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		567582F72F85E90F00B63DCC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		567583062F85E91000B63DCC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		567583102F85E91000B63DCC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		56D059882F6D03B4005DC14F /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -78,6 +131,9 @@
 				56D0598D2F6D03B4005DC14F /* skypaste */,
 				56D0599F2F6D03B7005DC14F /* skypasteTests */,
 				56D059A92F6D03B7005DC14F /* skypasteUITests */,
+				567582FB2F85E90F00B63DCC /* SkyPasteiOS */,
+				5675830C2F85E91000B63DCC /* SkyPasteiOSTests */,
+				567583162F85E91000B63DCC /* SkyPasteiOSUITests */,
 				56D0598C2F6D03B4005DC14F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -88,6 +144,9 @@
 				56D0598B2F6D03B4005DC14F /* SkyPaste.app */,
 				56D0599C2F6D03B7005DC14F /* skypasteTests.xctest */,
 				56D059A62F6D03B7005DC14F /* skypasteUITests.xctest */,
+				567582FA2F85E90F00B63DCC /* SkyPasteiOS.app */,
+				567583092F85E91000B63DCC /* SkyPasteiOSTests.xctest */,
+				567583132F85E91000B63DCC /* SkyPasteiOSUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -95,6 +154,74 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		567582F92F85E90F00B63DCC /* SkyPasteiOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 567583212F85E91000B63DCC /* Build configuration list for PBXNativeTarget "SkyPasteiOS" */;
+			buildPhases = (
+				567582F62F85E90F00B63DCC /* Sources */,
+				567582F72F85E90F00B63DCC /* Frameworks */,
+				567582F82F85E90F00B63DCC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				567582FB2F85E90F00B63DCC /* SkyPasteiOS */,
+			);
+			name = SkyPasteiOS;
+			packageProductDependencies = (
+			);
+			productName = SkyPasteiOS;
+			productReference = 567582FA2F85E90F00B63DCC /* SkyPasteiOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		567583082F85E91000B63DCC /* SkyPasteiOSTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 567583222F85E91000B63DCC /* Build configuration list for PBXNativeTarget "SkyPasteiOSTests" */;
+			buildPhases = (
+				567583052F85E91000B63DCC /* Sources */,
+				567583062F85E91000B63DCC /* Frameworks */,
+				567583072F85E91000B63DCC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				5675830B2F85E91000B63DCC /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				5675830C2F85E91000B63DCC /* SkyPasteiOSTests */,
+			);
+			name = SkyPasteiOSTests;
+			packageProductDependencies = (
+			);
+			productName = SkyPasteiOSTests;
+			productReference = 567583092F85E91000B63DCC /* SkyPasteiOSTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		567583122F85E91000B63DCC /* SkyPasteiOSUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 567583232F85E91000B63DCC /* Build configuration list for PBXNativeTarget "SkyPasteiOSUITests" */;
+			buildPhases = (
+				5675830F2F85E91000B63DCC /* Sources */,
+				567583102F85E91000B63DCC /* Frameworks */,
+				567583112F85E91000B63DCC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				567583152F85E91000B63DCC /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				567583162F85E91000B63DCC /* SkyPasteiOSUITests */,
+			);
+			name = SkyPasteiOSUITests;
+			packageProductDependencies = (
+			);
+			productName = SkyPasteiOSUITests;
+			productReference = 567583132F85E91000B63DCC /* SkyPasteiOSUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		56D0598A2F6D03B4005DC14F /* SkyPaste */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 56D059B02F6D03B7005DC14F /* Build configuration list for PBXNativeTarget "SkyPaste" */;
@@ -173,6 +300,17 @@
 				LastSwiftUpdateCheck = 1620;
 				LastUpgradeCheck = 1620;
 				TargetAttributes = {
+					567582F92F85E90F00B63DCC = {
+						CreatedOnToolsVersion = 16.2;
+					};
+					567583082F85E91000B63DCC = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = 567582F92F85E90F00B63DCC;
+					};
+					567583122F85E91000B63DCC = {
+						CreatedOnToolsVersion = 16.2;
+						TestTargetID = 567582F92F85E90F00B63DCC;
+					};
 					56D0598A2F6D03B4005DC14F = {
 						CreatedOnToolsVersion = 16.2;
 					};
@@ -208,11 +346,35 @@
 				56D0598A2F6D03B4005DC14F /* SkyPaste */,
 				56D0599B2F6D03B7005DC14F /* skypasteTests */,
 				56D059A52F6D03B7005DC14F /* skypasteUITests */,
+				567582F92F85E90F00B63DCC /* SkyPasteiOS */,
+				567583082F85E91000B63DCC /* SkyPasteiOSTests */,
+				567583122F85E91000B63DCC /* SkyPasteiOSUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		567582F82F85E90F00B63DCC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		567583072F85E91000B63DCC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		567583112F85E91000B63DCC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		56D059892F6D03B4005DC14F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -237,6 +399,27 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		567582F62F85E90F00B63DCC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		567583052F85E91000B63DCC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		5675830F2F85E91000B63DCC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		56D059872F6D03B4005DC14F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -261,6 +444,16 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		5675830B2F85E91000B63DCC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 567582F92F85E90F00B63DCC /* SkyPasteiOS */;
+			targetProxy = 5675830A2F85E91000B63DCC /* PBXContainerItemProxy */;
+		};
+		567583152F85E91000B63DCC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 567582F92F85E90F00B63DCC /* SkyPasteiOS */;
+			targetProxy = 567583142F85E91000B63DCC /* PBXContainerItemProxy */;
+		};
 		56D0599E2F6D03B7005DC14F /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 56D0598A2F6D03B4005DC14F /* SkyPaste */;
@@ -274,6 +467,151 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		5675831B2F85E91000B63DCC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = SkyPasteiOS/SkyPasteiOS.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"SkyPasteiOS/Preview Content\"";
+				DEVELOPMENT_TEAM = CS52G5Z35S;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.huaibor.skypaste.ios;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		5675831C2F85E91000B63DCC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = SkyPasteiOS/SkyPasteiOS.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "\"SkyPasteiOS/Preview Content\"";
+				DEVELOPMENT_TEAM = CS52G5Z35S;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.huaibor.skypaste.ios;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		5675831D2F85E91000B63DCC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CS52G5Z35S;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.huaibor.SkyPasteiOSTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SkyPasteiOS.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SkyPasteiOS";
+			};
+			name = Debug;
+		};
+		5675831E2F85E91000B63DCC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CS52G5Z35S;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.huaibor.SkyPasteiOSTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/SkyPasteiOS.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/SkyPasteiOS";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		5675831F2F85E91000B63DCC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CS52G5Z35S;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.huaibor.SkyPasteiOSUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = SkyPasteiOS;
+			};
+			name = Debug;
+		};
+		567583202F85E91000B63DCC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CS52G5Z35S;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.huaibor.SkyPasteiOSUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = SkyPasteiOS;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
 		56D059AE2F6D03B7005DC14F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -520,6 +858,33 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		567583212F85E91000B63DCC /* Build configuration list for PBXNativeTarget "SkyPasteiOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5675831B2F85E91000B63DCC /* Debug */,
+				5675831C2F85E91000B63DCC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		567583222F85E91000B63DCC /* Build configuration list for PBXNativeTarget "SkyPasteiOSTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5675831D2F85E91000B63DCC /* Debug */,
+				5675831E2F85E91000B63DCC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		567583232F85E91000B63DCC /* Build configuration list for PBXNativeTarget "SkyPasteiOSUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5675831F2F85E91000B63DCC /* Debug */,
+				567583202F85E91000B63DCC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		56D059862F6D03B4005DC14F /* Build configuration list for PBXProject "skypaste" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

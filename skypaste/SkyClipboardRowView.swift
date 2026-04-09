@@ -32,8 +32,8 @@ struct ClipboardRowView: View {
                     Text(metadataText)
                         .lineLimit(1)
 
-                    if item.source.isUniversalClipboard {
-                        Image(systemName: "iphone.gen3")
+                    if let deviceIcon = item.source.deviceIconSystemName {
+                        Image(systemName: deviceIcon)
                             .font(.system(size: 10.5, weight: .semibold))
                             .foregroundStyle(Color.accentColor.opacity(0.9))
                             .help(item.source.badgeText ?? "")

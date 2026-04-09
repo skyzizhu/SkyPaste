@@ -4,7 +4,8 @@
 "clipboard.file_count" = "%d 個檔案";
 "clipboard.subtitle.text" = "文字 • %d 字元";
 "clipboard.subtitle.image" = "圖片 • %d KB";
-"clipboard.source.universal" = "Universal Clipboard";
+"clipboard.source.universal" = "通用剪貼簿";
+"clipboard.source.icloud" = "iCloud 同步";
 "section.today" = "今天";
 "section.yesterday" = "昨天";
 "settings.hotkey" = "快捷鍵";
@@ -23,6 +24,11 @@
 "settings.launch_at_login" = "登入時啟動";
 "settings.launch_at_login_hint" = "需要打包後的 App；透過 swift run 執行時可能無法使用。";
 "settings.clipboard" = "剪貼簿";
+"settings.sync" = "同步";
+"settings.universal_clipboard" = "接收通用剪貼簿";
+"settings.universal_clipboard_hint" = "啟用後，SkyPaste 會嘗試收錄系統通用剪貼簿同步到這台 Mac 的內容。";
+"settings.icloud_sync" = "iCloud 同步";
+"settings.icloud_sync_hint" = "啟用後，SkyPaste 會從你的 iCloud 私有資料庫擷取 SkyPaste iPhone 端儲存的剪貼簿內容。";
 "settings.auto_paste" = "複製後自動貼上";
 "settings.auto_paste_hint" = "啟用後，SkyPaste 會在複製所選項目後自動送出 Cmd+V。";
 "settings.ignore_apps" = "忽略應用程式";
@@ -88,3 +94,4 @@
 "preview.text_title" = "文字預覽";
 "preview.unavailable" = "無法預覽";
 "preview.unavailable_message" = "SkyPaste 無法載入這張圖片的預覽。";
+"notice.database_recovered" = "本機歷史資料庫已自動恢復，損壞檔案已備份。";

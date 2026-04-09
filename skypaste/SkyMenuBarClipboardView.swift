@@ -15,6 +15,8 @@ struct MenuBarClipboardView: View {
 
     @ObservedObject var store: ClipboardStore
     let onCopy: (ClipboardItem) -> Void
+    let onPreview: (ClipboardItem) -> Void
+    let onTextPreview: (ClipboardItem) -> Void
     let onOpenPanel: () -> Void
     let onOpenDebug: () -> Void
     let onOpenPreferences: () -> Void
@@ -56,6 +58,9 @@ struct MenuBarClipboardView: View {
     var body: some View {
         VStack(spacing: 12) {
             header
+            if let startupNotice = store.startupNotice {
+                startupNoticeBanner(startupNotice)
+            }
             filterBar
             contentArea
             footer
@@ -189,6 +194,39 @@ struct MenuBarClipboardView: View {
         }
     }
 
+    private func startupNoticeBanner(_ text: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "info.circle")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+
+            Text(text)
+                .font(.system(size: 11.5, weight: .medium, design: .rounded))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button {
+                store.dismissStartupNotice()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.secondary)
+                    .frame(width: 18, height: 18)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.58))
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+        }
+    }
+
     private var contentArea: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 14) {
@@ -309,16 +347,40 @@ struct MenuBarClipboardView: View {
             timeText: copyTimeText(item.createdAt),
             isSelected: selectedID == item.id,
             style: .popover,
-            iconSize: 44
+            iconSize: 44,
+            onPreview: item.isImage ? {
+                selectedID = item.id
+                onPreview(item)
+            } : nil
         )
         .contentShape(Rectangle())
         .onTapGesture {
             selectedID = item.id
         }
+        .simultaneousGesture(
+            TapGesture(count: 2)
+                .onEnded {
+                    guard item.supportsTextPreview else { return }
+                    selectedID = item.id
+                    onTextPreview(item)
+                }
+        )
         .contextMenu {
             Button(L10n.tr("menu.copy")) {
                 selectedID = item.id
                 copy(item)
+            }
+            if item.isImage {
+                Button(L10n.tr("preview.open")) {
+                    selectedID = item.id
+                    onPreview(item)
+                }
+            }
+            if item.supportsTextPreview {
+                Button(L10n.tr("preview.text_open")) {
+                    selectedID = item.id
+                    onTextPreview(item)
+                }
             }
             Button(item.isFavorite ? L10n.tr("menu.unfavorite") : L10n.tr("menu.favorite")) {
                 selectedID = item.id

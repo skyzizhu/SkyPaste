@@ -6,6 +6,7 @@ import Foundation
 final class ClipboardStore: ObservableObject {
     @Published private(set) var items: [ClipboardItem] = []
     @Published var searchText: String = ""
+    @Published var startupNotice: String?
 
     private let settings: AppSettings
     private let database: ClipboardDatabase?
@@ -13,7 +14,9 @@ final class ClipboardStore: ObservableObject {
 
     init(settings: AppSettings) {
         self.settings = settings
-        self.database = Self.makeDatabase()
+        let initialization = Self.makeDatabase()
+        self.database = initialization.database
+        self.startupNotice = initialization.notice
 
         if let database {
             do {
@@ -64,11 +67,36 @@ final class ClipboardStore: ObservableObject {
         }
     }
 
-    func captureCurrentPasteboardIfNeeded() {
+    func addCloudSyncedItem(_ item: ClipboardItem) {
+        var item = item
+        item.isFavorite = preservedFavoriteState(for: item)
+
+        persist(item)
+
+        let memoryItem = ClipboardImageOptimizer.memoryOptimizedItem(item)
+        items.removeAll { $0.fingerprint == memoryItem.fingerprint }
+
+        let insertionIndex = items.firstIndex { existing in
+            existing.createdAt < memoryItem.createdAt
+        } ?? items.endIndex
+        items.insert(memoryItem, at: insertionIndex)
+
+        if items.count > settings.historyLimit {
+            items.removeLast(items.count - settings.historyLimit)
+        }
+    }
+
+    func captureCurrentPasteboardIfNeeded(acceptsLocalContent: Bool = true) {
         switch ClipboardDecoder.decode(from: NSPasteboard.general) {
         case .none:
             return
         case .item(let item):
+            if item.source == .universalClipboard, !settings.receiveUniversalClipboardEnabled {
+                return
+            }
+            if item.source == .local, !acceptsLocalContent {
+                return
+            }
             if item.source == .local, shouldIgnoreCurrentFrontApp() {
                 return
             }
@@ -133,6 +161,10 @@ final class ClipboardStore: ObservableObject {
         } catch {
             print("[ClipboardStore] Failed to delete day items: \(error)")
         }
+    }
+
+    func dismissStartupNotice() {
+        startupNotice = nil
     }
 
     private func shouldIgnoreCurrentFrontApp() -> Bool {
@@ -204,7 +236,12 @@ final class ClipboardStore: ObservableObject {
         }
     }
 
-    private static func makeDatabase() -> ClipboardDatabase? {
+    private struct DatabaseInitializationResult {
+        let database: ClipboardDatabase?
+        let notice: String?
+    }
+
+    private static func makeDatabase() -> DatabaseInitializationResult {
         let fileManager = FileManager.default
         let baseDir = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first ??
             URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
@@ -218,20 +255,88 @@ final class ClipboardStore: ObservableObject {
             if !fileManager.fileExists(atPath: dbURL.path), fileManager.fileExists(atPath: legacyDBURL.path) {
                 try fileManager.copyItem(at: legacyDBURL, to: dbURL)
             }
-            return try ClipboardDatabase(fileURL: dbURL)
+            return DatabaseInitializationResult(database: try ClipboardDatabase(fileURL: dbURL), notice: nil)
         } catch {
+            if recoverCorruptedDatabaseIfNeeded(error, fileURL: dbURL, fileManager: fileManager) {
+                do {
+                    return DatabaseInitializationResult(
+                        database: try ClipboardDatabase(fileURL: dbURL),
+                        notice: L10n.tr("notice.database_recovered")
+                    )
+                } catch {
+                    print("[ClipboardStore] Failed to initialize recovered db: \(error)")
+                    return DatabaseInitializationResult(database: nil, notice: nil)
+                }
+            }
+
             print("[ClipboardStore] Failed to initialize db: \(error)")
-            return nil
+            return DatabaseInitializationResult(database: nil, notice: nil)
         }
     }
+
+    private static func recoverCorruptedDatabaseIfNeeded(_ error: Error, fileURL: URL, fileManager: FileManager) -> Bool {
+        guard isDatabaseCorruption(error) else { return false }
+
+        let timestamp = Self.recoveryTimestampFormatter.string(from: Date())
+        let backupDir = fileURL.deletingLastPathComponent().appendingPathComponent("RecoveredDatabases", isDirectory: true)
+
+        do {
+            try fileManager.createDirectory(at: backupDir, withIntermediateDirectories: true)
+
+            for candidate in sqliteSidecarURLs(for: fileURL) where fileManager.fileExists(atPath: candidate.path) {
+                let backupURL = backupDir.appendingPathComponent(candidate.lastPathComponent + ".\(timestamp).bak")
+                if fileManager.fileExists(atPath: backupURL.path) {
+                    try fileManager.removeItem(at: backupURL)
+                }
+                try fileManager.copyItem(at: candidate, to: backupURL)
+                try fileManager.removeItem(at: candidate)
+            }
+
+            print("[ClipboardStore] Recovered corrupted database. Backup saved under \(backupDir.path)")
+            return true
+        } catch {
+            print("[ClipboardStore] Failed to recover corrupted database: \(error)")
+            return false
+        }
+    }
+
+    private static func isDatabaseCorruption(_ error: Error) -> Bool {
+        if let dbError = error as? ClipboardDatabaseError {
+            switch dbError {
+            case .corruptionDetected:
+                return true
+            case .openFailed(let message), .prepareFailed(let message), .stepFailed(let message):
+                return ClipboardDatabase.looksLikeCorruption(message)
+            }
+        }
+
+        return ClipboardDatabase.looksLikeCorruption(String(describing: error))
+    }
+
+    private static func sqliteSidecarURLs(for fileURL: URL) -> [URL] {
+        [
+            fileURL,
+            URL(fileURLWithPath: fileURL.path + "-wal"),
+            URL(fileURLWithPath: fileURL.path + "-shm")
+        ]
+    }
+
+    private static let recoveryTimestampFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd-HHmmss"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
 }
 
 final class ClipboardMonitor: @unchecked Sendable {
     private var timer: Timer?
     private var lastChangeCount: Int = NSPasteboard.general.changeCount
-    private let onChange: () -> Void
+    private var lastRemoteProbeDate = Date.distantPast
+    private let remoteProbeInterval: TimeInterval = 1.5
+    private let onChange: (_ acceptsLocalContent: Bool) -> Void
 
-    init(onChange: @escaping () -> Void) {
+    init(onChange: @escaping (_ acceptsLocalContent: Bool) -> Void) {
         self.onChange = onChange
     }
 
@@ -240,9 +345,17 @@ final class ClipboardMonitor: @unchecked Sendable {
         timer = Timer.scheduledTimer(withTimeInterval: 0.35, repeats: true) { [weak self] _ in
             guard let self else { return }
             let currentCount = NSPasteboard.general.changeCount
-            guard currentCount != self.lastChangeCount else { return }
-            self.lastChangeCount = currentCount
-            self.onChange()
+            if currentCount != self.lastChangeCount {
+                self.lastChangeCount = currentCount
+                self.lastRemoteProbeDate = Date()
+                self.onChange(true)
+                return
+            }
+
+            let now = Date()
+            guard now.timeIntervalSince(self.lastRemoteProbeDate) >= self.remoteProbeInterval else { return }
+            self.lastRemoteProbeDate = now
+            self.onChange(false)
         }
 
         if let timer {

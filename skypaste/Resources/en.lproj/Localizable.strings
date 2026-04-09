@@ -5,6 +5,7 @@
 "clipboard.subtitle.text" = "Text • %d chars";
 "clipboard.subtitle.image" = "Image • %d KB";
 "clipboard.source.universal" = "Universal Clipboard";
+"clipboard.source.icloud" = "iCloud Sync";
 "section.today" = "Today";
 "section.yesterday" = "Yesterday";
 "settings.hotkey" = "Hotkey";
@@ -23,6 +24,11 @@
 "settings.launch_at_login" = "Launch at login";
 "settings.launch_at_login_hint" = "Requires packaged app; may not work when running via swift run.";
 "settings.clipboard" = "Clipboard";
+"settings.sync" = "Sync";
+"settings.universal_clipboard" = "Receive Universal Clipboard";
+"settings.universal_clipboard_hint" = "When enabled, SkyPaste tries to capture items that macOS receives through Universal Clipboard.";
+"settings.icloud_sync" = "iCloud Sync";
+"settings.icloud_sync_hint" = "When enabled, SkyPaste fetches clipboard items saved from the SkyPaste iPhone app via your private iCloud database.";
 "settings.auto_paste" = "Auto paste after copy";
 "settings.auto_paste_hint" = "When enabled, SkyPaste sends Cmd+V after copying a selected item.";
 "settings.ignore_apps" = "Ignore Apps";
@@ -88,3 +94,4 @@
 "preview.text_title" = "Text Preview";
 "preview.unavailable" = "Preview unavailable";
 "preview.unavailable_message" = "SkyPaste could not load this image preview.";
+"notice.database_recovered" = "Local history database was automatically recovered and the damaged files were backed up.";

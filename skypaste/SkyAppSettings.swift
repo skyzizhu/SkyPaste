@@ -154,6 +154,21 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    @Published var receiveUniversalClipboardEnabled: Bool {
+        didSet {
+            defaults.set(receiveUniversalClipboardEnabled, forKey: Keys.receiveUniversalClipboardEnabled)
+        }
+    }
+
+    @Published var iCloudSyncEnabled: Bool {
+        didSet {
+            defaults.set(iCloudSyncEnabled, forKey: Keys.iCloudSyncEnabled)
+            if oldValue != iCloudSyncEnabled {
+                NotificationCenter.default.post(name: .iCloudSyncSettingsChanged, object: nil)
+            }
+        }
+    }
+
     @Published var languageCode: String {
         didSet {
             if !LanguageCatalog.isSupported(languageCode) {
@@ -204,6 +219,8 @@ final class AppSettings: ObservableObject {
         static let ignoredAppsInput = "settings.ignoredAppsInput"
         static let launchAtLogin = "settings.launchAtLogin"
         static let autoPasteEnabled = "settings.autoPasteEnabled"
+        static let receiveUniversalClipboardEnabled = "settings.receiveUniversalClipboardEnabled"
+        static let iCloudSyncEnabled = "settings.iCloudSyncEnabled"
         static let languageCode = LanguageCatalog.defaultsKey
     }
 
@@ -221,6 +238,8 @@ final class AppSettings: ObservableObject {
         self.ignoredAppsInput = defaults.string(forKey: Keys.ignoredAppsInput) ?? ""
         self.launchAtLogin = defaults.object(forKey: Keys.launchAtLogin) as? Bool ?? false
         self.autoPasteEnabled = defaults.object(forKey: Keys.autoPasteEnabled) as? Bool ?? !AppDistribution.isAppStoreBuild
+        self.receiveUniversalClipboardEnabled = defaults.object(forKey: Keys.receiveUniversalClipboardEnabled) as? Bool ?? true
+        self.iCloudSyncEnabled = defaults.object(forKey: Keys.iCloudSyncEnabled) as? Bool ?? false
         let savedLanguage = defaults.string(forKey: Keys.languageCode) ?? LanguageCatalog.system
         self.languageCode = LanguageCatalog.isSupported(savedLanguage) ? savedLanguage : LanguageCatalog.system
 
@@ -249,4 +268,5 @@ final class AppSettings: ObservableObject {
 extension Notification.Name {
     static let hotKeySettingsChanged = Notification.Name("hotKeySettingsChanged")
     static let languageSettingsChanged = Notification.Name("languageSettingsChanged")
+    static let iCloudSyncSettingsChanged = Notification.Name("iCloudSyncSettingsChanged")
 }

@@ -56,9 +56,25 @@ enum ClipboardContent: Equatable {
 enum ClipboardSource: Int, Equatable {
     case local = 0
     case universalClipboard = 1
+    case cloudKit = 2
 
     var isUniversalClipboard: Bool {
         self == .universalClipboard
+    }
+
+    var isDeviceSynced: Bool {
+        self == .universalClipboard || self == .cloudKit
+    }
+
+    var deviceIconSystemName: String? {
+        switch self {
+        case .local:
+            return nil
+        case .universalClipboard:
+            return "iphone.gen3"
+        case .cloudKit:
+            return "icloud"
+        }
     }
 
     var badgeText: String? {
@@ -67,6 +83,8 @@ enum ClipboardSource: Int, Equatable {
             return nil
         case .universalClipboard:
             return L10n.tr("clipboard.source.universal")
+        case .cloudKit:
+            return L10n.tr("clipboard.source.icloud")
         }
     }
 }
