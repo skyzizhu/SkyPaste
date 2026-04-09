@@ -9,9 +9,13 @@ import Testing
 @testable import SkyPasteiOS
 
 struct SkyPasteiOSTests {
+    @Test func cloudClipboardRecordNameIsStablePerFingerprint() {
+        let first = CloudClipboardSchema.recordName(for: "txt:https://example.com")
+        let second = CloudClipboardSchema.recordName(for: "txt:https://example.com")
+        let different = CloudClipboardSchema.recordName(for: "txt:https://openai.com")
 
-    @Test func example() async throws {
-        // Write your test here and use APIs like `#expect(...)` to check expected conditions.
+        #expect(first == second)
+        #expect(first != different)
+        #expect(first.hasPrefix("clip-"))
     }
-
 }

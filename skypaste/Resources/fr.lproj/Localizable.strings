@@ -8,6 +8,8 @@
 "clipboard.source.icloud" = "Synchronisation iCloud";
 "section.today" = "Aujourd'hui";
 "section.yesterday" = "Hier";
+"settings.appearance" = "Thème";
+"settings.appearance_hint" = "Suit le système par défaut, avec la possibilité de forcer le mode clair ou sombre.";
 "settings.hotkey" = "Raccourci";
 "settings.language" = "Langue";
 "settings.language_hint" = "Choisissez Système pour suivre macOS, ou définissez une langue propre à l'app.";
@@ -28,7 +30,7 @@
 "settings.universal_clipboard" = "Recevoir le Presse-papiers universel";
 "settings.universal_clipboard_hint" = "Lorsqu'il est activé, SkyPaste essaie de capturer les éléments que macOS reçoit via le Presse-papiers universel.";
 "settings.icloud_sync" = "Synchronisation iCloud";
-"settings.icloud_sync_hint" = "Lorsque cette option est activée, SkyPaste récupère depuis votre base iCloud privée les éléments enregistrés par l’app iPhone SkyPaste.";
+"settings.icloud_sync_hint" = "Lorsque cette option est activée, SkyPaste synchronise les textes copiés sur ce Mac vers votre base iCloud privée et récupère aussi les éléments SkyPaste enregistrés depuis vos autres appareils.";
 "settings.auto_paste" = "Coller automatiquement après copie";
 "settings.auto_paste_hint" = "Lorsque cette option est activée, SkyPaste envoie Cmd+V après la copie d'un élément sélectionné.";
 "settings.ignore_apps" = "Applications ignorées";
@@ -81,6 +83,9 @@
 "hotkey.option" = "Option";
 "hotkey.control" = "Control";
 "hotkey.keycode" = "Code touche %u";
+"appearance.system" = "Suivre le système";
+"appearance.light" = "Mode clair";
+"appearance.dark" = "Mode sombre";
 "language.system" = "Système";
 "language.en" = "Anglais";
 "language.zh-Hans" = "Chinois simplifié";

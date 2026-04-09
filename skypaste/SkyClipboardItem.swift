@@ -183,7 +183,7 @@ struct ClipboardItem: Identifiable, Equatable {
         case .text(let value):
             let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
             if looksLikeURL(trimmed) {
-                return trimmed
+                return L10n.tr("filter.url")
             }
             return L10n.format("clipboard.subtitle.text", value.count)
 
@@ -602,6 +602,7 @@ enum ClipboardImageOptimizer {
                     previewOnly: true
                 ),
                 fingerprint: item.fingerprint,
+                source: item.source,
                 isFavorite: item.isFavorite
             )
         }
@@ -616,6 +617,7 @@ enum ClipboardImageOptimizer {
                 previewOnly: true
             ),
             fingerprint: item.fingerprint,
+            source: item.source,
             isFavorite: item.isFavorite
         )
     }

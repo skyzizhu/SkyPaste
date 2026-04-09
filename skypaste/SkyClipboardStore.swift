@@ -7,6 +7,7 @@ final class ClipboardStore: ObservableObject {
     @Published private(set) var items: [ClipboardItem] = []
     @Published var searchText: String = ""
     @Published var startupNotice: String?
+    var onLocalItemAdded: ((ClipboardItem) -> Void)?
 
     private let settings: AppSettings
     private let database: ClipboardDatabase?
@@ -53,6 +54,9 @@ final class ClipboardStore: ObservableObject {
             if shouldRefreshTopItem(current: first, incoming: memoryItem) {
                 persist(item)
                 items[0] = memoryItem
+                if item.source == .local {
+                    onLocalItemAdded?(item)
+                }
             }
             return
         }
@@ -65,11 +69,20 @@ final class ClipboardStore: ObservableObject {
         if items.count > settings.historyLimit {
             items.removeLast(items.count - settings.historyLimit)
         }
+
+        if item.source == .local {
+            onLocalItemAdded?(item)
+        }
     }
 
     func addCloudSyncedItem(_ item: ClipboardItem) {
         var item = item
         item.isFavorite = preservedFavoriteState(for: item)
+
+        let existingItem = items.first { $0.fingerprint == item.fingerprint }
+        guard CloudClipboardSyncPolicy.shouldApplyIncoming(item, over: existingItem) else {
+            return
+        }
 
         persist(item)
 

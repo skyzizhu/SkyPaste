@@ -2,6 +2,8 @@ import AppKit
 import SwiftUI
 
 struct ClipboardRowView: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     enum Style {
         case popover
         case panel
@@ -79,10 +81,10 @@ struct ClipboardRowView: View {
     private var selectionBackground: some View {
         if isSelected {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .fill(Color.accentColor.opacity(style == .popover ? 0.11 : 0.10))
+                .fill(Color.accentColor.opacity(colorScheme == .dark ? (style == .popover ? 0.22 : 0.18) : (style == .popover ? 0.11 : 0.10)))
         } else if isHovered {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .fill(Color.white.opacity(style == .popover ? 0.52 : 0.42))
+                .fill(colorScheme == .dark ? Color.white.opacity(style == .popover ? 0.10 : 0.08) : Color.white.opacity(style == .popover ? 0.52 : 0.42))
         } else {
             Color.clear
         }
@@ -137,9 +139,9 @@ struct ClipboardRowView: View {
 
     private var borderColor: Color {
         if isSelected {
-            return Color.accentColor.opacity(style == .popover ? 0.18 : 0.16)
+            return Color.accentColor.opacity(colorScheme == .dark ? 0.32 : (style == .popover ? 0.18 : 0.16))
         }
-        return isHovered ? Color.primary.opacity(0.05) : .clear
+        return isHovered ? Color.primary.opacity(colorScheme == .dark ? 0.12 : 0.05) : .clear
     }
 
     private var metadataText: String {

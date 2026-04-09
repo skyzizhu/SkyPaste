@@ -1,3 +1,4 @@
+import AppKit
 import Carbon
 import Foundation
 import ServiceManagement
@@ -22,6 +23,36 @@ struct LanguageCatalog {
 
     static func isSupported(_ languageCode: String) -> Bool {
         options.contains(where: { $0.id == languageCode })
+    }
+}
+
+enum AppAppearanceMode: String, CaseIterable, Identifiable {
+    case system
+    case light
+    case dark
+
+    var id: String { rawValue }
+
+    var titleKey: String {
+        switch self {
+        case .system:
+            return "appearance.system"
+        case .light:
+            return "appearance.light"
+        case .dark:
+            return "appearance.dark"
+        }
+    }
+
+    var nsAppearance: NSAppearance? {
+        switch self {
+        case .system:
+            return nil
+        case .light:
+            return NSAppearance(named: .aqua)
+        case .dark:
+            return NSAppearance(named: .darkAqua)
+        }
     }
 }
 
@@ -144,7 +175,7 @@ final class AppSettings: ObservableObject {
     @Published var launchAtLogin: Bool {
         didSet {
             defaults.set(launchAtLogin, forKey: Keys.launchAtLogin)
-            applyLaunchAtLoginSetting()
+            applyLaunchAtLoginSetting(reportUnavailable: true)
         }
     }
 
@@ -177,6 +208,15 @@ final class AppSettings: ObservableObject {
             defaults.set(languageCode, forKey: Keys.languageCode)
             if oldValue != languageCode {
                 NotificationCenter.default.post(name: .languageSettingsChanged, object: nil)
+            }
+        }
+    }
+
+    @Published var appearanceMode: AppAppearanceMode {
+        didSet {
+            defaults.set(appearanceMode.rawValue, forKey: Keys.appearanceMode)
+            if oldValue != appearanceMode {
+                NotificationCenter.default.post(name: .appearanceSettingsChanged, object: nil)
             }
         }
     }
@@ -222,6 +262,7 @@ final class AppSettings: ObservableObject {
         static let receiveUniversalClipboardEnabled = "settings.receiveUniversalClipboardEnabled"
         static let iCloudSyncEnabled = "settings.iCloudSyncEnabled"
         static let languageCode = LanguageCatalog.defaultsKey
+        static let appearanceMode = "settings.appearanceMode"
     }
 
     private init() {
@@ -236,18 +277,26 @@ final class AppSettings: ObservableObject {
         self.hotKeyOption = defaults.object(forKey: Keys.hotKeyOption) as? Bool ?? false
         self.hotKeyControl = defaults.object(forKey: Keys.hotKeyControl) as? Bool ?? false
         self.ignoredAppsInput = defaults.string(forKey: Keys.ignoredAppsInput) ?? ""
-        self.launchAtLogin = defaults.object(forKey: Keys.launchAtLogin) as? Bool ?? false
+        self.launchAtLogin = defaults.object(forKey: Keys.launchAtLogin) as? Bool ?? true
         self.autoPasteEnabled = defaults.object(forKey: Keys.autoPasteEnabled) as? Bool ?? !AppDistribution.isAppStoreBuild
         self.receiveUniversalClipboardEnabled = defaults.object(forKey: Keys.receiveUniversalClipboardEnabled) as? Bool ?? true
         self.iCloudSyncEnabled = defaults.object(forKey: Keys.iCloudSyncEnabled) as? Bool ?? false
         let savedLanguage = defaults.string(forKey: Keys.languageCode) ?? LanguageCatalog.system
         self.languageCode = LanguageCatalog.isSupported(savedLanguage) ? savedLanguage : LanguageCatalog.system
+        let savedAppearance = defaults.string(forKey: Keys.appearanceMode) ?? AppAppearanceMode.system.rawValue
+        self.appearanceMode = AppAppearanceMode(rawValue: savedAppearance) ?? .system
 
-        applyLaunchAtLoginSetting()
+        applyLaunchAtLoginSetting(reportUnavailable: false)
     }
 
-    private func applyLaunchAtLoginSetting() {
+    private func applyLaunchAtLoginSetting(reportUnavailable: Bool) {
         guard #available(macOS 13.0, *) else { return }
+        guard Self.canConfigureLaunchAtLogin(for: Bundle.main.bundleURL) else {
+            if reportUnavailable, launchAtLogin {
+                print("[AppSettings] Launch at login is unavailable unless SkyPaste is installed in Applications.")
+            }
+            return
+        }
 
         do {
             if launchAtLogin {
@@ -256,8 +305,33 @@ final class AppSettings: ObservableObject {
                 try SMAppService.mainApp.unregister()
             }
         } catch {
-            print("[AppSettings] Launch at login update failed: \(error)")
+            let message = Self.describeLaunchAtLoginError(error)
+            print("[AppSettings] Launch at login update failed: \(message)")
         }
+    }
+
+    nonisolated static func canConfigureLaunchAtLogin(for bundleURL: URL) -> Bool {
+        let standardizedPath = bundleURL.standardizedFileURL.path
+        let applicationsRoots = [
+            URL(fileURLWithPath: "/Applications", isDirectory: true).path,
+            FileManager.default.homeDirectoryForCurrentUser
+                .appendingPathComponent("Applications", isDirectory: true)
+                .path
+        ]
+
+        return applicationsRoots.contains { root in
+            standardizedPath == root || standardizedPath.hasPrefix(root + "/")
+        }
+    }
+
+    private static func describeLaunchAtLoginError(_ error: Error) -> String {
+        let nsError = error as NSError
+        if nsError.domain == "SMAppServiceErrorDomain",
+           nsError.code == 1 {
+            return "Operation not permitted. Install SkyPaste in Applications before enabling launch at login."
+        }
+
+        return error.localizedDescription
     }
 
     private static func clampHistoryLimit(_ value: Int) -> Int {
@@ -269,4 +343,5 @@ extension Notification.Name {
     static let hotKeySettingsChanged = Notification.Name("hotKeySettingsChanged")
     static let languageSettingsChanged = Notification.Name("languageSettingsChanged")
     static let iCloudSyncSettingsChanged = Notification.Name("iCloudSyncSettingsChanged")
+    static let appearanceSettingsChanged = Notification.Name("appearanceSettingsChanged")
 }

@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct MenuBarClipboardView: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     private struct DaySection: Identifiable {
         let day: Date
         let items: [ClipboardItem]
@@ -55,6 +57,66 @@ struct MenuBarClipboardView: View {
         L10n.timeText(date)
     }
 
+    private var popoverGlossGradient: LinearGradient {
+        LinearGradient(
+            colors: colorScheme == .dark
+                ? [
+                    Color.white.opacity(0.08),
+                    Color.clear
+                ]
+                : [
+                    Color.white.opacity(0.24),
+                    Color.white.opacity(0.08)
+                ],
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
+    }
+
+    private var startupNoticeFill: Color {
+        colorScheme == .dark ? Color(nsColor: .controlBackgroundColor) : Color.white.opacity(0.58)
+    }
+
+    private var filterChipFill: Color {
+        colorScheme == .dark ? Color(nsColor: .controlBackgroundColor) : Color.white.opacity(0.94)
+    }
+
+    private var selectedFilterChipFill: Color {
+        colorScheme == .dark ? .white : Color.accentColor.opacity(0.16)
+    }
+
+    private var selectedFilterChipText: Color {
+        colorScheme == .dark ? .black : Color.accentColor
+    }
+
+    private func filterChipTextColor(for filter: ClipboardFilter) -> Color {
+        selectedFilter == filter ? selectedFilterChipText : Color.primary.opacity(colorScheme == .dark ? 0.82 : 0.72)
+    }
+
+    private func filterChipStrokeColor(for filter: ClipboardFilter) -> Color {
+        if selectedFilter == filter {
+            return colorScheme == .dark ? Color.primary.opacity(0.24) : Color.accentColor.opacity(0.16)
+        }
+        return colorScheme == .dark ? Color.primary.opacity(0.08) : Color.black.opacity(0.05)
+    }
+
+    private func filterChipShadowColor(for filter: ClipboardFilter) -> Color {
+        guard selectedFilter == filter, colorScheme != .dark else { return .clear }
+        return Color.accentColor.opacity(0.10)
+    }
+
+    private var contentAreaFill: Color {
+        colorScheme == .dark ? Color(nsColor: .underPageBackgroundColor) : Color.white.opacity(0.72)
+    }
+
+    private var sectionCardFill: Color {
+        colorScheme == .dark ? Color(nsColor: .controlBackgroundColor) : Color.white.opacity(0.78)
+    }
+
+    private var actionButtonFill: Color {
+        colorScheme == .dark ? Color(nsColor: .controlBackgroundColor) : Color.white.opacity(0.54)
+    }
+
     var body: some View {
         VStack(spacing: 12) {
             header
@@ -72,16 +134,7 @@ struct MenuBarClipboardView: View {
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(.regularMaterial)
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.24),
-                                Color.white.opacity(0.08)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
+                    .fill(popoverGlossGradient)
             }
         )
         .overlay(alignment: .top) {
@@ -172,20 +225,21 @@ struct MenuBarClipboardView: View {
                     } label: {
                         Text(filter.title)
                             .font(.system(size: 12, weight: .semibold, design: .rounded))
-                            .foregroundStyle(selectedFilter == filter ? Color.accentColor : Color.primary.opacity(0.82))
+                            .foregroundStyle(filterChipTextColor(for: filter))
                             .padding(.horizontal, 13)
                             .padding(.vertical, 8)
                             .background(
                                 Capsule(style: .continuous)
-                                    .fill(selectedFilter == filter ? Color.accentColor.opacity(0.14) : Color.white.opacity(0.54))
+                                    .fill(selectedFilter == filter ? selectedFilterChipFill : filterChipFill)
                             )
                             .overlay {
                                 Capsule(style: .continuous)
                                     .stroke(
-                                        selectedFilter == filter ? Color.accentColor.opacity(0.32) : Color.primary.opacity(0.08),
-                                        lineWidth: 1
+                                        filterChipStrokeColor(for: filter),
+                                        lineWidth: colorScheme == .dark ? 1 : 0.75
                                     )
                             }
+                            .shadow(color: filterChipShadowColor(for: filter), radius: 6, y: 2)
                     }
                     .buttonStyle(.plain)
                 }
@@ -219,7 +273,7 @@ struct MenuBarClipboardView: View {
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.white.opacity(0.58))
+                .fill(startupNoticeFill)
         )
         .overlay {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -245,7 +299,7 @@ struct MenuBarClipboardView: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white.opacity(0.72))
+                .fill(contentAreaFill)
         )
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -301,26 +355,33 @@ struct MenuBarClipboardView: View {
                 }
             }
 
-            VStack(spacing: 2) {
+            VStack(spacing: 0) {
                 ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                     rowView(for: item)
 
                     if index < items.count - 1 {
-                        Divider()
-                            .padding(.leading, item.isImage ? 64 : 12)
+                        rowSeparator(inset: item.isImage ? 64 : 12)
                     }
                 }
             }
             .padding(6)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.white.opacity(0.78))
+                    .fill(sectionCardFill)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .stroke(Color.primary.opacity(0.04), lineWidth: 1)
             }
         }
+    }
+
+    private func rowSeparator(inset: CGFloat) -> some View {
+        Rectangle()
+            .fill(Color.primary.opacity(0.08))
+            .frame(height: 0.5)
+            .padding(.leading, inset)
+            .padding(.trailing, 12)
     }
 
     private func copy(_ item: ClipboardItem) {
@@ -404,7 +465,7 @@ struct MenuBarClipboardView: View {
                 .padding(.horizontal, 2)
                 .background(
                     Capsule(style: .continuous)
-                        .fill(Color.white.opacity(0.54))
+                        .fill(actionButtonFill)
                 )
                 .overlay {
                     Capsule(style: .continuous)

@@ -1,3 +1,4 @@
+import CryptoKit
 import CloudKit
 import Foundation
 import UIKit
@@ -16,6 +17,11 @@ enum CloudClipboardSchema {
 
     enum ContentType {
         static let text = "text"
+    }
+
+    static func recordName(for fingerprint: String) -> String {
+        let digest = SHA256.hash(data: Data(fingerprint.utf8))
+        return "clip-" + digest.map { String(format: "%02x", $0) }.joined()
     }
 }
 
@@ -43,14 +49,33 @@ struct CloudClipboardUploader {
         let sourceDevice = await MainActor.run {
             UIDevice.current.name
         }
+        let fingerprint = "txt:\(text)"
 
-        let record = CKRecord(recordType: CloudClipboardSchema.recordType)
+        let recordID = CKRecord.ID(recordName: CloudClipboardSchema.recordName(for: fingerprint))
+        let record = CKRecord(recordType: CloudClipboardSchema.recordType, recordID: recordID)
         record[CloudClipboardSchema.Field.contentType] = CloudClipboardSchema.ContentType.text as CKRecordValue
         record[CloudClipboardSchema.Field.text] = text as CKRecordValue
-        record[CloudClipboardSchema.Field.fingerprint] = "txt:\(text)" as CKRecordValue
+        record[CloudClipboardSchema.Field.fingerprint] = fingerprint as CKRecordValue
         record[CloudClipboardSchema.Field.createdAt] = Date() as CKRecordValue
         record[CloudClipboardSchema.Field.sourceDevice] = sourceDevice as CKRecordValue
 
-        _ = try await database.save(record)
+        try await Self.upsert(record, in: database)
+    }
+
+    private static func upsert(_ record: CKRecord, in database: CKDatabase) async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            let operation = CKModifyRecordsOperation(recordsToSave: [record], recordIDsToDelete: nil)
+            operation.savePolicy = .changedKeys
+            operation.isAtomic = true
+            operation.modifyRecordsResultBlock = { result in
+                switch result {
+                case .success:
+                    continuation.resume()
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+            database.add(operation)
+        }
     }
 }

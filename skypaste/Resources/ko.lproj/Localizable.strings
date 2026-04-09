@@ -8,6 +8,8 @@
 "clipboard.source.icloud" = "iCloud 동기화";
 "section.today" = "오늘";
 "section.yesterday" = "어제";
+"settings.appearance" = "테마";
+"settings.appearance_hint" = "기본값은 시스템 설정을 따르며, 필요하면 라이트 또는 다크 모드로 고정할 수 있습니다.";
 "settings.hotkey" = "단축키";
 "settings.language" = "언어";
 "settings.language_hint" = "시스템을 선택하면 macOS 언어를 따르고, 앱 전용 언어를 고를 수도 있습니다.";
@@ -28,7 +30,7 @@
 "settings.universal_clipboard" = "Universal Clipboard 받기";
 "settings.universal_clipboard_hint" = "활성화하면 SkyPaste가 Universal Clipboard를 통해 이 Mac으로 들어온 내용을 수집하려고 시도합니다.";
 "settings.icloud_sync" = "iCloud 동기화";
-"settings.icloud_sync_hint" = "켜면 SkyPaste가 SkyPaste iPhone 앱에서 저장한 클립보드 항목을 개인 iCloud 데이터베이스에서 가져옵니다.";
+"settings.icloud_sync_hint" = "켜면 SkyPaste가 이 Mac에서 복사한 텍스트를 개인 iCloud 데이터베이스에 동기화하고, 다른 기기에서 저장한 SkyPaste 클립보드 항목도 가져옵니다.";
 "settings.auto_paste" = "복사 후 자동 붙여넣기";
 "settings.auto_paste_hint" = "활성화하면 SkyPaste가 선택 항목을 복사한 뒤 Cmd+V를 전송합니다.";
 "settings.ignore_apps" = "무시할 앱";
@@ -81,6 +83,9 @@
 "hotkey.option" = "Option";
 "hotkey.control" = "Control";
 "hotkey.keycode" = "키코드 %u";
+"appearance.system" = "시스템 따르기";
+"appearance.light" = "라이트 모드";
+"appearance.dark" = "다크 모드";
 "language.system" = "시스템";
 "language.en" = "영어";
 "language.zh-Hans" = "중국어 간체";

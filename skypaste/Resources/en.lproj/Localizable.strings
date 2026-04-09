@@ -8,6 +8,8 @@
 "clipboard.source.icloud" = "iCloud Sync";
 "section.today" = "Today";
 "section.yesterday" = "Yesterday";
+"settings.appearance" = "Theme";
+"settings.appearance_hint" = "Follow the system by default, or force Light or Dark mode.";
 "settings.hotkey" = "Hotkey";
 "settings.language" = "Language";
 "settings.language_hint" = "Choose System to follow macOS, or pick a fixed app language.";
@@ -28,7 +30,7 @@
 "settings.universal_clipboard" = "Receive Universal Clipboard";
 "settings.universal_clipboard_hint" = "When enabled, SkyPaste tries to capture items that macOS receives through Universal Clipboard.";
 "settings.icloud_sync" = "iCloud Sync";
-"settings.icloud_sync_hint" = "When enabled, SkyPaste fetches clipboard items saved from the SkyPaste iPhone app via your private iCloud database.";
+"settings.icloud_sync_hint" = "When enabled, SkyPaste syncs text copied on this Mac to your private iCloud database and fetches SkyPaste clipboard items saved from your other devices.";
 "settings.auto_paste" = "Auto paste after copy";
 "settings.auto_paste_hint" = "When enabled, SkyPaste sends Cmd+V after copying a selected item.";
 "settings.ignore_apps" = "Ignore Apps";
@@ -81,6 +83,9 @@
 "hotkey.option" = "Option";
 "hotkey.control" = "Control";
 "hotkey.keycode" = "KeyCode %u";
+"appearance.system" = "Follow System";
+"appearance.light" = "Light Mode";
+"appearance.dark" = "Dark Mode";
 "language.system" = "System";
 "language.en" = "English";
 "language.zh-Hans" = "Simplified Chinese";

@@ -8,6 +8,8 @@
 "clipboard.source.icloud" = "iCloud 同步";
 "section.today" = "今天";
 "section.yesterday" = "昨天";
+"settings.appearance" = "主題";
+"settings.appearance_hint" = "預設會跟隨系統，也可以固定使用淺色或深色模式。";
 "settings.hotkey" = "快捷鍵";
 "settings.language" = "語言";
 "settings.language_hint" = "選擇「跟隨系統」以使用 macOS 語言，或為應用程式指定固定語言。";
@@ -28,7 +30,7 @@
 "settings.universal_clipboard" = "接收通用剪貼簿";
 "settings.universal_clipboard_hint" = "啟用後，SkyPaste 會嘗試收錄系統通用剪貼簿同步到這台 Mac 的內容。";
 "settings.icloud_sync" = "iCloud 同步";
-"settings.icloud_sync_hint" = "啟用後，SkyPaste 會從你的 iCloud 私有資料庫擷取 SkyPaste iPhone 端儲存的剪貼簿內容。";
+"settings.icloud_sync_hint" = "啟用後，SkyPaste 會將這台 Mac 的文字剪貼簿同步到你的 iCloud 私有資料庫，並擷取其他裝置儲存的 SkyPaste 剪貼簿內容。";
 "settings.auto_paste" = "複製後自動貼上";
 "settings.auto_paste_hint" = "啟用後，SkyPaste 會在複製所選項目後自動送出 Cmd+V。";
 "settings.ignore_apps" = "忽略應用程式";
@@ -81,6 +83,9 @@
 "hotkey.option" = "Option";
 "hotkey.control" = "Control";
 "hotkey.keycode" = "鍵碼 %u";
+"appearance.system" = "跟隨系統";
+"appearance.light" = "淺色模式";
+"appearance.dark" = "深色模式";
 "language.system" = "跟隨系統";
 "language.en" = "英文";
 "language.zh-Hans" = "簡體中文";

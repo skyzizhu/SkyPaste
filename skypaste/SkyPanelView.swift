@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct PanelView: View {
+    @Environment(\.colorScheme) private var colorScheme
+
     private struct DaySection: Identifiable {
         let day: Date
         let items: [ClipboardItem]
@@ -52,6 +54,50 @@ struct PanelView: View {
 
     private func copyTimeText(_ date: Date) -> String {
         L10n.timeText(date)
+    }
+
+    private var startupNoticeFill: Color {
+        colorScheme == .dark ? Color(nsColor: .controlBackgroundColor) : Color.white.opacity(0.6)
+    }
+
+    private var filterChipFill: Color {
+        colorScheme == .dark ? Color(nsColor: .controlBackgroundColor) : Color.white.opacity(0.94)
+    }
+
+    private var selectedFilterChipFill: Color {
+        colorScheme == .dark ? .white : Color.accentColor.opacity(0.16)
+    }
+
+    private var selectedFilterChipText: Color {
+        colorScheme == .dark ? .black : Color.accentColor
+    }
+
+    private func filterChipTextColor(for filter: ClipboardFilter) -> Color {
+        selectedFilter == filter ? selectedFilterChipText : Color.primary.opacity(colorScheme == .dark ? 0.82 : 0.72)
+    }
+
+    private func filterChipStrokeColor(for filter: ClipboardFilter) -> Color {
+        if selectedFilter == filter {
+            return colorScheme == .dark ? Color.primary.opacity(0.24) : Color.accentColor.opacity(0.16)
+        }
+        return colorScheme == .dark ? Color.primary.opacity(0.08) : Color.black.opacity(0.05)
+    }
+
+    private func filterChipShadowColor(for filter: ClipboardFilter) -> Color {
+        guard selectedFilter == filter, colorScheme != .dark else { return .clear }
+        return Color.accentColor.opacity(0.10)
+    }
+
+    private var contentAreaFill: Color {
+        colorScheme == .dark ? Color(nsColor: .underPageBackgroundColor) : Color.white.opacity(0.76)
+    }
+
+    private var sectionCardFill: Color {
+        colorScheme == .dark ? Color(nsColor: .controlBackgroundColor) : Color.white.opacity(0.84)
+    }
+
+    private var actionButtonFill: Color {
+        colorScheme == .dark ? Color(nsColor: .controlBackgroundColor) : Color.white.opacity(0.56)
     }
 
     var body: some View {
@@ -221,7 +267,7 @@ struct PanelView: View {
         .padding(.vertical, 11)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white.opacity(0.6))
+                .fill(startupNoticeFill)
         )
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -240,20 +286,21 @@ struct PanelView: View {
                     } label: {
                         Text(filter.title)
                             .font(.system(size: 12, weight: .semibold, design: .rounded))
-                            .foregroundStyle(selectedFilter == filter ? Color.accentColor : Color.primary.opacity(0.82))
+                            .foregroundStyle(filterChipTextColor(for: filter))
                             .padding(.horizontal, 13)
                             .padding(.vertical, 8)
                             .background(
                                 Capsule(style: .continuous)
-                                    .fill(selectedFilter == filter ? Color.accentColor.opacity(0.14) : Color.white.opacity(0.54))
+                                    .fill(selectedFilter == filter ? selectedFilterChipFill : filterChipFill)
                             )
                             .overlay {
                                 Capsule(style: .continuous)
                                     .stroke(
-                                        selectedFilter == filter ? Color.accentColor.opacity(0.32) : Color.primary.opacity(0.08),
-                                        lineWidth: 1
+                                        filterChipStrokeColor(for: filter),
+                                        lineWidth: colorScheme == .dark ? 1 : 0.75
                                     )
                             }
+                            .shadow(color: filterChipShadowColor(for: filter), radius: 6, y: 2)
                     }
                     .buttonStyle(.plain)
                 }
@@ -280,7 +327,7 @@ struct PanelView: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .fill(Color.white.opacity(0.76))
+                .fill(contentAreaFill)
         )
         .overlay {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
@@ -329,26 +376,33 @@ struct PanelView: View {
                 }
             }
 
-            VStack(spacing: 3) {
+            VStack(spacing: 0) {
                 ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                     rowView(for: item)
 
                     if index < items.count - 1 {
-                        Divider()
-                            .padding(.leading, item.isImage ? 64 : 12)
+                        rowSeparator(inset: item.isImage ? 64 : 12)
                     }
                 }
             }
             .padding(6)
             .background(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color.white.opacity(0.84))
+                    .fill(sectionCardFill)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(Color.primary.opacity(0.04), lineWidth: 1)
             }
         }
+    }
+
+    private func rowSeparator(inset: CGFloat) -> some View {
+        Rectangle()
+            .fill(Color.primary.opacity(0.08))
+            .frame(height: 0.5)
+            .padding(.leading, inset)
+            .padding(.trailing, 12)
     }
 
     private func performPrimaryAction() {
@@ -475,7 +529,7 @@ struct PanelView: View {
                 .padding(.vertical, 9)
                 .background(
                     Capsule(style: .continuous)
-                        .fill(Color.white.opacity(0.56))
+                        .fill(actionButtonFill)
                 )
                 .overlay {
                     Capsule(style: .continuous)

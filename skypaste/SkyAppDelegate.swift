@@ -17,8 +17,15 @@ final class AppCoordinator {
 
     init(settings: AppSettings) {
         self.settings = settings
-        self.store = ClipboardStore(settings: settings)
-        self.cloudSync = CloudClipboardSyncManager(store: store, settings: settings)
+        let store = ClipboardStore(settings: settings)
+        let cloudSync = CloudClipboardSyncManager(store: store, settings: settings)
+        self.store = store
+        self.cloudSync = cloudSync
+        store.onLocalItemAdded = { [weak cloudSync] item in
+            Task { @MainActor in
+                cloudSync?.uploadLocalItemIfNeeded(item)
+            }
+        }
     }
 
     func configureWindow() {
@@ -28,6 +35,7 @@ final class AppCoordinator {
         if let panelWindow {
             panelWindow.title = L10n.tr("app.title")
             panelWindow.contentView = hostingView
+            applyAppearance()
             return
         }
 
@@ -50,6 +58,7 @@ final class AppCoordinator {
         panel.orderOut(nil)
 
         panelWindow = panel
+        applyAppearance()
     }
 
     private func makePanelView() -> PanelView {
@@ -108,6 +117,7 @@ final class AppCoordinator {
 
         debugWindow?.title = L10n.tr("app.debug_title")
         debugWindow?.contentView = hostingView
+        applyAppearance()
         NSApp.activate(ignoringOtherApps: true)
         debugWindow?.makeKeyAndOrderFront(nil)
     }
@@ -149,6 +159,7 @@ final class AppCoordinator {
         let controller = NSHostingController(rootView: rootView)
         imagePreviewWindow?.title = L10n.tr("preview.title")
         imagePreviewWindow?.contentViewController = controller
+        applyAppearance()
         centerWindow(imagePreviewWindow)
 
         NSApp.activate(ignoringOtherApps: true)
@@ -181,6 +192,7 @@ final class AppCoordinator {
         let controller = NSHostingController(rootView: SettingsView(settings: settings))
         settingsWindow?.title = L10n.tr("menu.preferences")
         settingsWindow?.contentViewController = controller
+        applyAppearance()
 
         guard let settingsWindowController else { return }
 
@@ -218,6 +230,7 @@ final class AppCoordinator {
         let controller = NSHostingController(rootView: rootView)
         textPreviewWindow?.title = L10n.tr("preview.text_title")
         textPreviewWindow?.contentViewController = controller
+        applyAppearance()
         centerWindow(textPreviewWindow)
 
         NSApp.activate(ignoringOtherApps: true)
@@ -237,6 +250,13 @@ final class AppCoordinator {
             window.setFrameOrigin(origin)
         } else {
             window.center()
+        }
+    }
+
+    func applyAppearance() {
+        let appearance = settings.appearanceMode.nsAppearance
+        [panelWindow, debugWindow, settingsWindow, imagePreviewWindow, textPreviewWindow].forEach { window in
+            window?.appearance = appearance
         }
     }
 
@@ -292,9 +312,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private var hotKeyObserver: NSObjectProtocol?
     private var languageObserver: NSObjectProtocol?
     private var iCloudSyncObserver: NSObjectProtocol?
+    private var appearanceObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        applyAppearance()
 
         coordinator.configureWindow()
         coordinator.store.captureCurrentPasteboardIfNeeded()
@@ -330,6 +352,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         if let iCloudSyncObserver {
             NotificationCenter.default.removeObserver(iCloudSyncObserver)
             self.iCloudSyncObserver = nil
+        }
+
+        if let appearanceObserver {
+            NotificationCenter.default.removeObserver(appearanceObserver)
+            self.appearanceObserver = nil
         }
 
         if let appDeactivationObserver {
@@ -375,6 +402,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         ) { [weak self] _ in
             Task { @MainActor in
                 self?.coordinator.cloudSync.applyCurrentSetting()
+            }
+        }
+
+        appearanceObserver = NotificationCenter.default.addObserver(
+            forName: .appearanceSettingsChanged,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.applyAppearance()
             }
         }
     }
@@ -484,8 +521,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         popover.behavior = .applicationDefined
         popover.delegate = self
         popover.contentSize = NSSize(width: 360, height: 460)
-        popover.contentViewController = NSHostingController(rootView: view)
+        let controller = NSHostingController(rootView: view)
+        controller.view.appearance = settings.appearanceMode.nsAppearance
+        popover.contentViewController = controller
         statusPopover = popover
+    }
+
+    private func applyAppearance() {
+        let appearance = settings.appearanceMode.nsAppearance
+        NSApp.appearance = appearance
+        coordinator.applyAppearance()
+        statusPopover?.contentViewController?.view.appearance = appearance
+        statusPopover?.contentViewController?.view.window?.appearance = appearance
     }
 
     @objc private func toggleStatusPopover() {
@@ -566,6 +613,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 }
 
 private struct ImagePreviewView: View {
+    @Environment(\.colorScheme) private var colorScheme
     let item: ClipboardItem
     @State private var zoomScale: CGFloat = 1
     @GestureState private var gestureScale: CGFloat = 1
@@ -626,10 +674,15 @@ private struct ImagePreviewView: View {
                     RoundedRectangle(cornerRadius: 28, style: .continuous)
                         .fill(
                             LinearGradient(
-                                colors: [
-                                    Color.black.opacity(0.05),
-                                    Color.white.opacity(0.52)
-                                ],
+                                colors: colorScheme == .dark
+                                    ? [
+                                        Color.white.opacity(0.04),
+                                        Color(nsColor: .controlBackgroundColor)
+                                    ]
+                                    : [
+                                        Color.black.opacity(0.05),
+                                        Color.white.opacity(0.52)
+                                    ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )

@@ -44,6 +44,7 @@
 		56D0598B2F6D03B4005DC14F /* SkyPaste.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SkyPaste.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		56D0599C2F6D03B7005DC14F /* skypasteTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = skypasteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		56D059A62F6D03B7005DC14F /* skypasteUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = skypasteUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		6C6CF9562F87E4AB000D1EC8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; name = Info.plist; path = Config/Info.plist; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -128,6 +129,7 @@
 		56D059822F6D03B4005DC14F = {
 			isa = PBXGroup;
 			children = (
+				6C6CF9562F87E4AB000D1EC8 /* Info.plist */,
 				56D0598D2F6D03B4005DC14F /* skypaste */,
 				56D0599F2F6D03B7005DC14F /* skypasteTests */,
 				56D059A92F6D03B7005DC14F /* skypasteUITests */,
@@ -738,19 +740,20 @@
 				CODE_SIGN_ENTITLEMENTS = skypaste/skypaste.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-					CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_ASSET_PATHS = "\"skypaste/Preview Content\"";
 				DEVELOPMENT_TEAM = CS52G5Z35S;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Config/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-					MARKETING_VERSION = 0.1.5;
+				MARKETING_VERSION = 1.0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.huaibor.skypaste;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "APP_STORE_BUILD $(inherited)";
@@ -767,19 +770,20 @@
 				CODE_SIGN_ENTITLEMENTS = skypaste/skypaste.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
-					CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_ASSET_PATHS = "\"skypaste/Preview Content\"";
 				DEVELOPMENT_TEAM = CS52G5Z35S;
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Config/Info.plist;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
-					MARKETING_VERSION = 0.1.5;
+				MARKETING_VERSION = 1.0.5;
 				PRODUCT_BUNDLE_IDENTIFIER = com.huaibor.skypaste;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;

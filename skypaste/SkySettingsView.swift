@@ -1,12 +1,14 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @Environment(\.colorScheme) private var colorScheme
     @ObservedObject var settings: AppSettings
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 hero
+                appearanceSection
                 generalSection
                 hotKeySection
                 behaviorSection
@@ -32,6 +34,23 @@ struct SettingsView: View {
             }
         )
         .frame(minWidth: 720, idealWidth: 760, minHeight: 680, idealHeight: 740)
+    }
+
+    private var appearanceSection: some View {
+        SettingsSection(title: L10n.tr("settings.appearance")) {
+            SettingsRow(title: L10n.tr("settings.appearance")) {
+                Picker("", selection: $settings.appearanceMode) {
+                    ForEach(AppAppearanceMode.allCases) { option in
+                        Text(L10n.tr(option.titleKey)).tag(option)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .frame(width: 220, alignment: .trailing)
+            }
+
+            hint(L10n.tr("settings.appearance_hint"))
+        }
     }
 
     private var hero: some View {
@@ -80,6 +99,7 @@ struct SettingsView: View {
                 .frame(width: 220, alignment: .trailing)
             }
 
+            hint(L10n.tr("settings.language_hint"))
         }
     }
 
@@ -159,6 +179,8 @@ struct SettingsView: View {
                     .labelsHidden()
                     .toggleStyle(.switch)
             }
+
+            hint(L10n.tr("settings.icloud_sync_hint"))
         }
     }
 
@@ -207,6 +229,14 @@ struct SettingsView: View {
         )
     }
 
+    private var settingsControlFill: Color {
+        colorScheme == .dark ? Color(nsColor: .controlBackgroundColor) : Color.white.opacity(0.54)
+    }
+
+    private var infoBadgeFill: Color {
+        colorScheme == .dark ? Color(nsColor: .underPageBackgroundColor) : Color.white.opacity(0.44)
+    }
+
     private func modifierToggle(_ title: String, isOn: Binding<Bool>) -> some View {
         Toggle(isOn: isOn) {
             Text(title)
@@ -218,7 +248,7 @@ struct SettingsView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.white.opacity(0.54))
+                .fill(settingsControlFill)
         )
         .overlay {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -235,7 +265,7 @@ struct SettingsView: View {
             .padding(.vertical, 10)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(Color.white.opacity(0.44))
+                    .fill(infoBadgeFill)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
@@ -253,8 +283,13 @@ struct SettingsView: View {
 }
 
 private struct SettingsSection<Content: View>: View {
+    @Environment(\.colorScheme) private var colorScheme
     let title: String
     @ViewBuilder let content: Content
+
+    private var sectionBackgroundColor: Color {
+        colorScheme == .dark ? Color(nsColor: .controlBackgroundColor) : Color.white.opacity(0.62)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -267,7 +302,7 @@ private struct SettingsSection<Content: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(.regularMaterial)
+                .fill(sectionBackgroundColor)
         )
         .overlay {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
