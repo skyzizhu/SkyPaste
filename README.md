@@ -5,6 +5,10 @@
 </p>
 
 <p align="center">
+  <a href="https://apps.apple.com/us/app/skypaste/id6760884520?mt=12">Download on the App Store / App Store 下载</a>
+</p>
+
+<p align="center">
   <strong>简洁的剪切板内容管理工具</strong>
 </p>
 <p align="center">
