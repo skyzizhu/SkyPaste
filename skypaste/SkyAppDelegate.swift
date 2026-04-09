@@ -418,10 +418,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     }
 
     private func statusBarImage() -> NSImage? {
-        let image = NSApp.applicationIconImage.copy() as? NSImage
-        image?.size = NSSize(width: 18, height: 18)
-        image?.isTemplate = false
-        return image
+        guard let appIcon = NSApp.applicationIconImage.copy() as? NSImage else { return nil }
+
+        let targetSize = NSSize(width: 18, height: 18)
+        let canvasRect = NSRect(origin: .zero, size: targetSize)
+        let roundedImage = NSImage(size: targetSize)
+
+        roundedImage.lockFocus()
+        NSColor.clear.setFill()
+        canvasRect.fill()
+
+        let clipPath = NSBezierPath(
+            roundedRect: canvasRect.insetBy(dx: 1, dy: 1),
+            xRadius: 4,
+            yRadius: 4
+        )
+        clipPath.addClip()
+
+        appIcon.draw(
+            in: canvasRect,
+            from: NSRect(origin: .zero, size: appIcon.size),
+            operation: .sourceOver,
+            fraction: 1
+        )
+        roundedImage.unlockFocus()
+
+        roundedImage.isTemplate = false
+        return roundedImage
     }
 
     private func configureStatusPopover() {
