@@ -1,7 +1,7 @@
 # SkyPaste
 
 <p align="center">
-  <img src="skypaste/Assets.xcassets/AppIcon.appiconset/icon_512x512.png" alt="SkyPaste app icon" width="120">
+  <img src="docs/screen/screen_1.png" alt="SkyPaste preview" width="120">
 </p>
 
 <p align="center">
@@ -23,15 +23,15 @@ SkyPaste is a simple macOS clipboard manager for text, images, and file URLs, de
 
 ### Menu Bar Popover
 
-![SkyPaste menu bar popover](docs/images/menu-bar-popover.png)
+![SkyPaste menu bar popover](docs/screen/screen_2.png)
 
 ### Main Panel
 
-![SkyPaste main panel screenshot with sensitive content removed](docs/images/main-panel.png)
+![SkyPaste main panel screenshot](docs/screen/screen_3.png)
 
 ### Preferences
 
-![SkyPaste preferences window](docs/images/preferences.png)
+![SkyPaste preferences window](docs/screen/screen_4.png)
 
 ## Features
 
@@ -142,11 +142,11 @@ SkyPaste 是一个 macOS 剪贴板管理工具，支持文本、图片、文件�
 ### 截图
 
 - 菜单栏弹窗  
-  ![SkyPaste 菜单栏弹窗](docs/images/menu-bar-popover.png)
+  ![SkyPaste 菜单栏弹窗](docs/screen/screen_2.png)
 - 主面板（敏感内容已移除）  
-  ![SkyPaste 主面板截图，敏感内容已移除](docs/images/main-panel.png)
+  ![SkyPaste 主面板截图](docs/screen/screen_3.png)
 - 偏好设置  
-  ![SkyPaste 偏好设置窗口](docs/images/preferences.png)
+  ![SkyPaste 偏好设置窗口](docs/screen/screen_4.png)
 
 ### 功能特性
 
