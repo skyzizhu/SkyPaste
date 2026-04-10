@@ -1,7 +1,7 @@
 # SkyPaste
 
 <p align="center">
-  <img src="docs/screen/screen_1.png" alt="SkyPaste preview" width="120">
+  <img src="docs/images/logo.png" alt="SkyPaste app icon" width="120">
 </p>
 
 <p align="center">
@@ -20,6 +20,10 @@
 SkyPaste is a simple macOS clipboard manager for text, images, and file URLs, designed for fast menu bar access, searchable history, filters, favorites, and keyboard-driven workflows.
 
 ## Screenshots
+
+### Overview
+
+![SkyPaste overview](docs/screen/screen_1.png)
 
 ### Menu Bar Popover
 
@@ -141,6 +145,8 @@ SkyPaste 是一个 macOS 剪贴板管理工具，支持文本、图片、文件�
 
 ### 截图
 
+- 概览  
+  ![SkyPaste 概览](docs/screen/screen_1.png)
 - 菜单栏弹窗  
   ![SkyPaste 菜单栏弹窗](docs/screen/screen_2.png)
 - 主面板（敏感内容已移除）  
