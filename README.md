@@ -47,8 +47,11 @@ SkyPaste is a simple macOS clipboard manager for text, images, and file URLs, de
 - `Enter` to paste the currently selected item
 - `Cmd+1...9` to quick-paste the first 9 items
 - Customizable global hotkey to open the panel
+- Built-in multi-language support: English, Simplified Chinese, Traditional Chinese, Japanese, Korean, French
+- Appearance options: follow system, light mode, or dark mode
+- iCloud sync support for SkyPaste content across your devices
+- iPhone-to-Mac clipboard sync support through iCloud when signed into the same Apple account
 - Local SQLite persistence
-- Multi-language support: English, Simplified Chinese, Traditional Chinese, Japanese, Korean, French
 - Memory optimizations for image history:
   - thumbnails are kept in memory instead of full-size images
   - image previews are lazily loaded only when rows are visible
@@ -61,6 +64,8 @@ SkyPaste is already usable as a practical daily menu bar clipboard utility, with
 - quick menu bar access
 - clipboard history browsing and search
 - favorites and category filters
+- multilingual UI and appearance controls
+- iCloud-based cross-device sync
 - local persistence
 - paste-back into the previous app
 
@@ -98,9 +103,11 @@ See [docs/PRIVACY_POLICY.md](docs/PRIVACY_POLICY.md) for a privacy policy templa
 
 Open `Preferences` from the menu bar app to configure:
 
+- app appearance
 - app language
 - global hotkey
 - history limit
+- iCloud sync
 - launch at login
 - ignored apps list (bundle IDs)
 
@@ -113,9 +120,8 @@ To support automatic paste back into the previous app, macOS may request Accessi
 
 ## Notes
 
-- No cloud sync in the current version
 - No tag system or end-to-end encryption yet
-- Data is stored locally by default
+- Data is stored locally by default, with optional iCloud sync
 - The old SwiftPM packaging scripts were removed in favor of the Xcode project
 - License: [MIT](LICENSE)
 
@@ -156,8 +162,11 @@ SkyPaste 是一个 macOS 剪贴板管理工具，支持文本、图片、文件�
 - `Enter` 粘贴当前选中项
 - `Cmd+1...9` 快速粘贴前 9 条
 - 全局快捷键呼出面板，可在设置中自定义
+- 内置多语言支持：English、简体中文、繁体中文、日本語、한국어、Français
+- 支持主题切换：跟随系统、浅色模式、深色模式
+- 支持 iCloud 同步 SkyPaste 内容
+- 支持同一 Apple 账户下的 iPhone 到 Mac 内容同步
 - 本地 SQLite 持久化存储
-- 多语言支持：English、简体中文、繁体中文、日本語、한국어、Français
 - 图片历史做了内存优化：
   - 内存中优先保留缩略图
   - 列表滚动时图片预览按可视区域懒加载
@@ -170,6 +179,8 @@ SkyPaste 是一个 macOS 剪贴板管理工具，支持文本、图片、文件�
 - 菜单栏快速查看与复制
 - 剪贴板历史检索
 - 收藏与分类管理
+- 多语言与外观模式切换
+- 基于 iCloud 的跨设备同步
 - 本地持久化
 - 自动粘贴回原应用
 
@@ -197,9 +208,11 @@ open skypaste.xcodeproj
 
 可在菜单栏中打开 `偏好设置`，支持配置：
 
+- 外观模式
 - 应用语言
 - 全局快捷键
 - 历史记录上限
+- iCloud 同步
 - 登录时启动
 - 忽略应用列表（按 bundle id）
 
@@ -212,8 +225,7 @@ open skypaste.xcodeproj
 
 ### 说明
 
-- 当前版本不包含云同步
 - 当前版本不包含标签系统和端到端加密
-- 数据默认仅保存在本地设备
+- 数据默认保存在本地设备，也可按需启用 iCloud 同步
 - 旧的 SwiftPM 打包脚本已移除，仓库以 Xcode 工程为主
 - 协议： [MIT](LICENSE)
