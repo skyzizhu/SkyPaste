@@ -5,7 +5,7 @@
 </p>
 
 <p align="center">
-  <a href="https://apps.apple.com/us/app/skypaste/id6760884520?mt=12">Download on the App Store / App Store 下载</a>
+  <a href="https://apps.apple.com/us/app/skypaste-clipboard-manager/id6760884520?mt=12">Download on the App Store / App Store 下载</a>
 </p>
 
 <p align="center">
