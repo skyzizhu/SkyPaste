@@ -1,5 +1,6 @@
 import CryptoKit
 import CloudKit
+import Combine
 import Foundation
 import Security
 
@@ -38,14 +39,25 @@ enum CloudClipboardSyncPolicy {
     }
 }
 
+enum CloudClipboardSyncStatus: Equatable {
+    case disabled
+    case unavailable
+    case syncing
+    case synced(Date)
+    case error(String)
+}
+
 @MainActor
-final class CloudClipboardSyncManager {
+final class CloudClipboardSyncManager: ObservableObject {
+    @Published private(set) var status: CloudClipboardSyncStatus = .disabled
+
     private let store: ClipboardStore
     private let settings: AppSettings
     private var database: CKDatabase?
     private var timer: Timer?
     private var isFetching = false
     private var pendingUploadFingerprints = Set<String>()
+    private var lastFetchedCreatedAt: Date?
 
     init(store: ClipboardStore, settings: AppSettings) {
         self.store = store
@@ -60,9 +72,11 @@ final class CloudClipboardSyncManager {
         stop()
 
         guard ensureCloudKitAvailability() else {
+            status = .unavailable
             return
         }
 
+        status = .syncing
         fetchNow()
         timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
             Task { @MainActor in
@@ -80,6 +94,8 @@ final class CloudClipboardSyncManager {
         timer = nil
         isFetching = false
         pendingUploadFingerprints.removeAll()
+        lastFetchedCreatedAt = nil
+        status = .disabled
     }
 
     func uploadLocalItemIfNeeded(_ item: ClipboardItem) {
@@ -92,10 +108,18 @@ final class CloudClipboardSyncManager {
             return
         }
 
+        status = .syncing
+
         Task { [weak self, database] in
             do {
                 try await Self.upsert(record, in: database)
+                await MainActor.run {
+                    self?.markSynced()
+                }
             } catch {
+                await MainActor.run {
+                    self?.status = .error(error.localizedDescription)
+                }
                 print("[CloudClipboardSync] Failed to upload clipboard item: \(error)")
             }
 
@@ -105,12 +129,28 @@ final class CloudClipboardSyncManager {
         }
     }
 
+    func syncNow() {
+        guard settings.iCloudSyncEnabled else {
+            status = .disabled
+            return
+        }
+
+        guard !isFetching else { return }
+
+        guard ensureCloudKitAvailability() else {
+            status = .unavailable
+            return
+        }
+
+        fetchNow()
+    }
+
     func fetchNow() {
         guard settings.iCloudSyncEnabled, !isFetching, let database else { return }
         isFetching = true
+        status = .syncing
 
-        let query = CKQuery(recordType: SkyCloudClipboardSchema.recordType, predicate: NSPredicate(value: true))
-        query.sortDescriptors = [NSSortDescriptor(key: SkyCloudClipboardSchema.Field.createdAt, ascending: false)]
+        let query = Self.makeFetchQuery(since: lastFetchedCreatedAt)
         let operation = CKQueryOperation(query: query)
         operation.desiredKeys = [
             SkyCloudClipboardSchema.Field.contentType,
@@ -132,8 +172,13 @@ final class CloudClipboardSyncManager {
             Task { @MainActor in
                 guard let self else { return }
                 self.isFetching = false
-                if case .success(let cursor?) = result {
+                switch result {
+                case .success(let cursor?):
                     self.fetch(cursor: cursor)
+                case .success(nil):
+                    self.markSynced()
+                case .failure(let error):
+                    self.status = .error(error.localizedDescription)
                 }
             }
         }
@@ -141,9 +186,28 @@ final class CloudClipboardSyncManager {
         database.add(operation)
     }
 
+    nonisolated static func makeFetchQuery(since cutoffDate: Date?) -> CKQuery {
+        let effectiveCutoff: Date
+        if let cutoffDate {
+            effectiveCutoff = cutoffDate.addingTimeInterval(-1)
+        } else {
+            effectiveCutoff = Date(timeIntervalSince1970: 0)
+        }
+
+        let predicate = NSPredicate(
+            format: "%K > %@",
+            SkyCloudClipboardSchema.Field.createdAt,
+            effectiveCutoff as NSDate
+        )
+        let query = CKQuery(recordType: SkyCloudClipboardSchema.recordType, predicate: predicate)
+        query.sortDescriptors = [NSSortDescriptor(key: SkyCloudClipboardSchema.Field.createdAt, ascending: false)]
+        return query
+    }
+
     private func fetch(cursor: CKQueryOperation.Cursor) {
         guard settings.iCloudSyncEnabled, !isFetching, let database else { return }
         isFetching = true
+        status = .syncing
 
         let operation = CKQueryOperation(cursor: cursor)
         operation.desiredKeys = [
@@ -166,8 +230,13 @@ final class CloudClipboardSyncManager {
             Task { @MainActor in
                 guard let self else { return }
                 self.isFetching = false
-                if case .success(let nextCursor?) = result {
+                switch result {
+                case .success(let nextCursor?):
                     self.fetch(cursor: nextCursor)
+                case .success(nil):
+                    self.markSynced()
+                case .failure(let error):
+                    self.status = .error(error.localizedDescription)
                 }
             }
         }
@@ -182,6 +251,7 @@ final class CloudClipboardSyncManager {
 
         guard Self.hasCloudKitEntitlement else {
             print("[CloudClipboardSync] CloudKit entitlement unavailable; iCloud sync disabled for this build.")
+            status = .unavailable
             return false
         }
 
@@ -216,6 +286,7 @@ final class CloudClipboardSyncManager {
 
         let fingerprint = record[SkyCloudClipboardSchema.Field.fingerprint] as? String ?? "txt:\(trimmed)"
         let createdAt = record[SkyCloudClipboardSchema.Field.createdAt] as? Date ?? record.creationDate ?? Date()
+        lastFetchedCreatedAt = max(lastFetchedCreatedAt ?? createdAt, createdAt)
         let item = ClipboardItem(
             id: UUID(),
             createdAt: createdAt,
@@ -254,5 +325,9 @@ final class CloudClipboardSyncManager {
             }
             database.add(operation)
         }
+    }
+
+    private func markSynced() {
+        status = .synced(Date())
     }
 }

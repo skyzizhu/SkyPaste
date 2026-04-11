@@ -14,7 +14,6 @@ struct ClipboardRowView: View {
     var isSelected: Bool = false
     var style: Style = .panel
     var iconSize: CGFloat = 40
-    var onPreview: (() -> Void)? = nil
     @State private var loadedPreview: NSImage?
     @State private var isHovered = false
 
@@ -53,6 +52,7 @@ struct ClipboardRowView: View {
                     .foregroundStyle(Color.yellow)
             }
         }
+        .padding(.trailing, showSelectionCopyHint ? copyHintReservedWidth : 0)
         .padding(.horizontal, horizontalPadding)
         .padding(.vertical, verticalPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -61,6 +61,14 @@ struct ClipboardRowView: View {
         .overlay {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .stroke(borderColor, lineWidth: 1)
+        }
+        .overlay(alignment: .topTrailing) {
+            if showSelectionCopyHint {
+                selectionCopyHint
+                    .padding(.top, 4)
+                    .padding(.trailing, 4)
+                    .transition(.opacity.combined(with: .scale(scale: 0.98)))
+            }
         }
         .onHover { hovering in
             isHovered = hovering
@@ -71,10 +79,25 @@ struct ClipboardRowView: View {
         .onDisappear {
             loadedPreview = nil
         }
-        .onChange(of: item.id) { _, _ in
+        .onChange(of: item.id) {
             loadedPreview = nil
             loadPreviewIfNeeded()
         }
+    }
+
+    private var showSelectionCopyHint: Bool {
+        isSelected
+    }
+
+    private var copyHintReservedWidth: CGFloat {
+        style == .popover ? 86 : 80
+    }
+
+    private var selectionCopyHint: some View {
+        Text(L10n.tr("menu.command_v_copy"))
+            .font(.system(size: 8.5, weight: .regular, design: .rounded))
+            .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.76) : Color.primary.opacity(0.55))
+            .lineLimit(1)
     }
 
     @ViewBuilder
@@ -114,15 +137,7 @@ struct ClipboardRowView: View {
                 .stroke(Color.primary.opacity(0.08), lineWidth: 1)
         }
 
-        if let onPreview {
-            Button(action: onPreview) {
-                thumbnail
-            }
-            .buttonStyle(.plain)
-            .help(L10n.tr("preview.open"))
-        } else {
-            thumbnail
-        }
+        thumbnail
     }
 
     private var cornerRadius: CGFloat {

@@ -36,6 +36,7 @@ final class ClipboardDatabase {
               file_urls_json TEXT,
               fingerprint TEXT NOT NULL UNIQUE,
               is_favorite INTEGER NOT NULL DEFAULT 0,
+              is_snippet INTEGER NOT NULL DEFAULT 0,
               source_kind INTEGER NOT NULL DEFAULT 0
             );
             """
@@ -54,14 +55,12 @@ final class ClipboardDatabase {
     func loadRecent(limit: Int) throws -> [ClipboardItem] {
         var statement: OpaquePointer?
         let sql =
-            "SELECT id, created_at, kind, text_value, blob_value, image_name, file_urls_json, fingerprint, is_favorite, source_kind FROM clipboard_items ORDER BY created_at DESC LIMIT ?;"
+            "SELECT id, created_at, kind, text_value, blob_value, image_name, file_urls_json, fingerprint, is_favorite, is_snippet, source_kind FROM clipboard_items ORDER BY created_at DESC;"
 
         guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
             throw ClipboardDatabaseError.prepareFailed(String(cString: sqlite3_errmsg(db)))
         }
         defer { sqlite3_finalize(statement) }
-
-        sqlite3_bind_int(statement, 1, Int32(limit))
 
         var result: [ClipboardItem] = []
 
@@ -78,7 +77,7 @@ final class ClipboardDatabase {
             let kind = sqlite3_column_int(statement, 2)
             let fingerprint = String(cString: fingerprintC)
             let isFavorite = sqlite3_column_int(statement, 8) != 0
-            let source = ClipboardSource(rawValue: Int(sqlite3_column_int(statement, 9))) ?? .local
+            let source = ClipboardSource(rawValue: Int(sqlite3_column_int(statement, 10))) ?? .local
 
             let content: ClipboardContent?
             switch kind {
@@ -112,17 +111,17 @@ final class ClipboardDatabase {
             }
 
             if let content {
-                result.append(ClipboardItem(id: id, createdAt: createdAt, content: content, fingerprint: fingerprint, source: source, isFavorite: isFavorite))
+                result.append(ClipboardItem(id: id, createdAt: createdAt, content: content, fingerprint: fingerprint, source: source, isFavorite: isFavorite, isSnippet: false))
             }
         }
 
-        return result
+        return Array(result.prefix(limit))
     }
 
     func loadItem(id: UUID) throws -> ClipboardItem? {
         var statement: OpaquePointer?
         let sql =
-            "SELECT id, created_at, kind, text_value, blob_value, image_name, file_urls_json, fingerprint, is_favorite, source_kind FROM clipboard_items WHERE id = ? LIMIT 1;"
+            "SELECT id, created_at, kind, text_value, blob_value, image_name, file_urls_json, fingerprint, is_favorite, is_snippet, source_kind FROM clipboard_items WHERE id = ? LIMIT 1;"
 
         guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
             throw ClipboardDatabaseError.prepareFailed(String(cString: sqlite3_errmsg(db)))
@@ -147,7 +146,7 @@ final class ClipboardDatabase {
         let kind = sqlite3_column_int(statement, 2)
         let fingerprint = String(cString: fingerprintC)
         let isFavorite = sqlite3_column_int(statement, 8) != 0
-        let source = ClipboardSource(rawValue: Int(sqlite3_column_int(statement, 9))) ?? .local
+        let source = ClipboardSource(rawValue: Int(sqlite3_column_int(statement, 10))) ?? .local
 
         let content: ClipboardContent?
         switch kind {
@@ -178,7 +177,7 @@ final class ClipboardDatabase {
         }
 
         guard let content else { return nil }
-        return ClipboardItem(id: resolvedID, createdAt: createdAt, content: content, fingerprint: fingerprint, source: source, isFavorite: isFavorite)
+        return ClipboardItem(id: resolvedID, createdAt: createdAt, content: content, fingerprint: fingerprint, source: source, isFavorite: isFavorite, isSnippet: false)
     }
 
     func save(_ item: ClipboardItem, maxItems: Int) throws {
@@ -289,7 +288,7 @@ final class ClipboardDatabase {
     private func insert(_ item: ClipboardItem) throws {
         var statement: OpaquePointer?
         let sql =
-            "INSERT INTO clipboard_items (id, created_at, kind, text_value, blob_value, image_name, file_urls_json, fingerprint, is_favorite, source_kind) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
+            "INSERT INTO clipboard_items (id, created_at, kind, text_value, blob_value, image_name, file_urls_json, fingerprint, is_favorite, is_snippet, source_kind) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
 
         guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
             throw ClipboardDatabaseError.prepareFailed(String(cString: sqlite3_errmsg(db)))
@@ -337,7 +336,8 @@ final class ClipboardDatabase {
 
         bindText(item.fingerprint, statement: statement, index: 8)
         sqlite3_bind_int(statement, 9, item.isFavorite ? 1 : 0)
-        sqlite3_bind_int(statement, 10, Int32(item.source.rawValue))
+        sqlite3_bind_int(statement, 10, 0)
+        sqlite3_bind_int(statement, 11, Int32(item.source.rawValue))
 
         guard sqlite3_step(statement) == SQLITE_DONE else {
             throw ClipboardDatabaseError.stepFailed(String(cString: sqlite3_errmsg(db)))
@@ -347,7 +347,14 @@ final class ClipboardDatabase {
     private func trim(maxItems: Int) throws {
         var statement: OpaquePointer?
         let sql =
-            "DELETE FROM clipboard_items WHERE id NOT IN (SELECT id FROM clipboard_items ORDER BY created_at DESC LIMIT ?);"
+            """
+            DELETE FROM clipboard_items
+            WHERE id NOT IN (
+              SELECT id FROM clipboard_items
+              ORDER BY created_at DESC
+              LIMIT ?
+            );
+            """
 
         guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
             throw ClipboardDatabaseError.prepareFailed(String(cString: sqlite3_errmsg(db)))
@@ -367,6 +374,10 @@ final class ClipboardDatabase {
         }
     }
 
+    func clearAllSnippets() throws {
+        try execute("UPDATE clipboard_items SET is_snippet = 0 WHERE is_snippet != 0;")
+    }
+
     private func migrateSchemaIfNeeded() throws {
         if !hasColumn(named: "image_name") {
             try execute("ALTER TABLE clipboard_items ADD COLUMN image_name TEXT;")
@@ -374,6 +385,10 @@ final class ClipboardDatabase {
 
         if !hasColumn(named: "is_favorite") {
             try execute("ALTER TABLE clipboard_items ADD COLUMN is_favorite INTEGER NOT NULL DEFAULT 0;")
+        }
+
+        if !hasColumn(named: "is_snippet") {
+            try execute("ALTER TABLE clipboard_items ADD COLUMN is_snippet INTEGER NOT NULL DEFAULT 0;")
         }
 
         if !hasColumn(named: "source_kind") {

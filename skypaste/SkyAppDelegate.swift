@@ -189,7 +189,7 @@ final class AppCoordinator {
             settingsWindow = window
         }
 
-        let controller = NSHostingController(rootView: SettingsView(settings: settings))
+        let controller = NSHostingController(rootView: SettingsView(settings: settings, cloudSync: cloudSync))
         settingsWindow?.title = L10n.tr("menu.preferences")
         settingsWindow?.contentViewController = controller
         applyAppearance()
@@ -459,18 +459,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
         let targetSize = NSSize(width: 18, height: 18)
         let canvasRect = NSRect(origin: .zero, size: targetSize)
-        let roundedImage = NSImage(size: targetSize)
+        let statusImage = NSImage(size: targetSize)
 
-        roundedImage.lockFocus()
+        statusImage.lockFocus()
         NSColor.clear.setFill()
         canvasRect.fill()
-
-        let clipPath = NSBezierPath(
-            roundedRect: canvasRect.insetBy(dx: 1, dy: 1),
-            xRadius: 4,
-            yRadius: 4
-        )
-        clipPath.addClip()
 
         appIcon.draw(
             in: canvasRect,
@@ -478,15 +471,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             operation: .sourceOver,
             fraction: 1
         )
-        roundedImage.unlockFocus()
+        statusImage.unlockFocus()
 
-        roundedImage.isTemplate = false
-        return roundedImage
+        statusImage.isTemplate = false
+        return statusImage
     }
 
     private func configureStatusPopover() {
         let view = MenuBarClipboardView(
             store: coordinator.store,
+            settings: settings,
+            onPick: { [weak self] item in
+                self?.closeStatusPopover()
+                self?.coordinator.paste(item)
+            },
             onCopy: { [weak self] item in
                 self?.coordinator.copyOnly(item)
             },

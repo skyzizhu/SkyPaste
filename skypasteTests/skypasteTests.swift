@@ -187,4 +187,54 @@ struct SkyPasteCoreModelTests {
         #expect(first != different)
         #expect(first.hasPrefix("clip-"))
     }
+
+    @Test func cloudSyncFetchQueryUsesCreatedAtInsteadOfRecordName() {
+        let cutoff = Date(timeIntervalSince1970: 1_700_000_000)
+        let query = CloudClipboardSyncManager.makeFetchQuery(since: cutoff)
+
+        let predicateFormat = query.predicate.predicateFormat
+        #expect(predicateFormat.contains(SkyCloudClipboardSchema.Field.createdAt))
+        #expect(!predicateFormat.localizedCaseInsensitiveContains("recordName"))
+        #expect(query.sortDescriptors?.first?.key == SkyCloudClipboardSchema.Field.createdAt)
+    }
+
+    @Test func searchQueryMatchesFullTextAndStructuredTokens() {
+        let item = ClipboardItem(
+            id: UUID(),
+            createdAt: Date(),
+            content: .text("""
+            This is a longer note about project launch readiness and rollout details.
+            """),
+            fingerprint: "txt:search",
+            source: .cloudKit
+        )
+
+        #expect(ClipboardSearchQuery(rawValue: "rollout").matches(item))
+        #expect(ClipboardSearchQuery(rawValue: "type:text source:icloud").matches(item))
+        #expect(!ClipboardSearchQuery(rawValue: "type:image").matches(item))
+        #expect(!ClipboardSearchQuery(rawValue: "source:phone").matches(item))
+    }
+
+    @Test func searchQueryMatchesFavoritesAndRelativeDates() {
+        let favoriteItem = ClipboardItem(
+            id: UUID(),
+            createdAt: Date(),
+            content: .text("Pinned note"),
+            fingerprint: "txt:pinned",
+            source: .local,
+            isFavorite: true
+        )
+        let oldItem = ClipboardItem(
+            id: UUID(),
+            createdAt: Calendar.current.date(byAdding: .day, value: -1, to: Date()) ?? Date(),
+            content: .text("Yesterday note"),
+            fingerprint: "txt:yesterday",
+            source: .local
+        )
+
+        #expect(ClipboardSearchQuery(rawValue: "fav today").matches(favoriteItem))
+        #expect(!ClipboardSearchQuery(rawValue: "fav").matches(oldItem))
+        #expect(ClipboardSearchQuery(rawValue: "yesterday").matches(oldItem))
+    }
+
 }

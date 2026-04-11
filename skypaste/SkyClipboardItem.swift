@@ -87,6 +87,17 @@ enum ClipboardSource: Int, Equatable {
             return L10n.tr("clipboard.source.icloud")
         }
     }
+
+    var searchKeywords: [String] {
+        switch self {
+        case .local:
+            return ["local", "mac", "this mac", "本机", "本地"]
+        case .universalClipboard:
+            return ["phone", "iphone", "universal", "universal clipboard", "手机", "iphone 剪贴板", "通用剪贴板"]
+        case .cloudKit:
+            return ["icloud", "cloud", "sync", "云", "云同步", "icloud sync"]
+        }
+    }
 }
 
 struct ClipboardItem: Identifiable, Equatable {
@@ -106,16 +117,17 @@ struct ClipboardItem: Identifiable, Equatable {
     let subtitle: String
     let source: ClipboardSource
     var isFavorite: Bool
+    var isSnippet: Bool
 
     init(content: ClipboardContent, fingerprint: String) {
-        self.init(id: UUID(), createdAt: Date(), content: content, fingerprint: fingerprint, source: .local, isFavorite: false)
+        self.init(id: UUID(), createdAt: Date(), content: content, fingerprint: fingerprint, source: .local, isFavorite: false, isSnippet: false)
     }
 
     init(content: ClipboardContent, fingerprint: String, source: ClipboardSource) {
-        self.init(id: UUID(), createdAt: Date(), content: content, fingerprint: fingerprint, source: source, isFavorite: false)
+        self.init(id: UUID(), createdAt: Date(), content: content, fingerprint: fingerprint, source: source, isFavorite: false, isSnippet: false)
     }
 
-    init(id: UUID, createdAt: Date, content: ClipboardContent, fingerprint: String, source: ClipboardSource = .local, isFavorite: Bool = false) {
+    init(id: UUID, createdAt: Date, content: ClipboardContent, fingerprint: String, source: ClipboardSource = .local, isFavorite: Bool = false, isSnippet: Bool = false) {
         let derivedClassification = Self.makeClassification(for: content)
         self.id = id
         self.createdAt = createdAt
@@ -126,6 +138,7 @@ struct ClipboardItem: Identifiable, Equatable {
         self.subtitle = Self.makeSubtitle(for: content)
         self.source = source
         self.isFavorite = isFavorite
+        self.isSnippet = isSnippet
     }
 
     var isPlainText: Bool { classification.isPlainText }
@@ -153,6 +166,43 @@ struct ClipboardItem: Identifiable, Equatable {
 
     var supportsTextPreview: Bool {
         previewText != nil
+    }
+
+    var searchableText: String {
+        var parts: [String] = [
+            title,
+            subtitle
+        ]
+
+        switch content {
+        case .text(let value):
+            parts.append(value)
+        case .image(_, let name, _, _):
+            if let name, !name.isEmpty {
+                parts.append(name)
+            }
+            parts.append(contentsOf: ["image", "img", "图片"])
+        case .fileURLs(let urls):
+            parts.append(contentsOf: urls.map(\.lastPathComponent))
+            parts.append(contentsOf: urls.map(\.path))
+            parts.append(contentsOf: ["file", "files", "文件"])
+        }
+
+        if isPlainText {
+            parts.append(contentsOf: ["text", "plain text", "文本"])
+        }
+        if isURL {
+            parts.append(contentsOf: ["url", "link", "链接"])
+        }
+        if isCode {
+            parts.append(contentsOf: ["code", "snippet", "代码"])
+        }
+        if isFavorite {
+            parts.append(contentsOf: ["favorite", "favorites", "fav", "收藏"])
+        }
+
+        parts.append(contentsOf: source.searchKeywords)
+        return parts.joined(separator: "\n").lowercased()
     }
 
     private static func makeTitle(for content: ClipboardContent) -> String {
@@ -603,7 +653,8 @@ enum ClipboardImageOptimizer {
                 ),
                 fingerprint: item.fingerprint,
                 source: item.source,
-                isFavorite: item.isFavorite
+                isFavorite: item.isFavorite,
+                isSnippet: item.isSnippet
             )
         }
 
@@ -618,7 +669,8 @@ enum ClipboardImageOptimizer {
             ),
             fingerprint: item.fingerprint,
             source: item.source,
-            isFavorite: item.isFavorite
+            isFavorite: item.isFavorite,
+            isSnippet: item.isSnippet
         )
     }
 

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PanelView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @FocusState private var isSearchFocused: Bool
 
     private struct DaySection: Identifiable {
         let day: Date
@@ -11,6 +12,7 @@ struct PanelView: View {
     }
 
     private struct Presentation {
+        let favoriteItems: [ClipboardItem]
         let orderedItems: [ClipboardItem]
         let daySections: [DaySection]
     }
@@ -26,13 +28,29 @@ struct PanelView: View {
     @State private var selectedID: ClipboardItem.ID?
     @State private var pendingDeleteDay: Date?
     @State private var selectedFilter: ClipboardFilter = .all
+    @State private var isSearchVisible = false
     @State private var showToast = false
     @State private var toastTask: DispatchWorkItem?
+    @State private var pendingPrimaryAction: DispatchWorkItem?
 
     private var presentation: Presentation {
         let filteredItems = store.filteredItems.filter { selectedFilter.matches($0) }
-        let orderedItems = filteredItems
-        let daySource = filteredItems
+        let favoriteItems: [ClipboardItem]
+        let daySource: [ClipboardItem]
+
+        switch selectedFilter {
+        case .all:
+            favoriteItems = filteredItems.filter(\.isFavorite)
+            daySource = filteredItems.filter { !$0.isFavorite }
+        case .favorites:
+            favoriteItems = filteredItems
+            daySource = []
+        default:
+            favoriteItems = []
+            daySource = filteredItems
+        }
+
+        let orderedItems = favoriteItems + daySource
 
         let calendar = Calendar.current
         let grouped = Dictionary(grouping: daySource) { item in
@@ -47,6 +65,7 @@ struct PanelView: View {
         }
 
         return Presentation(
+            favoriteItems: favoriteItems,
             orderedItems: orderedItems,
             daySections: daySections
         )
@@ -100,13 +119,46 @@ struct PanelView: View {
         colorScheme == .dark ? Color(nsColor: .controlBackgroundColor) : Color.white.opacity(0.56)
     }
 
+    private var isSearchActive: Bool {
+        isSearchVisible || !store.searchText.isEmpty
+    }
+
+    private var searchButtonFill: Color {
+        if isSearchActive {
+            return colorScheme == .dark ? Color.white.opacity(0.96) : Color.accentColor.opacity(0.16)
+        }
+        return colorScheme == .dark ? Color(nsColor: .controlBackgroundColor) : Color.white.opacity(0.84)
+    }
+
+    private var searchButtonForeground: Color {
+        if isSearchActive {
+            return colorScheme == .dark ? .black : Color.accentColor
+        }
+        return Color.primary.opacity(colorScheme == .dark ? 0.84 : 0.76)
+    }
+
+    private var searchButtonStroke: Color {
+        if isSearchActive {
+            return colorScheme == .dark ? Color.white.opacity(0.18) : Color.accentColor.opacity(0.24)
+        }
+        return colorScheme == .dark ? Color.white.opacity(0.08) : Color.black.opacity(0.06)
+    }
+
+    private var searchButtonShadow: Color {
+        guard isSearchActive else { return .clear }
+        return colorScheme == .dark ? Color.black.opacity(0.18) : Color.accentColor.opacity(0.12)
+    }
+
     var body: some View {
         VStack(spacing: 14) {
             header
             if let startupNotice = store.startupNotice {
                 startupNoticeBanner(startupNotice)
             }
-            searchBar
+            if isSearchVisible {
+                searchBar
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
             filterBar
             contentArea
             footer
@@ -154,6 +206,7 @@ struct PanelView: View {
         }
         .onAppear {
             selectedID = presentation.orderedItems.first?.id
+            isSearchVisible = !store.searchText.isEmpty
         }
         .onChange(of: presentation.orderedItems.map(\.id)) { _, ids in
             guard let selectedID else {
@@ -166,6 +219,12 @@ struct PanelView: View {
             }
         }
         .onChange(of: selectedFilter) { _, _ in
+            selectedID = presentation.orderedItems.first?.id
+        }
+        .onChange(of: store.searchText) { _, _ in
+            if !store.searchText.isEmpty {
+                isSearchVisible = true
+            }
             selectedID = presentation.orderedItems.first?.id
         }
         .onMoveCommand(perform: moveSelection)
@@ -210,11 +269,31 @@ struct PanelView: View {
             Spacer()
 
             Button {
+                toggleSearch()
+            } label: {
+                Image(systemName: isSearchActive ? "magnifyingglass.circle.fill" : "magnifyingglass")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(searchButtonForeground)
+                    .frame(width: 24, height: 24)
+                    .background(
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .fill(searchButtonFill)
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .stroke(searchButtonStroke, lineWidth: colorScheme == .dark ? 1 : 0.9)
+                    }
+                    .shadow(color: searchButtonShadow, radius: 7, y: 2)
+            }
+            .buttonStyle(.plain)
+            .help(L10n.tr("menu.search"))
+
+            Button {
                 onClose()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .semibold))
-                    .frame(width: 28, height: 28)
+                    .font(.system(size: 10, weight: .medium))
+                    .frame(width: 24, height: 24)
                     .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
             }
             .buttonStyle(.plain)
@@ -229,6 +308,16 @@ struct PanelView: View {
             TextField(L10n.tr("panel.search_placeholder"), text: $store.searchText)
                 .textFieldStyle(.plain)
                 .font(.system(size: 15, weight: .medium))
+                .focused($isSearchFocused)
+
+            Button {
+                closeSearch()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 12)
@@ -239,6 +328,29 @@ struct PanelView: View {
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        }
+    }
+
+    private func toggleSearch() {
+        if isSearchVisible {
+            closeSearch()
+            return
+        }
+
+        withAnimation(.snappy(duration: 0.18)) {
+            isSearchVisible = true
+        }
+
+        DispatchQueue.main.async {
+            isSearchFocused = true
+        }
+    }
+
+    private func closeSearch() {
+        store.searchText = ""
+        isSearchFocused = false
+        withAnimation(.snappy(duration: 0.18)) {
+            isSearchVisible = false
         }
     }
 
@@ -285,10 +397,10 @@ struct PanelView: View {
                         }
                     } label: {
                         Text(filter.title)
-                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
                             .foregroundStyle(filterChipTextColor(for: filter))
-                            .padding(.horizontal, 13)
-                            .padding(.vertical, 8)
+                            .padding(.horizontal, 11)
+                            .padding(.vertical, 6)
                             .background(
                                 Capsule(style: .continuous)
                                     .fill(selectedFilter == filter ? selectedFilterChipFill : filterChipFill)
@@ -312,15 +424,31 @@ struct PanelView: View {
     private var contentArea: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
-                ForEach(presentation.daySections) { section in
-                    sectionCard(
-                        title: L10n.sectionTitle(for: section.day),
-                        items: section.items,
-                        allowDeleteDay: true,
-                        onDeleteDay: {
-                            pendingDeleteDay = section.day
-                        }
+                if presentation.orderedItems.isEmpty {
+                    emptyStateCard(
+                        title: isSearchActive ? L10n.tr("panel.search_empty_title") : L10n.tr("panel.empty_title"),
+                        message: isSearchActive ? L10n.tr("panel.search_empty_message") : L10n.tr("panel.empty_message"),
+                        showsClearSearch: isSearchActive
                     )
+                } else {
+                    if !presentation.favoriteItems.isEmpty {
+                        sectionCard(
+                            title: L10n.tr("section.favorites"),
+                            items: presentation.favoriteItems,
+                            allowDeleteDay: false
+                        )
+                    }
+
+                    ForEach(presentation.daySections) { section in
+                        sectionCard(
+                            title: L10n.sectionTitle(for: section.day),
+                            items: section.items,
+                            allowDeleteDay: true,
+                            onDeleteDay: {
+                                pendingDeleteDay = section.day
+                            }
+                        )
+                    }
                 }
             }
             .padding(12)
@@ -332,6 +460,40 @@ struct PanelView: View {
         .overlay {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+        }
+    }
+
+    private func emptyStateCard(title: String, message: String, showsClearSearch: Bool) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: showsClearSearch ? "magnifyingglass.circle" : "tray")
+                .font(.system(size: 30, weight: .medium))
+                .foregroundStyle(Color.secondary.opacity(colorScheme == .dark ? 0.9 : 0.7))
+
+            Text(title)
+                .font(.system(size: 15, weight: .semibold, design: .rounded))
+
+            Text(message)
+                .font(.system(size: 12.5, weight: .medium, design: .rounded))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 320)
+
+            if showsClearSearch {
+                actionButton(title: L10n.tr("panel.clear_search")) {
+                    closeSearch()
+                }
+            }
+        }
+        .frame(maxWidth: .infinity)
+        .frame(minHeight: 260)
+        .padding(.horizontal, 20)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(sectionCardFill)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.primary.opacity(0.04), lineWidth: 1)
         }
     }
 
@@ -453,22 +615,16 @@ struct PanelView: View {
             timeText: copyTimeText(item.createdAt),
             isSelected: selectedID == item.id,
             style: .popover,
-            iconSize: 44,
-            onPreview: item.isImage ? {
-                selectedID = item.id
-                onPreview(item)
-            } : nil
+            iconSize: 44
         )
         .contentShape(Rectangle())
         .onTapGesture {
-            selectedID = item.id
+            handleRowTap(item)
         }
         .simultaneousGesture(
             TapGesture(count: 2)
                 .onEnded {
-                    guard item.supportsTextPreview else { return }
-                    selectedID = item.id
-                    onTextPreview(item)
+                    handleRowDoubleTap(item)
                 }
         )
         .contextMenu {
@@ -503,6 +659,26 @@ struct PanelView: View {
         showCopyToast()
     }
 
+    private func handleRowTap(_ item: ClipboardItem) {
+        pendingPrimaryAction?.cancel()
+        selectedID = item.id
+
+        guard settings.autoPasteEnabled else { return }
+
+        let task = DispatchWorkItem {
+            copySelected(item)
+        }
+        pendingPrimaryAction = task
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18, execute: task)
+    }
+
+    private func handleRowDoubleTap(_ item: ClipboardItem) {
+        pendingPrimaryAction?.cancel()
+        selectedID = item.id
+        guard item.supportsTextPreview else { return }
+        onTextPreview(item)
+    }
+
     private func showCopyToast() {
         toastTask?.cancel()
         withAnimation(.easeOut(duration: 0.15)) {
@@ -521,12 +697,12 @@ struct PanelView: View {
     private func actionButton(title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 12, weight: .semibold, design: .rounded))
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
                 .foregroundStyle(Color.primary.opacity(0.84))
                 .lineLimit(1)
                 .minimumScaleFactor(0.75)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 9)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
                 .background(
                     Capsule(style: .continuous)
                         .fill(actionButtonFill)

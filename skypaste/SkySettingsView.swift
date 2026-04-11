@@ -3,10 +3,25 @@ import SwiftUI
 struct SettingsView: View {
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject var settings: AppSettings
+    @ObservedObject var cloudSync: CloudClipboardSyncManager
+
+    init(settings: AppSettings, cloudSync: CloudClipboardSyncManager? = nil) {
+        _settings = ObservedObject(wrappedValue: settings)
+
+        let resolvedCloudSync: CloudClipboardSyncManager
+        if let cloudSync {
+            resolvedCloudSync = cloudSync
+        } else {
+            let previewStore = ClipboardStore(settings: settings)
+            resolvedCloudSync = CloudClipboardSyncManager(store: previewStore, settings: settings)
+        }
+
+        _cloudSync = ObservedObject(wrappedValue: resolvedCloudSync)
+    }
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 14) {
                 hero
                 appearanceSection
                 generalSection
@@ -16,8 +31,8 @@ struct SettingsView: View {
                 historySection
                 privacySection
             }
-            .padding(20)
-            .frame(maxWidth: 760, alignment: .leading)
+            .padding(16)
+            .frame(maxWidth: 740, alignment: .leading)
         }
         .background(
             ZStack {
@@ -33,7 +48,7 @@ struct SettingsView: View {
                 )
             }
         )
-        .frame(minWidth: 720, idealWidth: 760, minHeight: 680, idealHeight: 740)
+        .frame(minWidth: 700, idealWidth: 740, minHeight: 620, idealHeight: 700)
     }
 
     private var appearanceSection: some View {
@@ -54,34 +69,34 @@ struct SettingsView: View {
     }
 
     private var hero: some View {
-        HStack(alignment: .center, spacing: 16) {
+        HStack(alignment: .center, spacing: 12) {
             Image(nsImage: NSApp.applicationIconImage)
                 .resizable()
                 .interpolation(.high)
-                .frame(width: 68, height: 68)
-                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-                .shadow(color: .black.opacity(0.08), radius: 12, y: 6)
+                .frame(width: 60, height: 60)
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .shadow(color: .black.opacity(0.08), radius: 10, y: 5)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(L10n.tr("menu.preferences"))
-                    .font(.system(size: 28, weight: .semibold, design: .rounded))
+                    .font(.system(size: 24, weight: .semibold, design: .rounded))
                 Text(L10n.tr("app.title"))
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
                     .foregroundStyle(.secondary)
                 Text(versionText)
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
                     .foregroundStyle(.secondary)
             }
 
             Spacer()
         }
-        .padding(20)
+        .padding(16)
         .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(.regularMaterial)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(Color.primary.opacity(0.06), lineWidth: 1)
         }
     }
@@ -116,18 +131,18 @@ struct SettingsView: View {
                 .frame(width: 140, alignment: .trailing)
             }
 
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 10) {
                 Text(L10n.tr("settings.hotkey"))
                     .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .foregroundStyle(.secondary)
 
                 LazyVGrid(
                     columns: [
-                        GridItem(.flexible(minimum: 140), spacing: 10),
-                        GridItem(.flexible(minimum: 140), spacing: 10)
+                        GridItem(.flexible(minimum: 136), spacing: 8),
+                        GridItem(.flexible(minimum: 136), spacing: 8)
                     ],
                     alignment: .leading,
-                    spacing: 10
+                    spacing: 8
                 ) {
                     modifierToggle(L10n.tr("settings.command"), isOn: $settings.hotKeyCommand)
                     modifierToggle(L10n.tr("settings.shift"), isOn: $settings.hotKeyShift)
@@ -149,7 +164,7 @@ struct SettingsView: View {
             }
 
             Divider()
-                .padding(.vertical, 2)
+                .padding(.vertical, 1)
 
             SettingsRow(title: L10n.tr("settings.auto_paste")) {
                 Toggle("", isOn: $settings.autoPasteEnabled)
@@ -172,15 +187,13 @@ struct SettingsView: View {
             hint(L10n.tr("settings.universal_clipboard_hint"))
 
             Divider()
-                .padding(.vertical, 2)
+                .padding(.vertical, 1)
 
             SettingsRow(title: L10n.tr("settings.icloud_sync")) {
                 Toggle("", isOn: $settings.iCloudSyncEnabled)
                     .labelsHidden()
                     .toggleStyle(.switch)
             }
-
-            hint(L10n.tr("settings.icloud_sync_hint"))
         }
     }
 
@@ -191,7 +204,6 @@ struct SettingsView: View {
                     .labelsHidden()
                     .frame(width: 120, alignment: .trailing)
             }
-
         }
     }
 
@@ -201,7 +213,7 @@ struct SettingsView: View {
 
             TextEditor(text: $settings.ignoredAppsInput)
                 .font(.system(size: 12, design: .monospaced))
-                .frame(minHeight: 150)
+                .frame(minHeight: 128)
                 .padding(10)
                 .background(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -222,6 +234,21 @@ struct SettingsView: View {
         return "Version \(version) (\(build))"
     }
 
+    private var syncStatusText: String {
+        switch cloudSync.status {
+        case .disabled:
+            return L10n.tr("settings.icloud_sync_status_disabled")
+        case .unavailable:
+            return L10n.tr("settings.icloud_sync_status_unavailable")
+        case .syncing:
+            return L10n.tr("settings.icloud_sync_status_syncing")
+        case .synced:
+            return L10n.tr("settings.icloud_sync_status_synced")
+        case .error(let message):
+            return L10n.format("settings.icloud_sync_status_error", message)
+        }
+    }
+
     private var historyLimitBinding: Binding<Int> {
         Binding(
             get: { settings.historyLimit },
@@ -240,42 +267,42 @@ struct SettingsView: View {
     private func modifierToggle(_ title: String, isOn: Binding<Bool>) -> some View {
         Toggle(isOn: isOn) {
             Text(title)
-                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .font(.system(size: 12, weight: .medium, design: .rounded))
         }
         .toggleStyle(.switch)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(settingsControlFill)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .stroke(Color.primary.opacity(0.06), lineWidth: 1)
         }
     }
 
     private func infoBadge(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 12, weight: .medium, design: .rounded))
+            .font(.system(size: 11, weight: .medium, design: .rounded))
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
             .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .fill(infoBadgeFill)
             )
             .overlay {
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(Color.primary.opacity(0.05), lineWidth: 1)
             }
     }
 
     private func hint(_ text: String) -> some View {
         Text(text)
-            .font(.system(size: 12, weight: .medium))
+            .font(.system(size: 11, weight: .regular))
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -292,20 +319,20 @@ private struct SettingsSection<Content: View>: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 12) {
             Text(title)
-                .font(.system(size: 16, weight: .semibold, design: .rounded))
+                .font(.system(size: 15, weight: .semibold, design: .rounded))
 
             content
         }
-        .padding(18)
+        .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .fill(sectionBackgroundColor)
         )
         .overlay {
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(Color.primary.opacity(0.06), lineWidth: 1)
         }
     }
@@ -316,9 +343,9 @@ private struct SettingsRow<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-        HStack(alignment: .center, spacing: 16) {
+        HStack(alignment: .center, spacing: 12) {
             Text(title)
-                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .font(.system(size: 12, weight: .medium, design: .rounded))
                 .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
