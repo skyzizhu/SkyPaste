@@ -14,6 +14,7 @@ struct ClipboardRowView: View {
     var isSelected: Bool = false
     var style: Style = .panel
     var iconSize: CGFloat = 40
+    var onPreview: (() -> Void)? = nil
     @State private var loadedPreview: NSImage?
     @State private var isHovered = false
 
@@ -137,7 +138,15 @@ struct ClipboardRowView: View {
                 .stroke(Color.primary.opacity(0.08), lineWidth: 1)
         }
 
-        thumbnail
+        if let onPreview {
+            Button(action: onPreview) {
+                thumbnail
+            }
+            .buttonStyle(.plain)
+            .help(L10n.tr("preview.open"))
+        } else {
+            thumbnail
+        }
     }
 
     private var cornerRadius: CGFloat {

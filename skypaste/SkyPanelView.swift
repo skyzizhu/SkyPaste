@@ -615,7 +615,12 @@ struct PanelView: View {
             timeText: copyTimeText(item.createdAt),
             isSelected: selectedID == item.id,
             style: .popover,
-            iconSize: 44
+            iconSize: 44,
+            onPreview: item.isImage ? {
+                pendingPrimaryAction?.cancel()
+                selectedID = item.id
+                onPreview(item)
+            } : nil
         )
         .contentShape(Rectangle())
         .onTapGesture {
@@ -675,6 +680,10 @@ struct PanelView: View {
     private func handleRowDoubleTap(_ item: ClipboardItem) {
         pendingPrimaryAction?.cancel()
         selectedID = item.id
+        if item.isImage {
+            onPreview(item)
+            return
+        }
         guard item.supportsTextPreview else { return }
         onTextPreview(item)
     }
