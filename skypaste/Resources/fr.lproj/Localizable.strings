@@ -20,6 +20,7 @@
 "settings.option" = "Option";
 "settings.control" = "Control";
 "settings.current" = "Actuel : %@";
+"settings.version_format" = "Version %@ (%@)";
 "settings.history" = "Historique";
 "settings.max_records" = "Nombre max : %d";
 "settings.history_hint" = "La nouvelle limite s'applique immédiatement et réduit l'historique local si nécessaire.";

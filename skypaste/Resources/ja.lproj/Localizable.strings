@@ -20,6 +20,7 @@
 "settings.option" = "Option";
 "settings.control" = "Control";
 "settings.current" = "現在: %@";
+"settings.version_format" = "バージョン %@（%@）";
 "settings.history" = "履歴";
 "settings.max_records" = "最大件数: %d";
 "settings.history_hint" = "新しい上限はすぐに適用され、必要に応じてローカル履歴を削減します。";

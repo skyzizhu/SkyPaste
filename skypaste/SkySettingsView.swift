@@ -231,7 +231,7 @@ struct SettingsView: View {
     private var versionText: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
-        return "Version \(version) (\(build))"
+        return L10n.format("settings.version_format", version, build)
     }
 
     private var syncStatusText: String {

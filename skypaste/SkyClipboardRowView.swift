@@ -14,7 +14,10 @@ struct ClipboardRowView: View {
     var isSelected: Bool = false
     var style: Style = .panel
     var iconSize: CGFloat = 40
+    var onPrimaryMouseDown: (() -> Void)? = nil
+    var onSecondaryMouseDown: (() -> Void)? = nil
     var onPreview: (() -> Void)? = nil
+    var onPreviewDoubleTap: (() -> Void)? = nil
     @State private var loadedPreview: NSImage?
     @State private var isHovered = false
 
@@ -58,6 +61,12 @@ struct ClipboardRowView: View {
         .padding(.vertical, verticalPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(selectionBackground)
+        .background(
+            RowMouseDownObserver(
+                onPrimaryMouseDown: onPrimaryMouseDown,
+                onSecondaryMouseDown: onSecondaryMouseDown
+            )
+        )
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
@@ -144,6 +153,12 @@ struct ClipboardRowView: View {
             }
             .buttonStyle(.plain)
             .help(L10n.tr("preview.open"))
+            .simultaneousGesture(
+                TapGesture(count: 2)
+                    .onEnded {
+                        onPreviewDoubleTap?()
+                    }
+            )
         } else {
             thumbnail
         }
@@ -175,5 +190,79 @@ struct ClipboardRowView: View {
     private func loadPreviewIfNeeded() {
         guard loadedPreview == nil, let data = item.previewImageData else { return }
         loadedPreview = NSImage(data: data)
+    }
+}
+
+private struct RowMouseDownObserver: NSViewRepresentable {
+    let onPrimaryMouseDown: (() -> Void)?
+    let onSecondaryMouseDown: (() -> Void)?
+
+    func makeNSView(context: Context) -> RowMouseDownObserverView {
+        let view = RowMouseDownObserverView()
+        view.onPrimaryMouseDown = onPrimaryMouseDown
+        view.onSecondaryMouseDown = onSecondaryMouseDown
+        return view
+    }
+
+    func updateNSView(_ nsView: RowMouseDownObserverView, context: Context) {
+        nsView.onPrimaryMouseDown = onPrimaryMouseDown
+        nsView.onSecondaryMouseDown = onSecondaryMouseDown
+    }
+}
+
+private final class RowMouseDownObserverView: NSView {
+    var onPrimaryMouseDown: (() -> Void)?
+    var onSecondaryMouseDown: (() -> Void)?
+
+    private var eventMonitor: Any?
+
+    override var isFlipped: Bool {
+        true
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        if window == nil {
+            removeEventMonitor()
+        } else {
+            installEventMonitorIfNeeded()
+        }
+    }
+
+    deinit {
+        removeEventMonitor()
+    }
+
+    private func installEventMonitorIfNeeded() {
+        guard eventMonitor == nil else { return }
+
+        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+            guard let self, let window = self.window, event.window === window else {
+                return event
+            }
+
+            let point = self.convert(event.locationInWindow, from: nil)
+            guard self.bounds.contains(point) else {
+                return event
+            }
+
+            switch event.type {
+            case .leftMouseDown:
+                self.onPrimaryMouseDown?()
+            case .rightMouseDown:
+                self.onSecondaryMouseDown?()
+            default:
+                break
+            }
+
+            return event
+        }
+    }
+
+    private func removeEventMonitor() {
+        if let eventMonitor {
+            NSEvent.removeMonitor(eventMonitor)
+            self.eventMonitor = nil
+        }
     }
 }

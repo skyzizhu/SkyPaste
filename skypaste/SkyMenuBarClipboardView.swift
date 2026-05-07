@@ -43,7 +43,7 @@ struct MenuBarClipboardView: View {
 
         switch selectedFilter {
         case .all:
-            favoriteItems = filteredItems.filter(\.isFavorite)
+            favoriteItems = []
             daySource = filteredItems.filter { !$0.isFavorite }
         case .favorites:
             favoriteItems = filteredItems
@@ -619,10 +619,21 @@ struct MenuBarClipboardView: View {
             isSelected: selectedID == item.id,
             style: .popover,
             iconSize: 44,
+            onPrimaryMouseDown: {
+                pendingPrimaryAction?.cancel()
+                selectedID = item.id
+            },
+            onSecondaryMouseDown: {
+                pendingPrimaryAction?.cancel()
+                selectedID = item.id
+            },
             onPreview: item.isImage ? {
                 pendingPrimaryAction?.cancel()
                 selectedID = item.id
                 onPreview(item)
+            } : nil,
+            onPreviewDoubleTap: item.isImage ? {
+                handleRowDoubleTap(item)
             } : nil
         )
         .contentShape(Rectangle())

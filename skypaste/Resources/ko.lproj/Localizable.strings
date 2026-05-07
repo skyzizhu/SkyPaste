@@ -20,6 +20,7 @@
 "settings.option" = "Option";
 "settings.control" = "Control";
 "settings.current" = "현재: %@";
+"settings.version_format" = "버전 %@ (%@)";
 "settings.history" = "기록";
 "settings.max_records" = "최대 항목 수: %d";
 "settings.history_hint" = "새 제한은 즉시 적용되며 필요 시 로컬 기록을 정리합니다.";

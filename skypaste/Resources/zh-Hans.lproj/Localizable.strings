@@ -20,6 +20,7 @@
 "settings.option" = "Option";
 "settings.control" = "Control";
 "settings.current" = "当前：%@";
+"settings.version_format" = "版本 %@（%@）";
 "settings.history" = "历史记录";
 "settings.max_records" = "最大记录数：%d";
 "settings.history_hint" = "新限制会立即生效，并在需要时裁剪本地历史。";

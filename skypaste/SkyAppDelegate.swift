@@ -88,6 +88,11 @@ final class AppCoordinator {
         showPanel()
     }
 
+    func presentPanelForTesting() {
+        configureWindow()
+        showPanel()
+    }
+
     private func showPanel() {
         guard let panelWindow else { return }
         NSApp.activate(ignoringOtherApps: true)
@@ -133,7 +138,9 @@ final class AppCoordinator {
     func showImagePreview(for item: ClipboardItem) {
         guard item.isImage else { return }
         let previewItem = store.itemForPreview(item)
-        let rootView = ImagePreviewView(item: previewItem)
+        let rootView = ImagePreviewView(item: previewItem) { [weak self] in
+            self?.copyOnly(previewItem)
+        }
 
         if imagePreviewWindow == nil {
             let window = NSWindow(
@@ -145,7 +152,7 @@ final class AppCoordinator {
             window.minSize = NSSize(width: 860, height: 640)
             window.isReleasedWhenClosed = false
             window.tabbingMode = .disallowed
-            window.hidesOnDeactivate = true
+            window.hidesOnDeactivate = false
             window.titleVisibility = .hidden
             window.titlebarAppearsTransparent = true
             window.titlebarSeparatorStyle = .none
@@ -204,7 +211,9 @@ final class AppCoordinator {
 
     func showTextPreview(for item: ClipboardItem) {
         guard let text = item.previewText else { return }
-        let rootView = TextPreviewView(item: item, text: text)
+        let rootView = TextPreviewView(item: item, text: text) { [weak self] in
+            self?.copyOnly(item)
+        }
 
         if textPreviewWindow == nil {
             let window = NSWindow(
@@ -216,7 +225,7 @@ final class AppCoordinator {
             window.minSize = NSSize(width: 820, height: 600)
             window.isReleasedWhenClosed = false
             window.tabbingMode = .disallowed
-            window.hidesOnDeactivate = true
+            window.hidesOnDeactivate = false
             window.titleVisibility = .hidden
             window.titlebarAppearsTransparent = true
             window.titlebarSeparatorStyle = .none
@@ -314,11 +323,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private var iCloudSyncObserver: NSObjectProtocol?
     private var appearanceObserver: NSObjectProtocol?
 
-    func applicationDidFinishLaunching(_ notification: Notification) {
-        NSApp.setActivationPolicy(.accessory)
-        applyAppearance()
+    private var isRunningUITests: Bool {
+        ProcessInfo.processInfo.arguments.contains("--uitesting")
+    }
 
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        applyAppearance()
         coordinator.configureWindow()
+
+        if isRunningUITests {
+            NSApp.setActivationPolicy(.regular)
+            coordinator.presentPanelForTesting()
+            return
+        }
+
+        NSApp.setActivationPolicy(.accessory)
         coordinator.store.captureCurrentPasteboardIfNeeded()
 
         monitor = ClipboardMonitor { [weak coordinator] acceptsLocalContent in
@@ -457,7 +476,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private func statusBarImage() -> NSImage? {
         guard let appIcon = NSApp.applicationIconImage.copy() as? NSImage else { return nil }
 
-        let targetSize = NSSize(width: 18, height: 18)
+        let iconSide = max(18, NSStatusBar.system.thickness - 3)
+        let targetSize = NSSize(width: iconSide, height: iconSide)
         let canvasRect = NSRect(origin: .zero, size: targetSize)
         let statusImage = NSImage(size: targetSize)
 
@@ -472,6 +492,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
             fraction: 1
         )
         statusImage.unlockFocus()
+        statusImage.size = targetSize
 
         statusImage.isTemplate = false
         return statusImage
@@ -519,7 +540,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         popover.behavior = .applicationDefined
         popover.delegate = self
         popover.contentSize = NSSize(width: 360, height: 460)
-        let controller = NSHostingController(rootView: view)
+        let controller = FirstMouseHostingController(rootView: view)
         controller.view.appearance = settings.appearanceMode.nsAppearance
         popover.contentViewController = controller
         statusPopover = popover
@@ -539,7 +560,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         if popover.isShown {
             closeStatusPopover()
         } else {
+            NSApp.activate(ignoringOtherApps: true)
             popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            popover.contentViewController?.view.window?.makeKey()
             installPopoverAutoCloseMonitors()
         }
     }
@@ -613,6 +636,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 private struct ImagePreviewView: View {
     @Environment(\.colorScheme) private var colorScheme
     let item: ClipboardItem
+    let onCopy: () -> Void
     @State private var zoomScale: CGFloat = 1
     @GestureState private var gestureScale: CGFloat = 1
 
@@ -638,6 +662,10 @@ private struct ImagePreviewView: View {
                 Spacer()
 
                 HStack(spacing: 8) {
+                    Button(action: onCopy) {
+                        Label(L10n.tr("menu.copy"), systemImage: "doc.on.doc")
+                    }
+
                     Button {
                         zoomScale = clampedScale(zoomScale - 0.2)
                     } label: {
@@ -765,9 +793,22 @@ private struct ImagePreviewView: View {
     }
 }
 
+private final class FirstMouseHostingView<Content: View>: NSHostingView<Content> {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool {
+        true
+    }
+}
+
+private final class FirstMouseHostingController<Content: View>: NSHostingController<Content> {
+    override func loadView() {
+        view = FirstMouseHostingView(rootView: rootView)
+    }
+}
+
 private struct TextPreviewView: View {
     let item: ClipboardItem
     let text: String
+    let onCopy: () -> Void
 
     var body: some View {
         VStack(spacing: 0) {
@@ -781,6 +822,12 @@ private struct TextPreviewView: View {
                 }
 
                 Spacer()
+
+                Button(action: onCopy) {
+                    Label(L10n.tr("menu.copy"), systemImage: "doc.on.doc")
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.regular)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)

@@ -33,6 +33,12 @@ enum CloudClipboardSyncPolicy {
         return !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    static func backfillUploadCandidates(from items: [ClipboardItem]) -> [ClipboardItem] {
+        items
+            .filter(shouldUpload)
+            .sorted { $0.createdAt < $1.createdAt }
+    }
+
     static func shouldApplyIncoming(_ incoming: ClipboardItem, over existing: ClipboardItem?) -> Bool {
         guard let existing else { return true }
         return incoming.createdAt > existing.createdAt
@@ -58,6 +64,9 @@ final class CloudClipboardSyncManager: ObservableObject {
     private var isFetching = false
     private var pendingUploadFingerprints = Set<String>()
     private var lastFetchedCreatedAt: Date?
+    private var activeFetchOperation: CKQueryOperation?
+    private var activeUploadOperations: [String: CKModifyRecordsOperation] = [:]
+    private var syncSessionID = UUID()
 
     init(store: ClipboardStore, settings: AppSettings) {
         self.store = store
@@ -77,6 +86,7 @@ final class CloudClipboardSyncManager: ObservableObject {
         }
 
         status = .syncing
+        backfillExistingLocalItems()
         fetchNow()
         timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
             Task { @MainActor in
@@ -90,8 +100,13 @@ final class CloudClipboardSyncManager: ObservableObject {
     }
 
     func stop() {
+        syncSessionID = UUID()
         timer?.invalidate()
         timer = nil
+        activeFetchOperation?.cancel()
+        activeFetchOperation = nil
+        activeUploadOperations.values.forEach { $0.cancel() }
+        activeUploadOperations.removeAll()
         isFetching = false
         pendingUploadFingerprints.removeAll()
         lastFetchedCreatedAt = nil
@@ -109,22 +124,34 @@ final class CloudClipboardSyncManager: ObservableObject {
         }
 
         status = .syncing
+        let sessionID = syncSessionID
+        let operation = CKModifyRecordsOperation(recordsToSave: [record], recordIDsToDelete: nil)
+        operation.savePolicy = .changedKeys
+        operation.isAtomic = true
+        activeUploadOperations[item.fingerprint] = operation
 
-        Task { [weak self, database] in
+        Task { [weak self, database, operation] in
             do {
-                try await Self.upsert(record, in: database)
+                try await Self.upsert(operation, in: database)
                 await MainActor.run {
-                    self?.markSynced()
+                    guard let self else { return }
+                    self.activeUploadOperations.removeValue(forKey: item.fingerprint)
+                    self.pendingUploadFingerprints.remove(item.fingerprint)
+                    guard self.isCurrentSession(sessionID) else { return }
+                    self.markSynced()
                 }
             } catch {
                 await MainActor.run {
-                    self?.status = .error(error.localizedDescription)
+                    guard let self else { return }
+                    self.activeUploadOperations.removeValue(forKey: item.fingerprint)
+                    self.pendingUploadFingerprints.remove(item.fingerprint)
+                    guard self.isCurrentSession(sessionID) else { return }
+                    guard !Self.isCancellationError(error) else { return }
+                    self.status = .error(error.localizedDescription)
                 }
-                print("[CloudClipboardSync] Failed to upload clipboard item: \(error)")
-            }
-
-            _ = await MainActor.run {
-                self?.pendingUploadFingerprints.remove(item.fingerprint)
+                if !Self.isCancellationError(error) {
+                    print("[CloudClipboardSync] Failed to upload clipboard item: \(error)")
+                }
             }
         }
     }
@@ -152,6 +179,7 @@ final class CloudClipboardSyncManager: ObservableObject {
 
         let query = Self.makeFetchQuery(since: lastFetchedCreatedAt)
         let operation = CKQueryOperation(query: query)
+        let sessionID = syncSessionID
         operation.desiredKeys = [
             SkyCloudClipboardSchema.Field.contentType,
             SkyCloudClipboardSchema.Field.text,
@@ -160,24 +188,31 @@ final class CloudClipboardSyncManager: ObservableObject {
             SkyCloudClipboardSchema.Field.sourceDevice
         ]
         operation.resultsLimit = 100
+        activeFetchOperation = operation
 
         operation.recordMatchedBlock = { [weak self] _, result in
             guard case .success(let record) = result else { return }
             Task { @MainActor in
-                self?.ingest(record)
+                guard let self, self.isCurrentSession(sessionID) else { return }
+                self.ingest(record)
             }
         }
 
         operation.queryResultBlock = { [weak self] result in
             Task { @MainActor in
                 guard let self else { return }
+                if self.activeFetchOperation === operation {
+                    self.activeFetchOperation = nil
+                }
                 self.isFetching = false
+                guard self.isCurrentSession(sessionID) else { return }
                 switch result {
                 case .success(let cursor?):
-                    self.fetch(cursor: cursor)
+                    self.fetch(cursor: cursor, sessionID: sessionID)
                 case .success(nil):
                     self.markSynced()
                 case .failure(let error):
+                    guard !Self.isCancellationError(error) else { return }
                     self.status = .error(error.localizedDescription)
                 }
             }
@@ -204,12 +239,13 @@ final class CloudClipboardSyncManager: ObservableObject {
         return query
     }
 
-    private func fetch(cursor: CKQueryOperation.Cursor) {
+    private func fetch(cursor: CKQueryOperation.Cursor, sessionID: UUID) {
         guard settings.iCloudSyncEnabled, !isFetching, let database else { return }
         isFetching = true
         status = .syncing
 
         let operation = CKQueryOperation(cursor: cursor)
+        activeFetchOperation = operation
         operation.desiredKeys = [
             SkyCloudClipboardSchema.Field.contentType,
             SkyCloudClipboardSchema.Field.text,
@@ -222,20 +258,26 @@ final class CloudClipboardSyncManager: ObservableObject {
         operation.recordMatchedBlock = { [weak self] _, result in
             guard case .success(let record) = result else { return }
             Task { @MainActor in
-                self?.ingest(record)
+                guard let self, self.isCurrentSession(sessionID) else { return }
+                self.ingest(record)
             }
         }
 
         operation.queryResultBlock = { [weak self] result in
             Task { @MainActor in
                 guard let self else { return }
+                if self.activeFetchOperation === operation {
+                    self.activeFetchOperation = nil
+                }
                 self.isFetching = false
+                guard self.isCurrentSession(sessionID) else { return }
                 switch result {
                 case .success(let nextCursor?):
-                    self.fetch(cursor: nextCursor)
+                    self.fetch(cursor: nextCursor, sessionID: sessionID)
                 case .success(nil):
                     self.markSynced()
                 case .failure(let error):
+                    guard !Self.isCancellationError(error) else { return }
                     self.status = .error(error.localizedDescription)
                 }
             }
@@ -310,11 +352,18 @@ final class CloudClipboardSyncManager: ObservableObject {
         return record
     }
 
-    private static func upsert(_ record: CKRecord, in database: CKDatabase) async throws {
+    private func backfillExistingLocalItems() {
+        for item in store.itemsEligibleForCloudSync() {
+            uploadLocalItemIfNeeded(item)
+        }
+    }
+
+    private func isCurrentSession(_ sessionID: UUID) -> Bool {
+        settings.iCloudSyncEnabled && syncSessionID == sessionID
+    }
+
+    private static func upsert(_ operation: CKModifyRecordsOperation, in database: CKDatabase) async throws {
         try await withCheckedThrowingContinuation { continuation in
-            let operation = CKModifyRecordsOperation(recordsToSave: [record], recordIDsToDelete: nil)
-            operation.savePolicy = .changedKeys
-            operation.isAtomic = true
             operation.modifyRecordsResultBlock = { result in
                 switch result {
                 case .success:
@@ -325,6 +374,11 @@ final class CloudClipboardSyncManager: ObservableObject {
             }
             database.add(operation)
         }
+    }
+
+    private static func isCancellationError(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        return nsError.domain == CKError.errorDomain && nsError.code == CKError.Code.operationCancelled.rawValue
     }
 
     private func markSynced() {

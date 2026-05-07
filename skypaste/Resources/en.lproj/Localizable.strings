@@ -20,6 +20,7 @@
 "settings.option" = "Option";
 "settings.control" = "Control";
 "settings.current" = "Current: %@";
+"settings.version_format" = "Version %@ (%@)";
 "settings.history" = "History";
 "settings.max_records" = "Max records: %d";
 "settings.history_hint" = "New limit applies immediately and trims local history if needed.";

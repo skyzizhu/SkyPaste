@@ -178,6 +178,44 @@ struct SkyPasteCoreModelTests {
         #expect(CloudClipboardSyncPolicy.shouldApplyIncoming(newerIncoming, over: existing))
     }
 
+    @Test func cloudSyncBackfillCandidatesIncludeOnlyLocalTextInAscendingDateOrder() {
+        let now = Date()
+        let newestLocalText = ClipboardItem(
+            id: UUID(),
+            createdAt: now,
+            content: .text("Newest"),
+            fingerprint: "txt:newest",
+            source: .local
+        )
+        let oldestLocalText = ClipboardItem(
+            id: UUID(),
+            createdAt: now.addingTimeInterval(-20),
+            content: .text("Oldest"),
+            fingerprint: "txt:oldest",
+            source: .local
+        )
+        let universalText = ClipboardItem(
+            id: UUID(),
+            createdAt: now.addingTimeInterval(-10),
+            content: .text("Phone"),
+            fingerprint: "txt:phone",
+            source: .universalClipboard
+        )
+        let localImage = ClipboardItem(
+            id: UUID(),
+            createdAt: now.addingTimeInterval(-5),
+            content: .image(data: Data([0x1]), name: nil, originalByteCount: 1, previewOnly: false),
+            fingerprint: "img:1",
+            source: .local
+        )
+
+        let candidates = CloudClipboardSyncPolicy.backfillUploadCandidates(
+            from: [newestLocalText, universalText, oldestLocalText, localImage]
+        )
+
+        #expect(candidates.map(\.fingerprint) == ["txt:oldest", "txt:newest"])
+    }
+
     @Test func cloudSyncRecordNameIsStablePerFingerprint() {
         let first = SkyCloudClipboardSchema.recordName(for: "txt:hello")
         let second = SkyCloudClipboardSchema.recordName(for: "txt:hello")

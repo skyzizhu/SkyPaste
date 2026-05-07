@@ -195,6 +195,10 @@ final class ClipboardStore: ObservableObject {
         return items.filter { parsedQuery.matches($0) }
     }
 
+    func itemsEligibleForCloudSync() -> [ClipboardItem] {
+        CloudClipboardSyncPolicy.backfillUploadCandidates(from: items)
+    }
+
     func add(_ item: ClipboardItem) {
         var item = item
         item.isFavorite = preservedFavoriteState(for: item)
