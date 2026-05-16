@@ -172,8 +172,6 @@ struct ClipboardItem: Identifiable, Equatable {
     let content: ClipboardContent
     let fingerprint: String
     let classification: Classification
-    let title: String
-    let subtitle: String
     let source: ClipboardSource
     var isFavorite: Bool
     var isSnippet: Bool
@@ -193,11 +191,17 @@ struct ClipboardItem: Identifiable, Equatable {
         self.content = content
         self.fingerprint = fingerprint
         self.classification = derivedClassification
-        self.title = Self.makeTitle(for: content)
-        self.subtitle = Self.makeSubtitle(for: content)
         self.source = source
         self.isFavorite = isFavorite
         self.isSnippet = isSnippet
+    }
+
+    var title: String {
+        Self.makeTitle(for: content)
+    }
+
+    var subtitle: String {
+        Self.makeSubtitle(for: content)
     }
 
     var isPlainText: Bool { classification.isPlainText }
