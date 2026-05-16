@@ -6,8 +6,10 @@ struct ClipboardSearchQuery {
     enum ItemType: Hashable {
         case text
         case image
-        case url
+        case file
+        case folder
         case code
+        case url
     }
 
     enum SourceScope: Hashable {
@@ -93,10 +95,14 @@ struct ClipboardSearchQuery {
             return .text
         case "type:image", "type:img", "is:image":
             return .image
-        case "type:url", "type:link", "is:url":
-            return .url
+        case "type:file", "type:files", "is:file":
+            return .file
+        case "type:folder", "type:directory", "type:dir", "is:folder", "is:directory":
+            return .folder
         case "type:code", "is:code":
             return .code
+        case "type:url", "type:link", "is:url":
+            return .url
         default:
             return nil
         }
@@ -121,10 +127,14 @@ struct ClipboardSearchQuery {
             return item.isPlainText
         case .image:
             return item.isImage
-        case .url:
-            return item.isURL
+        case .file:
+            return item.containsFiles
+        case .folder:
+            return item.containsFolders
         case .code:
             return item.isCode
+        case .url:
+            return item.isURL
         }
     }
 
@@ -497,10 +507,17 @@ final class ClipboardStore: ObservableObject {
 }
 
 final class ClipboardMonitor: @unchecked Sendable {
-    private var timer: Timer?
-    private var lastChangeCount: Int = NSPasteboard.general.changeCount
+    private let queue = DispatchQueue(label: "com.huaibor.skypaste.clipboard-monitor", qos: .utility)
+    private var timer: DispatchSourceTimer?
+    private var lastChangeCount: Int = 0
+    private var lastLocalChangeDate = Date.distantPast
     private var lastRemoteProbeDate = Date.distantPast
-    private let remoteProbeInterval: TimeInterval = 1.5
+    private var scheduledPollInterval: TimeInterval = 0
+    private let activePollInterval: TimeInterval = 0.35
+    private let idlePollInterval: TimeInterval = 1.0
+    private let activeRemoteProbeInterval: TimeInterval = 1.5
+    private let idleRemoteProbeInterval: TimeInterval = 4.0
+    private let activePollingWindow: TimeInterval = 8.0
     private let onChange: (_ acceptsLocalContent: Bool) -> Void
 
     init(onChange: @escaping (_ acceptsLocalContent: Bool) -> Void) {
@@ -509,30 +526,78 @@ final class ClipboardMonitor: @unchecked Sendable {
 
     func start() {
         stop()
-        timer = Timer.scheduledTimer(withTimeInterval: 0.35, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            let currentCount = NSPasteboard.general.changeCount
-            if currentCount != self.lastChangeCount {
-                self.lastChangeCount = currentCount
-                self.lastRemoteProbeDate = Date()
-                self.onChange(true)
-                return
-            }
+        lastChangeCount = currentPasteboardChangeCount()
+        lastLocalChangeDate = Date()
+        lastRemoteProbeDate = Date.distantPast
 
-            let now = Date()
-            guard now.timeIntervalSince(self.lastRemoteProbeDate) >= self.remoteProbeInterval else { return }
-            self.lastRemoteProbeDate = now
-            self.onChange(false)
+        let timer = DispatchSource.makeTimerSource(queue: queue)
+        self.timer = timer
+        rescheduleTimer(for: Date())
+        timer.setEventHandler { [weak self] in
+            self?.pollPasteboard()
         }
-
-        if let timer {
-            RunLoop.main.add(timer, forMode: .common)
-        }
+        timer.resume()
     }
 
     func stop() {
-        timer?.invalidate()
+        timer?.setEventHandler {}
+        timer?.cancel()
         timer = nil
+        scheduledPollInterval = 0
     }
 
+    private func pollPasteboard() {
+        let now = Date()
+        let currentCount = currentPasteboardChangeCount()
+
+        if currentCount != lastChangeCount {
+            lastChangeCount = currentCount
+            lastLocalChangeDate = now
+            lastRemoteProbeDate = now
+            onChange(true)
+            rescheduleTimer(for: now)
+            return
+        }
+
+        let remoteProbeInterval = currentRemoteProbeInterval(for: now)
+        guard now.timeIntervalSince(lastRemoteProbeDate) >= remoteProbeInterval else {
+            rescheduleTimer(for: now)
+            return
+        }
+
+        lastRemoteProbeDate = now
+        onChange(false)
+        rescheduleTimer(for: now)
+    }
+
+    private func currentPasteboardChangeCount() -> Int {
+        if Thread.isMainThread {
+            return NSPasteboard.general.changeCount
+        }
+
+        return DispatchQueue.main.sync {
+            NSPasteboard.general.changeCount
+        }
+    }
+
+    private func currentPollInterval(for date: Date) -> TimeInterval {
+        isInActivePollingWindow(at: date) ? activePollInterval : idlePollInterval
+    }
+
+    private func currentRemoteProbeInterval(for date: Date) -> TimeInterval {
+        isInActivePollingWindow(at: date) ? activeRemoteProbeInterval : idleRemoteProbeInterval
+    }
+
+    private func isInActivePollingWindow(at date: Date) -> Bool {
+        date.timeIntervalSince(lastLocalChangeDate) < activePollingWindow
+    }
+
+    private func rescheduleTimer(for date: Date) {
+        let interval = currentPollInterval(for: date)
+        guard scheduledPollInterval != interval else { return }
+
+        scheduledPollInterval = interval
+        let leeway = interval >= 1 ? DispatchTimeInterval.milliseconds(300) : DispatchTimeInterval.milliseconds(120)
+        timer?.schedule(deadline: .now() + interval, repeating: interval, leeway: leeway)
+    }
 }

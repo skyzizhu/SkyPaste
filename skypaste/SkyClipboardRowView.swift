@@ -27,36 +27,39 @@ struct ClipboardRowView: View {
                 previewThumbnail
             }
 
-            VStack(alignment: .leading, spacing: 4) {
-                Text(item.title)
-                    .font(.system(size: item.isCode ? 12 : 13, weight: .semibold, design: item.isCode ? .monospaced : .default))
-                    .lineLimit(item.isCode ? 2 : 1)
-                    .fixedSize(horizontal: false, vertical: item.isCode)
+            HStack(alignment: .top, spacing: 8) {
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(alignment: .firstTextBaseline, spacing: 7) {
+                        if !item.isImage {
+                            titleTypeIcon
+                        }
 
-                HStack(spacing: 6) {
-                    Text(metadataText)
-                        .lineLimit(1)
-
-                    if let deviceIcon = item.source.deviceIconSystemName {
-                        Image(systemName: deviceIcon)
-                            .font(.system(size: 10.5, weight: .semibold))
-                            .foregroundStyle(Color.accentColor.opacity(0.9))
-                            .help(item.source.badgeText ?? "")
+                        Text(item.title)
+                            .font(.system(size: item.isCode ? 12 : 13, weight: .semibold, design: item.isCode ? .monospaced : .default))
+                            .lineLimit(item.isCode ? 2 : 1)
+                            .fixedSize(horizontal: false, vertical: item.isCode)
                     }
+
+                    HStack(spacing: 6) {
+                        Text(metadataText)
+                            .lineLimit(1)
+
+                        if let deviceIcon = item.source.deviceIconSystemName {
+                            Image(systemName: deviceIcon)
+                                .font(.system(size: 10.5, weight: .semibold))
+                                .foregroundStyle(Color.accentColor.opacity(0.9))
+                                .help(item.source.badgeText ?? "")
+                        }
+                    }
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundStyle(.secondary)
                 }
-                .font(.system(size: 11, weight: .medium, design: .rounded))
-                .foregroundStyle(.secondary)
-            }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.trailing, showSelectionCopyHint ? copyHintReservedWidth : 0)
 
-            Spacer(minLength: 0)
-
-            if item.isFavorite {
-                Image(systemName: "star.fill")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Color.yellow)
+                favoriteBadge
             }
         }
-        .padding(.trailing, showSelectionCopyHint ? copyHintReservedWidth : 0)
         .padding(.horizontal, horizontalPadding)
         .padding(.vertical, verticalPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -72,10 +75,10 @@ struct ClipboardRowView: View {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
                 .stroke(borderColor, lineWidth: 1)
         }
-        .overlay(alignment: .topTrailing) {
+        .overlay(alignment: .bottomTrailing) {
             if showSelectionCopyHint {
                 selectionCopyHint
-                    .padding(.top, 4)
+                    .padding(.bottom, 4)
                     .padding(.trailing, 4)
                     .transition(.opacity.combined(with: .scale(scale: 0.98)))
             }
@@ -108,6 +111,16 @@ struct ClipboardRowView: View {
             .font(.system(size: 8.5, weight: .regular, design: .rounded))
             .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.76) : Color.primary.opacity(0.55))
             .lineLimit(1)
+    }
+
+    @ViewBuilder
+    private var favoriteBadge: some View {
+        if item.isFavorite {
+            Image(systemName: "star.fill")
+                .font(.system(size: 12))
+                .foregroundStyle(Color.yellow)
+                .frame(width: 14, alignment: .center)
+        }
     }
 
     @ViewBuilder
@@ -164,6 +177,22 @@ struct ClipboardRowView: View {
         }
     }
 
+    private var titleTypeIcon: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(iconBackgroundColor)
+
+            Image(systemName: iconSystemName)
+                .font(.system(size: titleIconSymbolSize, weight: .semibold))
+                .foregroundStyle(iconForegroundColor)
+        }
+        .frame(width: titleIconSize, height: titleIconSize)
+        .overlay {
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        }
+    }
+
     private var cornerRadius: CGFloat {
         style == .popover ? 12 : 8
     }
@@ -185,6 +214,88 @@ struct ClipboardRowView: View {
 
     private var metadataText: String {
         [item.subtitle, timeText].joined(separator: " • ")
+    }
+
+    private var iconSystemName: String {
+        if item.isURL {
+            return "link"
+        }
+        if item.isCode {
+            return "chevron.left.forwardslash.chevron.right"
+        }
+        if item.isFileCollection {
+            if item.singleFileSystemItemKind == .folder {
+                return "folder.fill"
+            }
+            return item.fileURLs?.count ?? 0 > 1 ? "doc.on.doc.fill" : "doc.fill"
+        }
+        return "text.alignleft"
+    }
+
+    private var iconBackgroundColor: Color {
+        switch iconPalette {
+        case .text:
+            return Color.secondary.opacity(colorScheme == .dark ? 0.18 : 0.10)
+        case .url:
+            return Color.cyan.opacity(colorScheme == .dark ? 0.24 : 0.16)
+        case .code:
+            return Color.teal.opacity(colorScheme == .dark ? 0.22 : 0.14)
+        case .file:
+            return Color.indigo.opacity(colorScheme == .dark ? 0.24 : 0.14)
+        case .folder:
+            return Color.orange.opacity(colorScheme == .dark ? 0.24 : 0.16)
+        }
+    }
+
+    private var iconForegroundColor: Color {
+        switch iconPalette {
+        case .text:
+            return Color.primary.opacity(colorScheme == .dark ? 0.82 : 0.72)
+        case .url:
+            return Color.cyan.opacity(colorScheme == .dark ? 0.96 : 0.9)
+        case .code:
+            return Color.teal.opacity(colorScheme == .dark ? 0.96 : 0.9)
+        case .file:
+            return Color.indigo.opacity(colorScheme == .dark ? 0.95 : 0.9)
+        case .folder:
+            return Color.orange.opacity(colorScheme == .dark ? 0.96 : 0.9)
+        }
+    }
+
+    private enum TypeIconPalette {
+        case text
+        case url
+        case code
+        case file
+        case folder
+    }
+
+    private var iconPalette: TypeIconPalette {
+        if item.isURL {
+            return .url
+        }
+        if item.isCode {
+            return .code
+        }
+        if item.isFileCollection {
+            return item.singleFileSystemItemKind == .folder ? .folder : .file
+        }
+        return .text
+    }
+
+    private var titleIconSize: CGFloat {
+        item.isCode ? 18 : 16
+    }
+
+    private var titleIconSymbolSize: CGFloat {
+        switch iconSystemName {
+        case "chevron.left.forwardslash.chevron.right":
+            return 9.5
+        case "doc.on.doc.fill":
+            return 9
+        default:
+            return 8.5
+        }
     }
 
     private func loadPreviewIfNeeded() {
@@ -213,8 +324,7 @@ private struct RowMouseDownObserver: NSViewRepresentable {
 private final class RowMouseDownObserverView: NSView {
     var onPrimaryMouseDown: (() -> Void)?
     var onSecondaryMouseDown: (() -> Void)?
-
-    private var eventMonitor: Any?
+    private var isRegisteredForEvents = false
 
     override var isFlipped: Bool {
         true
@@ -223,46 +333,89 @@ private final class RowMouseDownObserverView: NSView {
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         if window == nil {
-            removeEventMonitor()
+            unregisterForEvents()
         } else {
-            installEventMonitorIfNeeded()
+            registerForEventsIfNeeded()
         }
     }
 
     deinit {
-        removeEventMonitor()
+        unregisterForEvents()
     }
 
-    private func installEventMonitorIfNeeded() {
+    fileprivate func handleMouseDownEvent(_ event: NSEvent) {
+        switch event.type {
+        case .leftMouseDown:
+            onPrimaryMouseDown?()
+        case .rightMouseDown:
+            onSecondaryMouseDown?()
+        default:
+            break
+        }
+    }
+
+    private func registerForEventsIfNeeded() {
+        guard !isRegisteredForEvents else { return }
+        isRegisteredForEvents = true
+        RowMouseDownEventCoordinator.shared.register(self)
+    }
+
+    private func unregisterForEvents() {
+        guard isRegisteredForEvents else { return }
+        isRegisteredForEvents = false
+        RowMouseDownEventCoordinator.shared.unregister(self)
+    }
+}
+
+private final class RowMouseDownEventCoordinator {
+    static let shared = RowMouseDownEventCoordinator()
+
+    private let registeredViews = NSHashTable<RowMouseDownObserverView>.weakObjects()
+    private var eventMonitor: Any?
+
+    private init() {}
+
+    func register(_ view: RowMouseDownObserverView) {
+        registeredViews.add(view)
+        installMonitorIfNeeded()
+    }
+
+    func unregister(_ view: RowMouseDownObserverView) {
+        registeredViews.remove(view)
+        removeMonitorIfPossible()
+    }
+
+    private func installMonitorIfNeeded() {
         guard eventMonitor == nil else { return }
 
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
-            guard let self, let window = self.window, event.window === window else {
-                return event
-            }
-
-            let point = self.convert(event.locationInWindow, from: nil)
-            guard self.bounds.contains(point) else {
-                return event
-            }
-
-            switch event.type {
-            case .leftMouseDown:
-                self.onPrimaryMouseDown?()
-            case .rightMouseDown:
-                self.onSecondaryMouseDown?()
-            default:
-                break
-            }
-
+            self?.dispatch(event)
             return event
         }
     }
 
-    private func removeEventMonitor() {
-        if let eventMonitor {
-            NSEvent.removeMonitor(eventMonitor)
-            self.eventMonitor = nil
+    private func removeMonitorIfPossible() {
+        guard registeredViews.allObjects.isEmpty, let eventMonitor else { return }
+        NSEvent.removeMonitor(eventMonitor)
+        self.eventMonitor = nil
+    }
+
+    private func dispatch(_ event: NSEvent) {
+        guard let eventWindow = event.window else { return }
+
+        for view in registeredViews.allObjects.reversed() {
+            guard
+                view.window === eventWindow,
+                !view.isHiddenOrHasHiddenAncestor,
+                view.alphaValue > 0.01
+            else {
+                continue
+            }
+
+            let point = view.convert(event.locationInWindow, from: nil)
+            guard view.bounds.contains(point) else { continue }
+            view.handleMouseDownEvent(event)
+            return
         }
     }
 }

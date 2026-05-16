@@ -63,8 +63,6 @@ struct SettingsView: View {
                 .pickerStyle(.menu)
                 .frame(width: 220, alignment: .trailing)
             }
-
-            hint(L10n.tr("settings.appearance_hint"))
         }
     }
 
@@ -113,8 +111,6 @@ struct SettingsView: View {
                 .pickerStyle(.menu)
                 .frame(width: 220, alignment: .trailing)
             }
-
-            hint(L10n.tr("settings.language_hint"))
         }
     }
 

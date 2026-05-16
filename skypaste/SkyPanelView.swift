@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct PanelView: View {
@@ -23,6 +24,11 @@ struct PanelView: View {
     let onCopy: (ClipboardItem) -> Void
     let onPreview: (ClipboardItem) -> Void
     let onTextPreview: (ClipboardItem) -> Void
+    let onFileSystemPreview: (ClipboardItem) -> Void
+    let onOpenFileItem: (ClipboardItem) -> Void
+    let onOpenContainingFolder: (ClipboardItem) -> Void
+    let onCopyFileSystemPath: (ClipboardItem) -> Void
+    let onOpenURL: (ClipboardItem) -> Void
     let onClose: () -> Void
 
     @State private var selectedID: ClipboardItem.ID?
@@ -41,7 +47,7 @@ struct PanelView: View {
         switch selectedFilter {
         case .all:
             favoriteItems = []
-            daySource = filteredItems.filter { !$0.isFavorite }
+            daySource = filteredItems
         case .favorites:
             favoriteItems = filteredItems
             daySource = []
@@ -107,6 +113,14 @@ struct PanelView: View {
         return Color.accentColor.opacity(0.10)
     }
 
+    private func filterChipHorizontalPadding(for filter: ClipboardFilter) -> CGFloat {
+        filter == .favorites ? 9 : 11
+    }
+
+    private func separatorInset(after item: ClipboardItem) -> CGFloat {
+        item.isImage ? 64 : 12
+    }
+
     private var contentAreaFill: Color {
         colorScheme == .dark ? Color(nsColor: .underPageBackgroundColor) : Color.white.opacity(0.76)
     }
@@ -121,6 +135,10 @@ struct PanelView: View {
 
     private var isSearchActive: Bool {
         isSearchVisible || !store.searchText.isEmpty
+    }
+
+    private var contentScrollResetID: String {
+        "\(selectedFilter.id)|\(store.searchText)"
     }
 
     private var searchButtonFill: Color {
@@ -258,13 +276,18 @@ struct PanelView: View {
 
     private var header: some View {
         HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(L10n.tr("app.title"))
-                    .font(.system(size: 24, weight: .semibold, design: .rounded))
-                Text(settings.autoPasteEnabled ? L10n.tr("panel.shortcut_hint") : L10n.tr("panel.shortcut_hint_copy_only"))
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundStyle(.secondary)
+            HStack(alignment: .top, spacing: 12) {
+                appIconBadge(size: 44, cornerRadius: 10)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L10n.tr("app.title"))
+                        .font(.system(size: 22, weight: .semibold, design: .rounded))
+                    Text(settings.autoPasteEnabled ? L10n.tr("panel.shortcut_hint") : L10n.tr("panel.shortcut_hint_copy_only"))
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundStyle(.secondary)
+                }
             }
+            .offset(y: -2)
 
             Spacer()
 
@@ -298,6 +321,15 @@ struct PanelView: View {
             }
             .buttonStyle(.plain)
         }
+    }
+
+    private func appIconBadge(size: CGFloat, cornerRadius: CGFloat) -> some View {
+        Image(nsImage: NSApp.applicationIconImage)
+            .resizable()
+            .interpolation(.high)
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .shadow(color: .black.opacity(colorScheme == .dark ? 0.18 : 0.08), radius: 6, y: 2)
     }
 
     private var searchBar: some View {
@@ -388,18 +420,25 @@ struct PanelView: View {
     }
 
     private var filterBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(ClipboardFilter.allCases) { filter in
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(ClipboardFilter.allCases) { filter in
                     Button {
-                        withAnimation(.snappy(duration: 0.18)) {
+                        withAnimation(.easeOut(duration: 0.12)) {
                             selectedFilter = filter
                         }
                     } label: {
-                        Text(filter.title)
-                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            HStack(spacing: 5) {
+                                if let symbolSystemName = filter.symbolSystemName {
+                                    Image(systemName: symbolSystemName)
+                                        .font(.system(size: filter == .favorites ? 8 : 10, weight: .semibold))
+                                }
+                                Text(filter.title)
+                                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                            }
                             .foregroundStyle(filterChipTextColor(for: filter))
-                            .padding(.horizontal, 11)
+                            .padding(.horizontal, filterChipHorizontalPadding(for: filter))
                             .padding(.vertical, 6)
                             .background(
                                 Capsule(style: .continuous)
@@ -413,11 +452,21 @@ struct PanelView: View {
                                     )
                             }
                             .shadow(color: filterChipShadowColor(for: filter), radius: 6, y: 2)
+                        }
+                        .buttonStyle(.plain)
+                        .id(filter)
                     }
-                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 2)
+            }
+            .onAppear {
+                proxy.scrollTo(selectedFilter, anchor: .center)
+            }
+            .onChange(of: selectedFilter) { _, filter in
+                withAnimation(.easeOut(duration: 0.12)) {
+                    proxy.scrollTo(filter, anchor: .center)
                 }
             }
-            .padding(.horizontal, 2)
         }
     }
 
@@ -453,6 +502,7 @@ struct PanelView: View {
             }
             .padding(12)
         }
+        .id(contentScrollResetID)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(contentAreaFill)
@@ -543,7 +593,7 @@ struct PanelView: View {
                     rowView(for: item)
 
                     if index < items.count - 1 {
-                        rowSeparator(inset: item.isImage ? 64 : 12)
+                        rowSeparator(inset: separatorInset(after: item))
                     }
                 }
             }
@@ -648,6 +698,31 @@ struct PanelView: View {
                 selectedID = item.id
                 copySelected(item)
             }
+            if item.isFileCollection {
+                Button(item.openActionTitle) {
+                    selectedID = item.id
+                    onOpenFileItem(item)
+                }
+            }
+            if item.isSingleFile {
+                Button(L10n.tr("menu.reveal_in_finder")) {
+                    selectedID = item.id
+                    onOpenContainingFolder(item)
+                }
+            }
+            if item.isFileCollection {
+                Button(L10n.tr("menu.copy_path")) {
+                    selectedID = item.id
+                    onCopyFileSystemPath(item)
+                    showCopyToast()
+                }
+            }
+            if item.isURL {
+                Button(L10n.tr("menu.open_in_browser")) {
+                    selectedID = item.id
+                    onOpenURL(item)
+                }
+            }
             if item.isImage {
                 Button(L10n.tr("preview.open")) {
                     selectedID = item.id
@@ -691,6 +766,10 @@ struct PanelView: View {
     private func handleRowDoubleTap(_ item: ClipboardItem) {
         pendingPrimaryAction?.cancel()
         selectedID = item.id
+        if item.isFileCollection {
+            onFileSystemPreview(item)
+            return
+        }
         if item.isImage {
             onPreview(item)
             return

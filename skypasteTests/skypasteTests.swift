@@ -75,6 +75,7 @@ struct SkyPasteCoreModelTests {
 
         #expect(item.isURL)
         #expect(item.subtitle == L10n.tr("filter.url"))
+        #expect(item.browserURL?.absoluteString == "https://example.com/path?q=1")
     }
 
     @Test func imageOptimizerPreservesUniversalClipboardSource() {
@@ -89,6 +90,162 @@ struct SkyPasteCoreModelTests {
         let optimized = ClipboardImageOptimizer.memoryOptimizedItem(item)
 
         #expect(optimized.source == .universalClipboard)
+    }
+
+    @Test func singleFileClipboardItemUsesFileMetadata() {
+        let item = ClipboardItem(
+            content: .fileURLs(urls: [URL(fileURLWithPath: "/tmp/Report.pdf")], pasteboardPayload: nil),
+            fingerprint: "file:/tmp/Report.pdf"
+        )
+
+        #expect(item.isFileCollection)
+        #expect(item.singleFileSystemItemKind == .file)
+        #expect(item.title == L10n.format("clipboard.file_single", "Report.pdf"))
+        #expect(item.subtitle == L10n.format("clipboard.subtitle.file_path", "/tmp"))
+        #expect(item.openActionTitle == L10n.tr("menu.open_file"))
+        #expect(item.containingFolderURL?.path == "/tmp")
+    }
+
+    @Test func singleFolderClipboardItemUsesFolderMetadata() {
+        let item = ClipboardItem(
+            content: .fileURLs(urls: [URL(fileURLWithPath: "/tmp/SkyPaste Folder", isDirectory: true)], pasteboardPayload: nil),
+            fingerprint: "file:/tmp/SkyPaste Folder"
+        )
+
+        #expect(item.isFileCollection)
+        #expect(item.singleFileSystemItemKind == .folder)
+        #expect(item.title == L10n.format("clipboard.folder_single", "SkyPaste Folder"))
+        #expect(item.subtitle == L10n.format("clipboard.subtitle.folder_path", "/tmp"))
+        #expect(item.openActionTitle == L10n.tr("menu.open_folder"))
+    }
+
+    @Test func multipleFolderClipboardItemUsesFolderCountMetadata() {
+        let item = ClipboardItem(
+            content: .fileURLs(urls: [
+                URL(fileURLWithPath: "/tmp/Folder A", isDirectory: true),
+                URL(fileURLWithPath: "/tmp/Folder B", isDirectory: true)
+            ], pasteboardPayload: nil),
+            fingerprint: "file:/tmp/Folder A|/tmp/Folder B"
+        )
+
+        #expect(item.title == L10n.format("clipboard.folder_count", 2))
+        #expect(item.subtitle == L10n.format("clipboard.subtitle.folder_count", 2))
+        #expect(item.openActionTitle == L10n.tr("menu.open_item"))
+    }
+
+    @Test func fileAndFolderFiltersMatchTheirOwnTypes() {
+        let fileItem = ClipboardItem(
+            content: .fileURLs(urls: [URL(fileURLWithPath: "/tmp/Report.pdf")], pasteboardPayload: nil),
+            fingerprint: "file:/tmp/Report.pdf"
+        )
+        let folderItem = ClipboardItem(
+            content: .fileURLs(urls: [URL(fileURLWithPath: "/tmp/SkyPaste Folder", isDirectory: true)], pasteboardPayload: nil),
+            fingerprint: "file:/tmp/SkyPaste Folder"
+        )
+        let textItem = ClipboardItem(
+            content: .text("hello"),
+            fingerprint: "txt:hello"
+        )
+
+        #expect(ClipboardFilter.file.matches(fileItem))
+        #expect(!ClipboardFilter.file.matches(folderItem))
+        #expect(ClipboardFilter.folder.matches(folderItem))
+        #expect(!ClipboardFilter.folder.matches(fileItem))
+        #expect(!ClipboardFilter.file.matches(textItem))
+        #expect(!ClipboardFilter.folder.matches(textItem))
+    }
+
+    @Test func filePasteboardPayloadRoundTripsThroughClipboardDecoder() {
+        let url = URL(fileURLWithPath: "/tmp/Report.pdf")
+        let payload = ClipboardFilePasteboardPayload(items: [
+            ClipboardPasteboardItemPayload(entries: [
+                ClipboardPasteboardEntryPayload(
+                    type: NSPasteboard.PasteboardType.fileURL.rawValue,
+                    storage: .string(url.absoluteString)
+                ),
+                ClipboardPasteboardEntryPayload(
+                    type: "com.huaibor.skypaste.test-file-marker",
+                    storage: .data(Data([0x1, 0x2, 0x3]))
+                )
+            ])
+        ])
+
+        let item = ClipboardItem(
+            id: UUID(),
+            createdAt: Date(),
+            content: .fileURLs(urls: [url], pasteboardPayload: payload),
+            fingerprint: "file:\(url.path)",
+            source: .local
+        )
+
+        let pasteboard = NSPasteboard.withUniqueName()
+        ClipboardDecoder.write(item, to: pasteboard)
+
+        let restoredItems = pasteboard.pasteboardItems ?? []
+        #expect(restoredItems.count == 1)
+        #expect(restoredItems.first?.string(forType: .fileURL) == url.absoluteString)
+        #expect(restoredItems.first?.data(forType: NSPasteboard.PasteboardType("com.huaibor.skypaste.test-file-marker")) == Data([0x1, 0x2, 0x3]))
+
+        let decoded = ClipboardDecoder.decode(from: pasteboard)
+        guard case .item(let decodedItem) = decoded else {
+            Issue.record("Expected file item after roundtrip decode")
+            return
+        }
+
+        #expect(decodedItem.fileURLs == [url])
+        #expect(decodedItem.filePasteboardPayload?.hasEntries == true)
+        let markerEntry = decodedItem.filePasteboardPayload?.items
+            .flatMap(\.entries)
+            .first(where: { $0.type == "com.huaibor.skypaste.test-file-marker" })
+
+        guard let markerEntry else {
+            Issue.record("Expected custom file marker to survive payload roundtrip")
+            return
+        }
+
+        #expect(markerEntry.storage == .data(Data([0x1, 0x2, 0x3])))
+    }
+
+    @Test func fileWriteAddsLegacyFinderFileListType() {
+        let url = URL(fileURLWithPath: "/tmp/Report.pdf")
+        let item = ClipboardItem(
+            content: .fileURLs(urls: [url], pasteboardPayload: nil),
+            fingerprint: "file:\(url.path)"
+        )
+
+        let pasteboard = NSPasteboard.withUniqueName()
+        ClipboardDecoder.write(item, to: pasteboard)
+
+        let filenames = pasteboard.propertyList(forType: NSPasteboard.PasteboardType("NSFilenamesPboardType")) as? [String]
+        #expect(filenames == [url.path])
+    }
+
+    @Test func fileSystemPreviewSnapshotListsImmediateDirectoryEntries() throws {
+        let fileManager = FileManager.default
+        let rootDirectory = fileManager.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let nestedDirectory = rootDirectory.appendingPathComponent("Subdir", isDirectory: true)
+        let topLevelFile = rootDirectory.appendingPathComponent("notes.txt")
+        let nestedFile = nestedDirectory.appendingPathComponent("deep.txt")
+
+        try fileManager.createDirectory(at: nestedDirectory, withIntermediateDirectories: true)
+        try Data([0x1, 0x2, 0x3]).write(to: topLevelFile)
+        try Data([0x4, 0x5, 0x6, 0x7]).write(to: nestedFile)
+        defer {
+            try? fileManager.removeItem(at: rootDirectory)
+        }
+
+        let item = ClipboardItem(
+            content: .fileURLs(urls: [rootDirectory], pasteboardPayload: nil),
+            fingerprint: "file:\(rootDirectory.path)"
+        )
+
+        let snapshot = FileSystemPreviewSnapshot.build(for: item)
+
+        #expect(snapshot.kind == .folder)
+        #expect(snapshot.itemCount == 2)
+        #expect(snapshot.sizeBytes == 7)
+        #expect(snapshot.directoryEntries.map(\.name) == ["Subdir", "notes.txt"])
+        #expect(!snapshot.directoryEntries.map(\.name).contains("deep.txt"))
     }
 
     @Test func supportedLanguagesAreRecognized() {
@@ -251,6 +408,20 @@ struct SkyPasteCoreModelTests {
         #expect(ClipboardSearchQuery(rawValue: "type:text source:icloud").matches(item))
         #expect(!ClipboardSearchQuery(rawValue: "type:image").matches(item))
         #expect(!ClipboardSearchQuery(rawValue: "source:phone").matches(item))
+    }
+
+    @Test func searchQueryMatchesStructuredFileTokens() {
+        let item = ClipboardItem(
+            id: UUID(),
+            createdAt: Date(),
+            content: .fileURLs(urls: [URL(fileURLWithPath: "/tmp/Contracts", isDirectory: true)], pasteboardPayload: nil),
+            fingerprint: "file:/tmp/Contracts",
+            source: .local
+        )
+
+        #expect(!ClipboardSearchQuery(rawValue: "type:file").matches(item))
+        #expect(ClipboardSearchQuery(rawValue: "type:folder").matches(item))
+        #expect(!ClipboardSearchQuery(rawValue: "type:image").matches(item))
     }
 
     @Test func searchQueryMatchesFavoritesAndRelativeDates() {

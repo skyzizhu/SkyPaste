@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct MenuBarClipboardView: View {
@@ -23,8 +24,12 @@ struct MenuBarClipboardView: View {
     let onCopy: (ClipboardItem) -> Void
     let onPreview: (ClipboardItem) -> Void
     let onTextPreview: (ClipboardItem) -> Void
+    let onFileSystemPreview: (ClipboardItem) -> Void
+    let onOpenFileItem: (ClipboardItem) -> Void
+    let onOpenContainingFolder: (ClipboardItem) -> Void
+    let onCopyFileSystemPath: (ClipboardItem) -> Void
+    let onOpenURL: (ClipboardItem) -> Void
     let onOpenPanel: () -> Void
-    let onOpenDebug: () -> Void
     let onOpenPreferences: () -> Void
     let onQuit: () -> Void
 
@@ -44,7 +49,7 @@ struct MenuBarClipboardView: View {
         switch selectedFilter {
         case .all:
             favoriteItems = []
-            daySource = filteredItems.filter { !$0.isFavorite }
+            daySource = filteredItems
         case .favorites:
             favoriteItems = filteredItems
             daySource = []
@@ -126,6 +131,14 @@ struct MenuBarClipboardView: View {
         return Color.accentColor.opacity(0.10)
     }
 
+    private func filterChipHorizontalPadding(for filter: ClipboardFilter) -> CGFloat {
+        filter == .favorites ? 9 : 11
+    }
+
+    private func separatorInset(after item: ClipboardItem) -> CGFloat {
+        item.isImage ? 64 : 12
+    }
+
     private var contentAreaFill: Color {
         colorScheme == .dark ? Color(nsColor: .underPageBackgroundColor) : Color.white.opacity(0.72)
     }
@@ -140,6 +153,10 @@ struct MenuBarClipboardView: View {
 
     private var isSearchActive: Bool {
         isSearchVisible || !store.searchText.isEmpty
+    }
+
+    private var contentScrollResetID: String {
+        "\(selectedFilter.id)|\(store.searchText)"
     }
 
     private var searchButtonFill: Color {
@@ -287,24 +304,20 @@ struct MenuBarClipboardView: View {
 
     private var header: some View {
         HStack(alignment: .center, spacing: 10) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(L10n.tr("menu.clipboard"))
-                    .font(.system(size: 17, weight: .semibold, design: .rounded))
-                Text(L10n.tr("menu.right_click_to_copy"))
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.secondary)
+            HStack(alignment: .center, spacing: 10) {
+                appIconBadge(size: 34, cornerRadius: 8)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(L10n.tr("app.title"))
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    Text(L10n.tr("menu.clipboard_manager"))
+                        .font(.system(size: 9, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
             }
+            .offset(y: -2)
 
             Spacer()
-
-            Button(action: onOpenDebug) {
-                Image(systemName: "ladybug")
-                    .font(.system(size: 11, weight: .medium))
-                    .frame(width: 24, height: 24)
-                    .background(.thinMaterial, in: RoundedRectangle(cornerRadius: 9, style: .continuous))
-            }
-            .buttonStyle(.plain)
-            .help(L10n.tr("menu.debug"))
 
             Button(action: toggleSearch) {
                 Image(systemName: isSearchActive ? "magnifyingglass.circle.fill" : "magnifyingglass")
@@ -324,6 +337,15 @@ struct MenuBarClipboardView: View {
             .buttonStyle(.plain)
             .help(L10n.tr("menu.search"))
         }
+    }
+
+    private func appIconBadge(size: CGFloat, cornerRadius: CGFloat) -> some View {
+        Image(nsImage: NSApp.applicationIconImage)
+            .resizable()
+            .interpolation(.high)
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .shadow(color: .black.opacity(colorScheme == .dark ? 0.18 : 0.08), radius: 5, y: 2)
     }
 
     private func toggleSearch() {
@@ -350,18 +372,25 @@ struct MenuBarClipboardView: View {
     }
 
     private var filterBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(ClipboardFilter.allCases) { filter in
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(ClipboardFilter.allCases) { filter in
                     Button {
-                        withAnimation(.snappy(duration: 0.18)) {
+                        withAnimation(.easeOut(duration: 0.12)) {
                             selectedFilter = filter
                         }
                     } label: {
-                        Text(filter.title)
-                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            HStack(spacing: 5) {
+                                if let symbolSystemName = filter.symbolSystemName {
+                                    Image(systemName: symbolSystemName)
+                                        .font(.system(size: filter == .favorites ? 8 : 10, weight: .semibold))
+                                }
+                                Text(filter.title)
+                                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                            }
                             .foregroundStyle(filterChipTextColor(for: filter))
-                            .padding(.horizontal, 11)
+                            .padding(.horizontal, filterChipHorizontalPadding(for: filter))
                             .padding(.vertical, 6)
                             .background(
                                 Capsule(style: .continuous)
@@ -375,11 +404,21 @@ struct MenuBarClipboardView: View {
                                     )
                             }
                             .shadow(color: filterChipShadowColor(for: filter), radius: 6, y: 2)
+                        }
+                        .buttonStyle(.plain)
+                        .id(filter)
                     }
-                    .buttonStyle(.plain)
+                }
+                .padding(.horizontal, 2)
+            }
+            .onAppear {
+                proxy.scrollTo(selectedFilter, anchor: .center)
+            }
+            .onChange(of: selectedFilter) { _, filter in
+                withAnimation(.easeOut(duration: 0.12)) {
+                    proxy.scrollTo(filter, anchor: .center)
                 }
             }
-            .padding(.horizontal, 2)
         }
     }
 
@@ -448,6 +487,7 @@ struct MenuBarClipboardView: View {
             }
             .padding(10)
         }
+        .id(contentScrollResetID)
         .background(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .fill(contentAreaFill)
@@ -546,7 +586,7 @@ struct MenuBarClipboardView: View {
                     rowView(for: item)
 
                     if index < items.count - 1 {
-                        rowSeparator(inset: item.isImage ? 64 : 12)
+                        rowSeparator(inset: separatorInset(after: item))
                     }
                 }
             }
@@ -573,6 +613,10 @@ struct MenuBarClipboardView: View {
     private func copy(_ item: ClipboardItem) {
         selectedID = item.id
         onCopy(item)
+        showCopyToast()
+    }
+
+    private func showCopyToast() {
         toastTask?.cancel()
 
         withAnimation(.easeOut(duration: 0.15)) {
@@ -604,6 +648,10 @@ struct MenuBarClipboardView: View {
     private func handleRowDoubleTap(_ item: ClipboardItem) {
         pendingPrimaryAction?.cancel()
         selectedID = item.id
+        if item.isFileCollection {
+            onFileSystemPreview(item)
+            return
+        }
         if item.isImage {
             onPreview(item)
             return
@@ -650,6 +698,31 @@ struct MenuBarClipboardView: View {
             Button(L10n.tr("menu.copy")) {
                 selectedID = item.id
                 copy(item)
+            }
+            if item.isFileCollection {
+                Button(item.openActionTitle) {
+                    selectedID = item.id
+                    onOpenFileItem(item)
+                }
+            }
+            if item.isSingleFile {
+                Button(L10n.tr("menu.reveal_in_finder")) {
+                    selectedID = item.id
+                    onOpenContainingFolder(item)
+                }
+            }
+            if item.isFileCollection {
+                Button(L10n.tr("menu.copy_path")) {
+                    selectedID = item.id
+                    onCopyFileSystemPath(item)
+                    showCopyToast()
+                }
+            }
+            if item.isURL {
+                Button(L10n.tr("menu.open_in_browser")) {
+                    selectedID = item.id
+                    onOpenURL(item)
+                }
             }
             if item.isImage {
                 Button(L10n.tr("preview.open")) {

@@ -40,7 +40,7 @@ final class PasteboardDebugModel: ObservableObject {
                 let originalKB = max(1, originalByteCount / 1024)
                 preview = previewOnly ? "\(namePart)\(currentKB) KB preview / \(originalKB) KB original" : "\(namePart)\(originalKB) KB"
 
-            case .fileURLs(let urls):
+            case .fileURLs(let urls, _):
                 decodedSummary = debugSummary(for: item, base: L10n.tr("debug.file_urls"))
                 preview = urls.map(\.path).joined(separator: "\n")
             }

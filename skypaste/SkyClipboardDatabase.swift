@@ -34,6 +34,7 @@ final class ClipboardDatabase {
               blob_value BLOB,
               image_name TEXT,
               file_urls_json TEXT,
+              pasteboard_payload BLOB,
               fingerprint TEXT NOT NULL UNIQUE,
               is_favorite INTEGER NOT NULL DEFAULT 0,
               is_snippet INTEGER NOT NULL DEFAULT 0,
@@ -53,16 +54,21 @@ final class ClipboardDatabase {
     }
 
     func loadRecent(limit: Int) throws -> [ClipboardItem] {
+        guard limit > 0 else { return [] }
+
         var statement: OpaquePointer?
         let sql =
-            "SELECT id, created_at, kind, text_value, blob_value, image_name, file_urls_json, fingerprint, is_favorite, is_snippet, source_kind FROM clipboard_items ORDER BY created_at DESC;"
+            "SELECT id, created_at, kind, text_value, blob_value, image_name, file_urls_json, fingerprint, is_favorite, is_snippet, source_kind, pasteboard_payload FROM clipboard_items ORDER BY created_at DESC LIMIT ?;"
 
         guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
             throw ClipboardDatabaseError.prepareFailed(String(cString: sqlite3_errmsg(db)))
         }
         defer { sqlite3_finalize(statement) }
 
+        sqlite3_bind_int(statement, 1, Int32(limit))
+
         var result: [ClipboardItem] = []
+        result.reserveCapacity(limit)
 
         while sqlite3_step(statement) == SQLITE_ROW {
             guard
@@ -101,7 +107,8 @@ final class ClipboardDatabase {
             case 2:
                 if let jsonC = sqlite3_column_text(statement, 6) {
                     let json = String(cString: jsonC)
-                    content = .fileURLs(Self.decodeURLs(from: json))
+                    let payload = Self.decodePasteboardPayload(from: statement, column: 11)
+                    content = .fileURLs(urls: Self.decodeURLs(from: json), pasteboardPayload: payload)
                 } else {
                     content = nil
                 }
@@ -115,13 +122,13 @@ final class ClipboardDatabase {
             }
         }
 
-        return Array(result.prefix(limit))
+        return result
     }
 
     func loadItem(id: UUID) throws -> ClipboardItem? {
         var statement: OpaquePointer?
         let sql =
-            "SELECT id, created_at, kind, text_value, blob_value, image_name, file_urls_json, fingerprint, is_favorite, is_snippet, source_kind FROM clipboard_items WHERE id = ? LIMIT 1;"
+            "SELECT id, created_at, kind, text_value, blob_value, image_name, file_urls_json, fingerprint, is_favorite, is_snippet, source_kind, pasteboard_payload FROM clipboard_items WHERE id = ? LIMIT 1;"
 
         guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
             throw ClipboardDatabaseError.prepareFailed(String(cString: sqlite3_errmsg(db)))
@@ -168,7 +175,8 @@ final class ClipboardDatabase {
         case 2:
             if let jsonC = sqlite3_column_text(statement, 6) {
                 let json = String(cString: jsonC)
-                content = .fileURLs(Self.decodeURLs(from: json))
+                let payload = Self.decodePasteboardPayload(from: statement, column: 11)
+                content = .fileURLs(urls: Self.decodeURLs(from: json), pasteboardPayload: payload)
             } else {
                 content = nil
             }
@@ -288,7 +296,7 @@ final class ClipboardDatabase {
     private func insert(_ item: ClipboardItem) throws {
         var statement: OpaquePointer?
         let sql =
-            "INSERT INTO clipboard_items (id, created_at, kind, text_value, blob_value, image_name, file_urls_json, fingerprint, is_favorite, is_snippet, source_kind) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
+            "INSERT INTO clipboard_items (id, created_at, kind, text_value, blob_value, image_name, file_urls_json, fingerprint, is_favorite, is_snippet, source_kind, pasteboard_payload) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
 
         guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
             throw ClipboardDatabaseError.prepareFailed(String(cString: sqlite3_errmsg(db)))
@@ -305,6 +313,7 @@ final class ClipboardDatabase {
             sqlite3_bind_null(statement, 5)
             sqlite3_bind_null(statement, 6)
             sqlite3_bind_null(statement, 7)
+            sqlite3_bind_null(statement, 12)
 
         case .image(let data, let name, _, _):
             sqlite3_bind_int(statement, 3, 1)
@@ -325,13 +334,15 @@ final class ClipboardDatabase {
                 sqlite3_bind_null(statement, 6)
             }
             sqlite3_bind_null(statement, 7)
+            sqlite3_bind_null(statement, 12)
 
-        case .fileURLs(let urls):
+        case .fileURLs(let urls, let pasteboardPayload):
             sqlite3_bind_int(statement, 3, 2)
             sqlite3_bind_null(statement, 4)
             sqlite3_bind_null(statement, 5)
             sqlite3_bind_null(statement, 6)
             bindText(Self.encodeURLs(urls), statement: statement, index: 7)
+            Self.bindData(Self.encodePasteboardPayload(pasteboardPayload), statement: statement, index: 12)
         }
 
         bindText(item.fingerprint, statement: statement, index: 8)
@@ -393,6 +404,10 @@ final class ClipboardDatabase {
 
         if !hasColumn(named: "source_kind") {
             try execute("ALTER TABLE clipboard_items ADD COLUMN source_kind INTEGER NOT NULL DEFAULT 0;")
+        }
+
+        if !hasColumn(named: "pasteboard_payload") {
+            try execute("ALTER TABLE clipboard_items ADD COLUMN pasteboard_payload BLOB;")
         }
     }
 
@@ -470,6 +485,37 @@ final class ClipboardDatabase {
         }
 
         return values.compactMap(URL.init(string:))
+    }
+
+    private static func bindData(_ data: Data?, statement: OpaquePointer?, index: Int32) {
+        guard let data, !data.isEmpty else {
+            sqlite3_bind_null(statement, index)
+            return
+        }
+
+        data.withUnsafeBytes { rawBuffer in
+            if let baseAddress = rawBuffer.baseAddress {
+                sqlite3_bind_blob(statement, index, baseAddress, Int32(data.count), sqliteTransient)
+            }
+        }
+    }
+
+    private static func encodePasteboardPayload(_ payload: ClipboardFilePasteboardPayload?) -> Data? {
+        guard let payload, payload.hasEntries else { return nil }
+        return try? JSONEncoder().encode(payload)
+    }
+
+    private static func decodePasteboardPayload(from statement: OpaquePointer?, column: Int32) -> ClipboardFilePasteboardPayload? {
+        guard
+            let bytes = sqlite3_column_blob(statement, column)
+        else {
+            return nil
+        }
+
+        let count = Int(sqlite3_column_bytes(statement, column))
+        guard count > 0 else { return nil }
+        let data = Data(bytes: bytes, count: count)
+        return try? JSONDecoder().decode(ClipboardFilePasteboardPayload.self, from: data)
     }
 
     static func looksLikeCorruption(_ message: String) -> Bool {
