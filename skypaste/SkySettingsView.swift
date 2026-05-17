@@ -23,8 +23,7 @@ struct SettingsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 hero
-                appearanceSection
-                generalSection
+                generalSettingsSection
                 hotKeySection
                 behaviorSection
                 syncSection
@@ -51,12 +50,30 @@ struct SettingsView: View {
         .frame(minWidth: 700, idealWidth: 740, minHeight: 620, idealHeight: 700)
     }
 
-    private var appearanceSection: some View {
-        SettingsSection(title: L10n.tr("settings.appearance")) {
+    private var generalSettingsSection: some View {
+        SettingsSection(
+            title: L10n.tr("settings.general"),
+            contentSpacing: 10,
+            contentPadding: 12
+        ) {
             SettingsRow(title: L10n.tr("settings.appearance")) {
                 Picker("", selection: $settings.appearanceMode) {
                     ForEach(AppAppearanceMode.allCases) { option in
                         Text(L10n.tr(option.titleKey)).tag(option)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .frame(width: 220, alignment: .trailing)
+            }
+
+            Divider()
+                .padding(.vertical, 0.5)
+
+            SettingsRow(title: L10n.tr("settings.language")) {
+                Picker("", selection: $settings.languageCode) {
+                    ForEach(LanguageCatalog.options) { option in
+                        Text(L10n.tr(option.titleKey)).tag(option.id)
                     }
                 }
                 .labelsHidden()
@@ -96,21 +113,6 @@ struct SettingsView: View {
         .overlay {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-        }
-    }
-
-    private var generalSection: some View {
-        SettingsSection(title: L10n.tr("settings.language")) {
-            SettingsRow(title: L10n.tr("settings.language")) {
-                Picker("", selection: $settings.languageCode) {
-                    ForEach(LanguageCatalog.options) { option in
-                        Text(L10n.tr(option.titleKey)).tag(option.id)
-                    }
-                }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .frame(width: 220, alignment: .trailing)
-            }
         }
     }
 
@@ -209,7 +211,7 @@ struct SettingsView: View {
 
             TextEditor(text: $settings.ignoredAppsInput)
                 .font(.system(size: 12, design: .monospaced))
-                .frame(minHeight: 128)
+                .frame(minHeight: 104)
                 .padding(10)
                 .background(
                     RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -303,25 +305,46 @@ struct SettingsView: View {
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
+
+    private func pickerOnlyRow<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        HStack {
+            Spacer(minLength: 0)
+            content()
+        }
+    }
 }
 
 private struct SettingsSection<Content: View>: View {
     @Environment(\.colorScheme) private var colorScheme
     let title: String
+    let contentSpacing: CGFloat
+    let contentPadding: CGFloat
     @ViewBuilder let content: Content
+
+    init(
+        title: String,
+        contentSpacing: CGFloat = 12,
+        contentPadding: CGFloat = 14,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.contentSpacing = contentSpacing
+        self.contentPadding = contentPadding
+        self.content = content()
+    }
 
     private var sectionBackgroundColor: Color {
         colorScheme == .dark ? Color(nsColor: .controlBackgroundColor) : Color.white.opacity(0.62)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: contentSpacing) {
             Text(title)
                 .font(.system(size: 15, weight: .semibold, design: .rounded))
 
             content
         }
-        .padding(14)
+        .padding(contentPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)

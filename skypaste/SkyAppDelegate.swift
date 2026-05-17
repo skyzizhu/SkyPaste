@@ -1260,6 +1260,10 @@ struct FileSystemPreviewSnapshot: Equatable {
     }
 
     private static func typeDescription(for url: URL, fallbackKind: ClipboardFileSystemItemKind?) -> String {
+        if fallbackKind == .folder {
+            return L10n.tr("preview.file_system_type_folder")
+        }
+
         if let values = withSecurityScopedAccess(to: url, {
             try? url.resourceValues(forKeys: [.localizedTypeDescriptionKey])
         }),

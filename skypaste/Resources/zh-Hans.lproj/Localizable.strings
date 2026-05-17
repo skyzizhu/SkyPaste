@@ -18,6 +18,7 @@
 "section.today" = "今天";
 "section.yesterday" = "昨天";
 "settings.appearance" = "主题";
+"settings.general" = "通用设置";
 "settings.appearance_hint" = "默认跟随系统，也可以固定使用浅色或深色模式。";
 "settings.hotkey" = "快捷键";
 "settings.language" = "语言";

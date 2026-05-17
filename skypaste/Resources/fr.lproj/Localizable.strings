@@ -18,6 +18,7 @@
 "section.today" = "Aujourd'hui";
 "section.yesterday" = "Hier";
 "settings.appearance" = "Thème";
+"settings.general" = "Réglages généraux";
 "settings.appearance_hint" = "Suit le système par défaut, avec la possibilité de forcer le mode clair ou sombre.";
 "settings.hotkey" = "Raccourci";
 "settings.language" = "Langue";

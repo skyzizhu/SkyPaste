@@ -18,6 +18,7 @@
 "section.today" = "Today";
 "section.yesterday" = "Yesterday";
 "settings.appearance" = "Theme";
+"settings.general" = "General";
 "settings.appearance_hint" = "Follow the system by default, or force Light or Dark mode.";
 "settings.hotkey" = "Hotkey";
 "settings.language" = "Language";

@@ -18,6 +18,7 @@
 "section.today" = "今日";
 "section.yesterday" = "昨日";
 "settings.appearance" = "テーマ";
+"settings.general" = "一般設定";
 "settings.appearance_hint" = "既定ではシステムに従い、必要に応じてライトまたはダークに固定できます。";
 "settings.hotkey" = "ホットキー";
 "settings.language" = "言語";
