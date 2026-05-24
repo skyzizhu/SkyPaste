@@ -3,7 +3,6 @@ import SwiftUI
 
 struct MenuBarClipboardView: View {
     @Environment(\.colorScheme) private var colorScheme
-    @FocusState private var isSearchFocused: Bool
 
     private struct DaySection: Identifiable {
         let day: Date
@@ -42,7 +41,7 @@ struct MenuBarClipboardView: View {
     @State private var pendingPrimaryAction: DispatchWorkItem?
 
     private var presentation: Presentation {
-        let filteredItems = Array(store.filteredItems.lazy.filter { selectedFilter.matches($0) }.prefix(80))
+        let filteredItems = Array(store.items(for: selectedFilter).prefix(80))
         let favoriteItems: [ClipboardItem]
         let daySource: [ClipboardItem]
 
@@ -152,11 +151,11 @@ struct MenuBarClipboardView: View {
     }
 
     private var isSearchActive: Bool {
-        isSearchVisible || !store.searchText.isEmpty
+        isSearchVisible || !store.appliedSearchText.isEmpty
     }
 
     private var contentScrollResetID: String {
-        "\(selectedFilter.id)|\(store.searchText)"
+        "\(selectedFilter.id)|\(store.appliedSearchText)"
     }
 
     private var searchButtonFill: Color {
@@ -224,7 +223,7 @@ struct MenuBarClipboardView: View {
         }
         .onAppear {
             selectedID = presentation.orderedItems.first?.id
-            isSearchVisible = !store.searchText.isEmpty
+            isSearchVisible = !store.appliedSearchText.isEmpty
         }
         .onChange(of: presentation.orderedItems.map(\.id)) { _, ids in
             guard let selectedID else {
@@ -239,8 +238,8 @@ struct MenuBarClipboardView: View {
         .onChange(of: selectedFilter) { _, _ in
             selectedID = presentation.orderedItems.first?.id
         }
-        .onChange(of: store.searchText) { _, _ in
-            if !store.searchText.isEmpty {
+        .onChange(of: store.appliedSearchText) { _, _ in
+            if !store.appliedSearchText.isEmpty {
                 isSearchVisible = true
             }
             selectedID = presentation.orderedItems.first?.id
@@ -271,35 +270,18 @@ struct MenuBarClipboardView: View {
     }
 
     private var searchBar: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.secondary)
-
-            TextField(L10n.tr("panel.search_placeholder"), text: $store.searchText)
-                .textFieldStyle(.plain)
-                .font(.system(size: 13, weight: .medium))
-                .focused($isSearchFocused)
-
-            Button {
-                closeSearch()
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(.thinMaterial)
+        DeferredSearchField(
+            placeholder: L10n.tr("panel.search_placeholder"),
+            query: store.appliedSearchText,
+            font: .system(size: 13, weight: .medium),
+            iconFont: .system(size: 12, weight: .semibold),
+            clearIconFont: .system(size: 12, weight: .semibold),
+            horizontalPadding: 12,
+            verticalPadding: 10,
+            cornerRadius: 14,
+            onQueryChange: store.setSearchQuery,
+            onClose: closeSearch
         )
-        .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
-        }
     }
 
     private var header: some View {
@@ -357,15 +339,10 @@ struct MenuBarClipboardView: View {
         withAnimation(.snappy(duration: 0.18)) {
             isSearchVisible = true
         }
-
-        DispatchQueue.main.async {
-            isSearchFocused = true
-        }
     }
 
     private func closeSearch() {
-        store.searchText = ""
-        isSearchFocused = false
+        store.setSearchQuery("")
         withAnimation(.snappy(duration: 0.18)) {
             isSearchVisible = false
         }
@@ -461,7 +438,7 @@ struct MenuBarClipboardView: View {
                 if presentation.orderedItems.isEmpty {
                     emptyStateCard(
                         title: isSearchActive ? L10n.tr("panel.search_empty_title") : L10n.tr("panel.empty_title"),
-                        message: isSearchActive ? L10n.tr("panel.search_empty_message") : L10n.tr("panel.empty_message"),
+                        message: emptyStateMessage,
                         showsClearSearch: isSearchActive
                     )
                 } else {
@@ -497,6 +474,21 @@ struct MenuBarClipboardView: View {
                 .stroke(Color.primary.opacity(0.05), lineWidth: 1)
         }
         .shadow(color: .black.opacity(0.03), radius: 14, y: 8)
+    }
+
+    private var emptyStateMessage: String {
+        if isSearchActive {
+            if selectedFilter == .all {
+                return L10n.tr("panel.search_empty_message")
+            }
+            return L10n.format("panel.search_empty_message_scoped", selectedFilter.title)
+        }
+
+        if selectedFilter == .all {
+            return L10n.tr("panel.empty_message")
+        }
+
+        return L10n.format("panel.empty_message_scoped", selectedFilter.title)
     }
 
     private func emptyStateCard(title: String, message: String, showsClearSearch: Bool) -> some View {

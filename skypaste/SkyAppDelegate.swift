@@ -222,9 +222,16 @@ final class AppCoordinator {
 
     func showTextPreview(for item: ClipboardItem) {
         guard let text = item.previewText else { return }
-        let rootView = TextPreviewView(item: item, text: text) { [weak self] in
-            self?.copyOnly(item)
-        }
+        let rootView = TextPreviewView(
+            item: item,
+            text: text,
+            onCopy: { [weak self] in
+                self?.copyOnly(item)
+            },
+            onOpenURL: item.browserURL != nil ? { [weak self] in
+                self?.openURLInBrowser(for: item)
+            } : nil
+        )
 
         if textPreviewWindow == nil {
             let window = NSWindow(
@@ -271,9 +278,9 @@ final class AppCoordinator {
             onOpen: { [weak self] in
                 self?.openFileSystemItem(for: item)
             },
-            onRevealInFinder: item.isSingleFile ? { [weak self] in
+            onRevealInFinder: { [weak self] in
                 self?.revealInFinder(for: item)
-            } : nil
+            }
         )
 
         if fileSystemPreviewWindow == nil {
@@ -974,6 +981,29 @@ private struct TextPreviewView: View {
     let item: ClipboardItem
     let text: String
     let onCopy: () -> Void
+    let onOpenURL: (() -> Void)?
+
+    private var headerActions: [PreviewHeaderAction] {
+        var actions = [
+            PreviewHeaderAction(
+                title: item.isURL ? L10n.tr("menu.copy_link") : L10n.tr("menu.copy"),
+                systemImage: "doc.on.doc",
+                action: onCopy
+            )
+        ]
+
+        if let onOpenURL {
+            actions.append(
+                PreviewHeaderAction(
+                    title: L10n.tr("menu.open_in_browser"),
+                    systemImage: "safari",
+                    action: onOpenURL
+                )
+            )
+        }
+
+        return actions
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -988,11 +1018,7 @@ private struct TextPreviewView: View {
 
                 Spacer()
 
-                Button(action: onCopy) {
-                    Label(L10n.tr("menu.copy"), systemImage: "doc.on.doc")
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
+                PreviewHeaderActionBar(actions: headerActions)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
@@ -1060,7 +1086,11 @@ struct FileSystemPreviewSnapshot: Equatable {
     let sizeBytes: Int64?
     let sizeText: String
     let pathText: String
+    let fileExtensionText: String?
+    let modifiedAtText: String?
     let itemCount: Int?
+    let directFileCount: Int?
+    let directFolderCount: Int?
     let directoryEntries: [FileSystemPreviewDirectoryEntry]
 
     var isMissing: Bool {
@@ -1097,7 +1127,11 @@ struct FileSystemPreviewSnapshot: Equatable {
                     sizeBytes: sizeBytes,
                     sizeText: sizeBytes.map(formatByteCount) ?? L10n.tr("preview.file_system_unavailable"),
                     pathText: pathText,
+                    fileExtensionText: nil,
+                    modifiedAtText: nil,
                     itemCount: availableURLs.isEmpty ? nil : entries.count,
+                    directFileCount: availableURLs.isEmpty ? nil : entries.filter { $0.kind == .file }.count,
+                    directFolderCount: availableURLs.isEmpty ? nil : entries.filter { $0.kind == .folder }.count,
                     directoryEntries: entries
                 )
             case .file:
@@ -1112,7 +1146,11 @@ struct FileSystemPreviewSnapshot: Equatable {
                     sizeBytes: sizeBytes,
                     sizeText: sizeBytes.map(formatByteCount) ?? L10n.tr("preview.file_system_unavailable"),
                     pathText: pathText,
+                    fileExtensionText: fileExtensionText(for: singleURL),
+                    modifiedAtText: availableURLs.isEmpty ? nil : modifiedDateText(for: singleURL),
                     itemCount: nil,
+                    directFileCount: nil,
+                    directFolderCount: nil,
                     directoryEntries: []
                 )
             }
@@ -1135,7 +1173,11 @@ struct FileSystemPreviewSnapshot: Equatable {
             sizeBytes: sizeBytes,
             sizeText: sizeBytes.map(formatByteCount) ?? L10n.tr("preview.file_system_unavailable"),
             pathText: L10n.tr("preview.file_system_multiple_locations"),
+            fileExtensionText: nil,
+            modifiedAtText: nil,
             itemCount: urls.count,
+            directFileCount: nil,
+            directFolderCount: nil,
             directoryEntries: urls.map(selectionEntry(for:))
         )
     }
@@ -1259,6 +1301,20 @@ struct FileSystemPreviewSnapshot: Equatable {
         }
     }
 
+    private static func fileExtensionText(for url: URL) -> String {
+        let ext = url.pathExtension.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !ext.isEmpty else { return L10n.tr("preview.file_system_unavailable") }
+        return ext.uppercased()
+    }
+
+    private static func modifiedDateText(for url: URL) -> String? {
+        let values = withSecurityScopedAccess(to: url) {
+            try? url.resourceValues(forKeys: [.contentModificationDateKey])
+        }
+        guard let date = values?.contentModificationDate else { return nil }
+        return L10n.dateTimeText(date)
+    }
+
     private static func typeDescription(for url: URL, fallbackKind: ClipboardFileSystemItemKind?) -> String {
         if fallbackKind == .folder {
             return L10n.tr("preview.file_system_type_folder")
@@ -1324,6 +1380,41 @@ private struct FileSystemPreviewView: View {
     let onRevealInFinder: (() -> Void)?
     @StateObject private var model: FileSystemPreviewModel
 
+    private var headerActions: [PreviewHeaderAction] {
+        var actions = [
+            PreviewHeaderAction(
+                title: L10n.tr("menu.copy"),
+                systemImage: "doc.on.doc",
+                action: onCopy
+            ),
+            PreviewHeaderAction(
+                title: L10n.tr("menu.copy_path"),
+                systemImage: "text.alignleft",
+                action: onCopyPath
+            )
+        ]
+
+        if let onRevealInFinder {
+            actions.append(
+                PreviewHeaderAction(
+                    title: L10n.tr("menu.reveal_in_finder"),
+                    systemImage: "folder.badge.gearshape",
+                    action: onRevealInFinder
+                )
+            )
+        }
+
+        actions.append(
+            PreviewHeaderAction(
+                title: item.openActionTitle,
+                systemImage: item.singleFileSystemItemKind == .folder ? "folder" : "arrow.up.right.square",
+                action: onOpen
+            )
+        )
+
+        return actions
+    }
+
     init(
         item: ClipboardItem,
         onCopy: @escaping () -> Void,
@@ -1386,32 +1477,8 @@ private struct FileSystemPreviewView: View {
 
             Spacer()
 
-            HStack(spacing: 8) {
-                Button(action: onCopy) {
-                    Label(L10n.tr("menu.copy"), systemImage: "doc.on.doc")
-                }
-                .fixedSize()
-
-                Button(action: onCopyPath) {
-                    Label(L10n.tr("menu.copy_path"), systemImage: "text.alignleft")
-                }
-                .fixedSize()
-
-                Button(action: onOpen) {
-                    Label(item.openActionTitle, systemImage: item.singleFileSystemItemKind == .folder ? "folder" : "arrow.up.right.square")
-                }
-                .fixedSize()
-
-                if let onRevealInFinder {
-                    Button(action: onRevealInFinder) {
-                        Label(L10n.tr("menu.reveal_in_finder"), systemImage: "folder.badge.gearshape")
-                    }
-                    .fixedSize()
-                }
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.regular)
-            .layoutPriority(1)
+            PreviewHeaderActionBar(actions: headerActions)
+                .layoutPriority(1)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
@@ -1483,10 +1550,22 @@ private struct FileSystemPreviewView: View {
             VStack(spacing: 12) {
                 infoRow(label: L10n.tr("preview.file_system_label_name"), value: snapshot.displayName)
                 infoRow(label: L10n.tr("preview.file_system_label_type"), value: snapshot.typeDescription)
+                if let fileExtensionText = snapshot.fileExtensionText {
+                    infoRow(label: L10n.tr("preview.file_system_label_extension"), value: fileExtensionText)
+                }
                 infoRow(label: L10n.tr("preview.file_system_label_size"), value: snapshot.sizeText)
+                if let modifiedAtText = snapshot.modifiedAtText {
+                    infoRow(label: L10n.tr("preview.file_system_label_modified"), value: modifiedAtText)
+                }
                 infoRow(label: L10n.tr("preview.file_system_label_path"), value: snapshot.pathText, monospaced: true)
                 if let itemCount = snapshot.itemCount {
                     infoRow(label: L10n.tr("preview.file_system_label_items"), value: L10n.format("preview.file_system_item_count", itemCount))
+                }
+                if let directFileCount = snapshot.directFileCount {
+                    infoRow(label: L10n.tr("preview.file_system_label_files"), value: L10n.format("preview.file_system_file_count", directFileCount))
+                }
+                if let directFolderCount = snapshot.directFolderCount {
+                    infoRow(label: L10n.tr("preview.file_system_label_folders"), value: L10n.format("preview.file_system_folder_count", directFolderCount))
                 }
             }
         }
@@ -1550,6 +1629,31 @@ private struct FileSystemPreviewView: View {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .stroke(Color.primary.opacity(0.06), lineWidth: 1)
         }
+    }
+}
+
+private struct PreviewHeaderAction: Identifiable {
+    let title: String
+    let systemImage: String
+    let action: () -> Void
+
+    var id: String { "\(systemImage)|\(title)" }
+}
+
+private struct PreviewHeaderActionBar: View {
+    let actions: [PreviewHeaderAction]
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(actions) { action in
+                Button(action: action.action) {
+                    Label(action.title, systemImage: action.systemImage)
+                }
+                .fixedSize()
+            }
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.regular)
     }
 }
 

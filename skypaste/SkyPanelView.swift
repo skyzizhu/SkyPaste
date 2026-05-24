@@ -3,7 +3,6 @@ import SwiftUI
 
 struct PanelView: View {
     @Environment(\.colorScheme) private var colorScheme
-    @FocusState private var isSearchFocused: Bool
 
     private struct DaySection: Identifiable {
         let day: Date
@@ -40,7 +39,7 @@ struct PanelView: View {
     @State private var pendingPrimaryAction: DispatchWorkItem?
 
     private var presentation: Presentation {
-        let filteredItems = store.filteredItems.filter { selectedFilter.matches($0) }
+        let filteredItems = store.items(for: selectedFilter)
         let favoriteItems: [ClipboardItem]
         let daySource: [ClipboardItem]
 
@@ -134,11 +133,11 @@ struct PanelView: View {
     }
 
     private var isSearchActive: Bool {
-        isSearchVisible || !store.searchText.isEmpty
+        isSearchVisible || !store.appliedSearchText.isEmpty
     }
 
     private var contentScrollResetID: String {
-        "\(selectedFilter.id)|\(store.searchText)"
+        "\(selectedFilter.id)|\(store.appliedSearchText)"
     }
 
     private var searchButtonFill: Color {
@@ -224,7 +223,7 @@ struct PanelView: View {
         }
         .onAppear {
             selectedID = presentation.orderedItems.first?.id
-            isSearchVisible = !store.searchText.isEmpty
+            isSearchVisible = !store.appliedSearchText.isEmpty
         }
         .onChange(of: presentation.orderedItems.map(\.id)) { _, ids in
             guard let selectedID else {
@@ -239,8 +238,8 @@ struct PanelView: View {
         .onChange(of: selectedFilter) { _, _ in
             selectedID = presentation.orderedItems.first?.id
         }
-        .onChange(of: store.searchText) { _, _ in
-            if !store.searchText.isEmpty {
+        .onChange(of: store.appliedSearchText) { _, _ in
+            if !store.appliedSearchText.isEmpty {
                 isSearchVisible = true
             }
             selectedID = presentation.orderedItems.first?.id
@@ -333,34 +332,18 @@ struct PanelView: View {
     }
 
     private var searchBar: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-
-            TextField(L10n.tr("panel.search_placeholder"), text: $store.searchText)
-                .textFieldStyle(.plain)
-                .font(.system(size: 15, weight: .medium))
-                .focused($isSearchFocused)
-
-            Button {
-                closeSearch()
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.thinMaterial)
+        DeferredSearchField(
+            placeholder: L10n.tr("panel.search_placeholder"),
+            query: store.appliedSearchText,
+            font: .system(size: 15, weight: .medium),
+            iconFont: .system(size: 14, weight: .medium),
+            clearIconFont: .system(size: 13, weight: .semibold),
+            horizontalPadding: 14,
+            verticalPadding: 12,
+            cornerRadius: 16,
+            onQueryChange: store.setSearchQuery,
+            onClose: closeSearch
         )
-        .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
-        }
     }
 
     private func toggleSearch() {
@@ -372,15 +355,10 @@ struct PanelView: View {
         withAnimation(.snappy(duration: 0.18)) {
             isSearchVisible = true
         }
-
-        DispatchQueue.main.async {
-            isSearchFocused = true
-        }
     }
 
     private func closeSearch() {
-        store.searchText = ""
-        isSearchFocused = false
+        store.setSearchQuery("")
         withAnimation(.snappy(duration: 0.18)) {
             isSearchVisible = false
         }
@@ -476,7 +454,7 @@ struct PanelView: View {
                 if presentation.orderedItems.isEmpty {
                     emptyStateCard(
                         title: isSearchActive ? L10n.tr("panel.search_empty_title") : L10n.tr("panel.empty_title"),
-                        message: isSearchActive ? L10n.tr("panel.search_empty_message") : L10n.tr("panel.empty_message"),
+                        message: emptyStateMessage,
                         showsClearSearch: isSearchActive
                     )
                 } else {
@@ -511,6 +489,21 @@ struct PanelView: View {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(Color.primary.opacity(0.05), lineWidth: 1)
         }
+    }
+
+    private var emptyStateMessage: String {
+        if isSearchActive {
+            if selectedFilter == .all {
+                return L10n.tr("panel.search_empty_message")
+            }
+            return L10n.format("panel.search_empty_message_scoped", selectedFilter.title)
+        }
+
+        if selectedFilter == .all {
+            return L10n.tr("panel.empty_message")
+        }
+
+        return L10n.format("panel.empty_message_scoped", selectedFilter.title)
     }
 
     private func emptyStateCard(title: String, message: String, showsClearSearch: Bool) -> some View {
@@ -812,6 +805,110 @@ struct PanelView: View {
                 }
         }
         .buttonStyle(.plain)
+    }
+}
+
+struct DeferredSearchField: View {
+    let placeholder: String
+    let query: String
+    let font: Font
+    let iconFont: Font
+    let clearIconFont: Font
+    let horizontalPadding: CGFloat
+    let verticalPadding: CGFloat
+    let cornerRadius: CGFloat
+    let onQueryChange: (String) -> Void
+    let onClose: () -> Void
+
+    @FocusState private var isFocused: Bool
+    @State private var draft: String
+    @State private var pendingUpdate: DispatchWorkItem?
+
+    init(
+        placeholder: String,
+        query: String,
+        font: Font,
+        iconFont: Font,
+        clearIconFont: Font,
+        horizontalPadding: CGFloat,
+        verticalPadding: CGFloat,
+        cornerRadius: CGFloat,
+        onQueryChange: @escaping (String) -> Void,
+        onClose: @escaping () -> Void
+    ) {
+        self.placeholder = placeholder
+        self.query = query
+        self.font = font
+        self.iconFont = iconFont
+        self.clearIconFont = clearIconFont
+        self.horizontalPadding = horizontalPadding
+        self.verticalPadding = verticalPadding
+        self.cornerRadius = cornerRadius
+        self.onQueryChange = onQueryChange
+        self.onClose = onClose
+        _draft = State(initialValue: query)
+    }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .font(iconFont)
+                .foregroundStyle(.secondary)
+
+            TextField(placeholder, text: $draft)
+                .textFieldStyle(.plain)
+                .font(font)
+                .focused($isFocused)
+
+            Button {
+                pendingUpdate?.cancel()
+                draft = ""
+                onQueryChange("")
+                onClose()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(clearIconFont)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, verticalPadding)
+        .background(
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(.thinMaterial)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        }
+        .onAppear {
+            draft = query
+            DispatchQueue.main.async {
+                isFocused = true
+            }
+        }
+        .onChange(of: query) { _, newValue in
+            if newValue != draft {
+                draft = newValue
+            }
+        }
+        .onChange(of: draft) { _, newValue in
+            scheduleQueryUpdate(for: newValue)
+        }
+        .onDisappear {
+            pendingUpdate?.cancel()
+        }
+    }
+
+    private func scheduleQueryUpdate(for value: String) {
+        pendingUpdate?.cancel()
+
+        let task = DispatchWorkItem {
+            onQueryChange(value)
+        }
+        pendingUpdate = task
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.10, execute: task)
     }
 }
 

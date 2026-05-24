@@ -65,7 +65,7 @@ enum ClipboardFilter: String, CaseIterable, Identifiable {
         case .text:
             return item.isPlainText
         case .image:
-            return item.isImage
+            return item.isImage || item.containsImageFiles
         case .file:
             return item.containsFiles
         case .folder:
@@ -172,6 +172,7 @@ struct ClipboardItem: Identifiable, Equatable {
     let content: ClipboardContent
     let fingerprint: String
     let classification: Classification
+    let searchIndex: String
     let source: ClipboardSource
     var isFavorite: Bool
     var isSnippet: Bool
@@ -192,6 +193,7 @@ struct ClipboardItem: Identifiable, Equatable {
         self.fingerprint = fingerprint
         self.classification = derivedClassification
         self.source = source
+        self.searchIndex = Self.makeSearchIndex(for: content, classification: derivedClassification, source: source)
         self.isFavorite = isFavorite
         self.isSnippet = isSnippet
     }
@@ -231,11 +233,21 @@ struct ClipboardItem: Identifiable, Equatable {
     }
 
     var containsFiles: Bool {
-        fileSystemKinds.contains(.file)
+        guard let fileURLs else { return false }
+        return fileURLs.contains { url in
+            Self.fileSystemItemKind(for: url) == .file && !Self.isImageFileURL(url)
+        }
     }
 
     var containsFolders: Bool {
         fileSystemKinds.contains(.folder)
+    }
+
+    var containsImageFiles: Bool {
+        guard let fileURLs else { return false }
+        return fileURLs.contains { url in
+            Self.fileSystemItemKind(for: url) == .file && Self.isImageFileURL(url)
+        }
     }
 
     var singleFileURL: URL? {
@@ -300,40 +312,10 @@ struct ClipboardItem: Identifiable, Equatable {
     }
 
     var searchableText: String {
-        var parts: [String] = [
-            title,
-            subtitle
-        ]
-
-        switch content {
-        case .text(let value):
-            parts.append(value)
-        case .image(_, let name, _, _):
-            if let name, !name.isEmpty {
-                parts.append(name)
-            }
-            parts.append(contentsOf: ["image", "img", "图片"])
-        case .fileURLs(let urls, _):
-            parts.append(contentsOf: urls.map(\.lastPathComponent))
-            parts.append(contentsOf: urls.map(\.path))
-            parts.append(contentsOf: ["file", "files", "folder", "folders", "directory", "directories", "文件", "文件夹", "目录"])
-        }
-
-        if isPlainText {
-            parts.append(contentsOf: ["text", "plain text", "文本"])
-        }
-        if isURL {
-            parts.append(contentsOf: ["url", "link", "链接"])
-        }
-        if isCode {
-            parts.append(contentsOf: ["code", "snippet", "代码"])
-        }
         if isFavorite {
-            parts.append(contentsOf: ["favorite", "favorites", "fav", "收藏"])
+            return searchIndex + "\nfavorite\nfavorites\nfav\n收藏"
         }
-
-        parts.append(contentsOf: source.searchKeywords)
-        return parts.joined(separator: "\n").lowercased()
+        return searchIndex
     }
 
     private static func makeTitle(for content: ClipboardContent) -> String {
@@ -426,6 +408,53 @@ struct ClipboardItem: Identifiable, Equatable {
                 isCode: isCode
             )
         }
+    }
+
+    private static func makeSearchIndex(
+        for content: ClipboardContent,
+        classification: Classification,
+        source: ClipboardSource
+    ) -> String {
+        var parts: [String] = []
+
+        switch content {
+        case .text(let value):
+            let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                parts.append(trimmed)
+            }
+
+        case .image(_, let name, _, _):
+            if let name {
+                let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty {
+                    parts.append(trimmed)
+                }
+            }
+            parts.append(contentsOf: ["image", "img", "图片"])
+
+        case .fileURLs(let urls, _):
+            parts.append(contentsOf: urls.map(displayName(for:)))
+            parts.append(contentsOf: urls.map(\.path))
+            parts.append(contentsOf: ["file", "files", "folder", "folders", "directory", "directories", "文件", "文件夹", "目录"])
+
+            if urls.contains(where: isImageFileURL(_:)) {
+                parts.append(contentsOf: ["image file", "photo file", "image", "img", "图片", "图片文件"])
+            }
+        }
+
+        if classification.isPlainText {
+            parts.append(contentsOf: ["text", "plain text", "文本"])
+        }
+        if classification.isURL {
+            parts.append(contentsOf: ["url", "link", "链接"])
+        }
+        if classification.isCode {
+            parts.append(contentsOf: ["code", "snippet", "代码"])
+        }
+
+        parts.append(contentsOf: source.searchKeywords)
+        return parts.joined(separator: "\n").lowercased()
     }
 
     private static func looksLikeURL(_ value: String) -> Bool {
@@ -546,6 +575,14 @@ struct ClipboardItem: Identifiable, Equatable {
         return url.hasDirectoryPath ? .folder : .file
     }
 
+    private static func isImageFileURL(_ url: URL) -> Bool {
+        guard !url.pathExtension.isEmpty else { return false }
+        if let type = UTType(filenameExtension: url.pathExtension) {
+            return type.conforms(to: .image)
+        }
+        return false
+    }
+
     private static func displayName(for url: URL) -> String {
         let component = url.lastPathComponent.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         return component.isEmpty ? url.path : component
@@ -629,10 +666,13 @@ struct ClipboardDecoder {
             }
 
         case .fileURLs(let urls, let pasteboardPayload):
-            if restoreFilePasteboardPayload(pasteboardPayload, to: pasteboard) {
+            let pasteboardItems = makeFilePasteboardItems(urls: urls, payload: pasteboardPayload)
+            if !pasteboardItems.isEmpty {
+                pasteboard.writeObjects(pasteboardItems as [NSPasteboardWriting])
                 writeLegacyFileList(urls, to: pasteboard)
                 return
             }
+
             pasteboard.writeObjects(urls as [NSPasteboardWriting])
             writeLegacyFileList(urls, to: pasteboard)
         }
@@ -669,14 +709,17 @@ struct ClipboardDecoder {
         return payload.hasEntries ? payload : nil
     }
 
-    private static func restoreFilePasteboardPayload(_ payload: ClipboardFilePasteboardPayload?, to pasteboard: NSPasteboard) -> Bool {
-        guard let payload, payload.hasEntries else { return false }
+    private static func makeFilePasteboardItems(urls: [URL], payload: ClipboardFilePasteboardPayload?) -> [NSPasteboardItem] {
+        guard !urls.isEmpty else { return [] }
 
-        let items = payload.items.compactMap { archivedItem -> NSPasteboardItem? in
+        let payloadItems = payload?.items ?? []
+
+        return urls.enumerated().compactMap { index, url in
             let item = NSPasteboardItem()
             var hasValue = false
+            var restoredTypes = Set<String>()
 
-            for entry in archivedItem.entries {
+            for entry in payloadItems[safe: index]?.entries ?? [] {
                 let type = NSPasteboard.PasteboardType(entry.type)
                 switch entry.storage {
                 case .data(let data):
@@ -691,13 +734,32 @@ struct ClipboardDecoder {
                         hasValue = true
                     }
                 }
+
+                restoredTypes.insert(entry.type)
+            }
+
+            if !restoredTypes.contains(NSPasteboard.PasteboardType.fileURL.rawValue) {
+                item.setString(url.absoluteString, forType: .fileURL)
+                hasValue = true
+            }
+
+            if !restoredTypes.contains(NSPasteboard.PasteboardType.URL.rawValue) {
+                item.setString(url.absoluteString, forType: .URL)
+                hasValue = true
+            }
+
+            if !restoredTypes.contains("public.url-name") {
+                item.setString(url.lastPathComponent, forType: NSPasteboard.PasteboardType("public.url-name"))
+                hasValue = true
+            }
+
+            if !restoredTypes.contains(NSPasteboard.PasteboardType.string.rawValue) {
+                item.setString(url.lastPathComponent, forType: .string)
+                hasValue = true
             }
 
             return hasValue ? item : nil
         }
-
-        guard !items.isEmpty else { return false }
-        return pasteboard.writeObjects(items as [NSPasteboardWriting])
     }
 
     private static func writeLegacyFileList(_ urls: [URL], to pasteboard: NSPasteboard) {
@@ -874,6 +936,12 @@ struct ClipboardDecoder {
         }
 
         return .zero
+    }
+}
+
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
     }
 }
 

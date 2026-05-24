@@ -126,7 +126,7 @@ struct ClipboardSearchQuery {
         case .text:
             return item.isPlainText
         case .image:
-            return item.isImage
+            return item.isImage || item.containsImageFiles
         case .file:
             return item.containsFiles
         case .folder:
@@ -163,13 +163,18 @@ struct ClipboardSearchQuery {
 @MainActor
 final class ClipboardStore: ObservableObject {
     @Published private(set) var items: [ClipboardItem] = []
-    @Published var searchText: String = ""
+    @Published private(set) var filteredItems: [ClipboardItem] = []
+    @Published private(set) var filteredItemsByFilter: [ClipboardFilter: [ClipboardItem]] = [:]
+    @Published private(set) var appliedSearchText: String = ""
     @Published var startupNotice: String?
     var onLocalItemAdded: ((ClipboardItem) -> Void)?
 
     private let settings: AppSettings
     private let database: ClipboardDatabase?
+    private let filterQueue = DispatchQueue(label: "com.huaibor.skypaste.search-filter", qos: .userInitiated)
     private var cancellables = Set<AnyCancellable>()
+    private var filterWorkItem: DispatchWorkItem?
+    private var filterGeneration: Int = 0
 
     init(settings: AppSettings) {
         self.settings = settings
@@ -190,19 +195,22 @@ final class ClipboardStore: ObservableObject {
             }
         }
 
+        filteredItemsByFilter = Self.makeFilteredItemsByFilter(items: items, query: "")
+        filteredItems = filteredItemsByFilter[.all] ?? items
+
         settings.$historyLimit
             .removeDuplicates()
             .sink { [weak self] newLimit in
                 self?.applyHistoryLimit(newLimit)
             }
             .store(in: &cancellables)
-    }
 
-    var filteredItems: [ClipboardItem] {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else { return items }
-        let parsedQuery = ClipboardSearchQuery(rawValue: query)
-        return items.filter { parsedQuery.matches($0) }
+        $items
+            .sink { [weak self] items in
+                self?.updateFilteredItems(items: items, query: self?.appliedSearchText ?? "")
+            }
+            .store(in: &cancellables)
+
     }
 
     func itemsEligibleForCloudSync() -> [ClipboardItem] {
@@ -339,6 +347,14 @@ final class ClipboardStore: ObservableObject {
 
     func dismissStartupNotice() {
         startupNotice = nil
+    }
+
+    func setSearchQuery(_ query: String) {
+        updateFilteredItems(items: items, query: query)
+    }
+
+    func items(for filter: ClipboardFilter) -> [ClipboardItem] {
+        filteredItemsByFilter[filter] ?? []
     }
 
     private func shouldIgnoreCurrentFrontApp() -> Bool {
@@ -499,6 +515,62 @@ final class ClipboardStore: ObservableObject {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter
     }()
+
+    private func updateFilteredItems(items: [ClipboardItem], query: String) {
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        appliedSearchText = trimmedQuery
+        filterGeneration += 1
+        let generation = filterGeneration
+
+        filterWorkItem?.cancel()
+
+        guard !trimmedQuery.isEmpty else {
+            filteredItemsByFilter = Self.makeFilteredItemsByFilter(items: items, query: "")
+            filteredItems = filteredItemsByFilter[.all] ?? items
+            return
+        }
+
+        let snapshot = items
+        let workItem = DispatchWorkItem { [trimmedQuery] in
+            let result = Self.makeFilteredItemsByFilter(items: snapshot, query: trimmedQuery)
+            DispatchQueue.main.async { [weak self] in
+                guard let self else { return }
+                guard self.filterGeneration == generation else { return }
+                self.filteredItemsByFilter = result
+                self.filteredItems = result[.all] ?? []
+            }
+        }
+
+        filterWorkItem = workItem
+        filterQueue.async(execute: workItem)
+    }
+
+    private static func filter(items: [ClipboardItem], query: String) -> [ClipboardItem] {
+        guard !query.isEmpty else { return items }
+
+        let parsedQuery = ClipboardSearchQuery(rawValue: query)
+        return items.filter { parsedQuery.matches($0) }
+    }
+
+    private static func makeFilteredItemsByFilter(items: [ClipboardItem], query: String) -> [ClipboardFilter: [ClipboardItem]] {
+        var result: [ClipboardFilter: [ClipboardItem]] = [:]
+
+        for filter in ClipboardFilter.allCases {
+            let scopedItems: [ClipboardItem]
+            switch filter {
+            case .all:
+                scopedItems = items
+            case .favorites:
+                scopedItems = items.filter(\.isFavorite)
+            default:
+                scopedItems = items.filter { filter.matches($0) }
+            }
+
+            result[filter] = Self.filter(items: scopedItems, query: query)
+        }
+
+        return result
+    }
 
     private func enforceHistoryLimit(limit: Int? = nil) {
         let resolvedLimit = limit ?? settings.historyLimit

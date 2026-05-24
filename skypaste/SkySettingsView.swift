@@ -29,6 +29,7 @@ struct SettingsView: View {
                 syncSection
                 historySection
                 privacySection
+                yourToolsSection
             }
             .padding(16)
             .frame(maxWidth: 740, alignment: .leading)
@@ -226,10 +227,73 @@ struct SettingsView: View {
         }
     }
 
+    private var yourToolsSection: some View {
+        SettingsSection(title: L10n.tr("settings.recommended_app")) {
+            HStack(alignment: .center, spacing: 14) {
+                yourToolsLogo
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L10n.tr("yourtools.title"))
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.primary)
+
+                    Text(L10n.tr("yourtools.subtitle"))
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer(minLength: 12)
+
+                Button(action: openYourTools) {
+                    Text(L10n.tr("yourtools.open"))
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(
+                            Capsule(style: .continuous)
+                                .fill(Color.accentColor.opacity(colorScheme == .dark ? 0.22 : 0.12))
+                        )
+                }
+                .buttonStyle(.plain)
+                .help(L10n.tr("yourtools.open"))
+            }
+        }
+    }
+
     private var versionText: String {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
         return L10n.format("settings.version_format", version, build)
+    }
+
+    private var yourToolsLogo: some View {
+        Group {
+            if let imageURL = Bundle.main.url(forResource: "yourtools-logo", withExtension: "jpeg"),
+               let image = NSImage(contentsOf: imageURL) {
+                Image(nsImage: image)
+                    .resizable()
+                    .interpolation(.high)
+            } else {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.accentColor.opacity(0.12))
+                    .overlay {
+                        Image(systemName: "sparkles.rectangle.stack.fill")
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundStyle(Color.accentColor)
+                    }
+            }
+        }
+        .frame(width: 64, height: 64)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+        }
+    }
+
+    private func openYourTools() {
+        guard let url = URL(string: "https://apps.apple.com/us/app/your-tools-ai-toolbox/id6670400942") else { return }
+        NSWorkspace.shared.open(url)
     }
 
     private var syncStatusText: String {

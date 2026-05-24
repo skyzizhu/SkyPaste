@@ -155,6 +155,18 @@ struct SkyPasteCoreModelTests {
         #expect(!ClipboardFilter.folder.matches(textItem))
     }
 
+    @Test func imageFilesAreExcludedFromFileFilterAndIncludedInImageFilter() {
+        let imageFileItem = ClipboardItem(
+            content: .fileURLs(urls: [URL(fileURLWithPath: "/tmp/Screenshot.png")], pasteboardPayload: nil),
+            fingerprint: "file:/tmp/Screenshot.png"
+        )
+
+        #expect(!ClipboardFilter.file.matches(imageFileItem))
+        #expect(ClipboardFilter.image.matches(imageFileItem))
+        #expect(ClipboardSearchQuery(rawValue: "type:image").matches(imageFileItem))
+        #expect(!ClipboardSearchQuery(rawValue: "type:file").matches(imageFileItem))
+    }
+
     @Test func filePasteboardPayloadRoundTripsThroughClipboardDecoder() {
         let url = URL(fileURLWithPath: "/tmp/Report.pdf")
         let payload = ClipboardFilePasteboardPayload(items: [
@@ -218,6 +230,29 @@ struct SkyPasteCoreModelTests {
 
         let filenames = pasteboard.propertyList(forType: NSPasteboard.PasteboardType("NSFilenamesPboardType")) as? [String]
         #expect(filenames == [url.path])
+        #expect(pasteboard.pasteboardItems?.first?.string(forType: .fileURL) == url.absoluteString)
+        #expect(pasteboard.pasteboardItems?.first?.string(forType: .URL) == url.absoluteString)
+        #expect(pasteboard.pasteboardItems?.first?.string(forType: NSPasteboard.PasteboardType("public.url-name")) == url.lastPathComponent)
+        #expect(pasteboard.pasteboardItems?.first?.string(forType: .string) == url.lastPathComponent)
+    }
+
+    @Test func folderWriteAddsFinderCompatibleNameTypes() {
+        let url = URL(fileURLWithPath: "/tmp/SkyPaste Folder", isDirectory: true)
+        let item = ClipboardItem(
+            content: .fileURLs(urls: [url], pasteboardPayload: nil),
+            fingerprint: "file:\(url.path)"
+        )
+
+        let pasteboard = NSPasteboard.withUniqueName()
+        ClipboardDecoder.write(item, to: pasteboard)
+
+        let fileURLString = pasteboard.pasteboardItems?.first?.string(forType: .fileURL)
+        let restoredURL = fileURLString.flatMap(URL.init(string:))?.standardizedFileURL
+        let filenames = pasteboard.propertyList(forType: NSPasteboard.PasteboardType("NSFilenamesPboardType")) as? [String]
+        #expect(filenames == [url.path])
+        #expect(restoredURL?.path == url.standardizedFileURL.path)
+        #expect(pasteboard.pasteboardItems?.first?.string(forType: NSPasteboard.PasteboardType("public.url-name")) == url.lastPathComponent)
+        #expect(pasteboard.pasteboardItems?.first?.string(forType: .string) == url.lastPathComponent)
     }
 
     @Test func fileSystemPreviewSnapshotListsImmediateDirectoryEntries() throws {
