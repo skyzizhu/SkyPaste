@@ -810,15 +810,12 @@ private struct ImagePreviewView: View {
     let item: ClipboardItem
     let onCopy: () -> Void
     @State private var zoomScale: CGFloat = 1
-    @GestureState private var gestureScale: CGFloat = 1
 
     private var image: NSImage? {
         item.previewImage
     }
 
     var body: some View {
-        let liveScale = clampedScale(zoomScale * gestureScale)
-
         VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -847,7 +844,7 @@ private struct ImagePreviewView: View {
                     Button {
                         zoomScale = 1
                     } label: {
-                        Text("\(Int(liveScale * 100))%")
+                        Text("\(Int(zoomScale * 100))%")
                             .font(.system(size: 12, weight: .semibold, design: .rounded))
                             .monospacedDigit()
                     }
@@ -891,22 +888,15 @@ private struct ImagePreviewView: View {
                         }
 
                     if let image {
-                        let fittedSize = fittedImageSize(
-                            imageSize: image.size,
+                        MagnifiableImagePreviewRepresentable(
+                            image: image,
+                            zoomScale: $zoomScale,
                             availableSize: CGSize(
                                 width: max(proxy.size.width - 120, 280),
                                 height: max(proxy.size.height - 120, 280)
                             )
                         )
-
-                        Image(nsImage: image)
-                            .resizable()
-                            .interpolation(.high)
-                            .frame(
-                                width: max(120, fittedSize.width * liveScale),
-                                height: max(120, fittedSize.height * liveScale)
-                            )
-                            .shadow(color: .black.opacity(0.08), radius: 14, y: 8)
+                        .shadow(color: .black.opacity(0.08), radius: 14, y: 8)
                     } else {
                         ContentUnavailableView(
                             L10n.tr("preview.unavailable"),
@@ -917,7 +907,6 @@ private struct ImagePreviewView: View {
                     }
                 }
                 .padding(24)
-                .gesture(magnifyGesture)
                 .clipped()
                 .background(
                     LinearGradient(
@@ -935,6 +924,138 @@ private struct ImagePreviewView: View {
         .background(Color(nsColor: .windowBackgroundColor))
     }
 
+    private func clampedScale(_ value: CGFloat) -> CGFloat {
+        min(max(value, 0.4), 5)
+    }
+}
+
+private struct MagnifiableImagePreviewRepresentable: NSViewRepresentable {
+    let image: NSImage
+    @Binding var zoomScale: CGFloat
+    let availableSize: CGSize
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(zoomScale: $zoomScale)
+    }
+
+    func makeNSView(context: Context) -> MagnifiableImageScrollView {
+        let scrollView = MagnifiableImageScrollView()
+        scrollView.onMagnificationChanged = { magnification in
+            context.coordinator.updateZoomScale(magnification)
+        }
+        return scrollView
+    }
+
+    func updateNSView(_ nsView: MagnifiableImageScrollView, context: Context) {
+        nsView.onMagnificationChanged = { magnification in
+            context.coordinator.updateZoomScale(magnification)
+        }
+        nsView.update(
+            image: image,
+            zoomScale: zoomScale,
+            availableSize: availableSize
+        )
+    }
+
+    final class Coordinator {
+        @Binding private var zoomScale: CGFloat
+
+        init(zoomScale: Binding<CGFloat>) {
+            _zoomScale = zoomScale
+        }
+
+        func updateZoomScale(_ magnification: CGFloat) {
+            DispatchQueue.main.async {
+                let clamped = min(max(magnification, 0.4), 5)
+                if abs(self.zoomScale - clamped) > 0.001 {
+                    self.zoomScale = clamped
+                }
+            }
+        }
+    }
+}
+
+private final class MagnifiableImageScrollView: NSScrollView {
+    var onMagnificationChanged: ((CGFloat) -> Void)?
+
+    private let containerView = PannableImageContainerView()
+    private let imageView = NSImageView()
+    private var baseImageSize: CGSize = CGSize(width: 240, height: 240)
+    private var currentScale: CGFloat = 1
+    private var panStartOrigin: CGPoint = .zero
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        configure()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        configure()
+    }
+
+    func update(image: NSImage, zoomScale: CGFloat, availableSize: CGSize) {
+        imageView.image = image
+        baseImageSize = fittedImageSize(imageSize: imageDisplaySize(for: image), availableSize: availableSize)
+        if abs(currentScale - zoomScale) > 0.001 {
+            currentScale = zoomScale
+        }
+        layoutImage()
+    }
+
+    override func layout() {
+        super.layout()
+        layoutImage()
+    }
+
+    override func magnify(with event: NSEvent) {
+        currentScale = min(max(currentScale + event.magnification, 0.4), 5)
+        onMagnificationChanged?(currentScale)
+        layoutImage()
+    }
+
+    private func configure() {
+        drawsBackground = false
+        hasVerticalScroller = true
+        hasHorizontalScroller = true
+        autohidesScrollers = true
+        borderType = .noBorder
+        currentScale = 1
+
+        imageView.imageScaling = .scaleProportionallyUpOrDown
+        imageView.imageAlignment = .alignCenter
+        imageView.wantsLayer = true
+
+        containerView.wantsLayer = true
+        containerView.layer?.backgroundColor = NSColor.clear.cgColor
+        containerView.addSubview(imageView)
+        containerView.onPan = { [weak self] translation, state in
+            self?.handlePan(translation: translation, state: state)
+        }
+        documentView = containerView
+    }
+
+    private func layoutImage() {
+        let scaledSize = CGSize(
+            width: max(120, baseImageSize.width * currentScale),
+            height: max(120, baseImageSize.height * currentScale)
+        )
+        let visibleSize = contentView.bounds.size
+        let containerSize = CGSize(
+            width: max(visibleSize.width, scaledSize.width),
+            height: max(visibleSize.height, scaledSize.height)
+        )
+
+        containerView.frame = CGRect(origin: .zero, size: containerSize)
+        imageView.frame = CGRect(
+            x: max(0, (containerSize.width - scaledSize.width) / 2),
+            y: max(0, (containerSize.height - scaledSize.height) / 2),
+            width: scaledSize.width,
+            height: scaledSize.height
+        )
+        updateCursor()
+    }
+
     private func fittedImageSize(imageSize: CGSize, availableSize: CGSize) -> CGSize {
         guard imageSize.width > 0, imageSize.height > 0 else {
             return CGSize(width: 240, height: 240)
@@ -950,18 +1071,103 @@ private struct ImagePreviewView: View {
         )
     }
 
-    private var magnifyGesture: some Gesture {
-        MagnifyGesture()
-            .updating($gestureScale) { value, state, _ in
-                state = value.magnification
-            }
-            .onEnded { value in
-                zoomScale = clampedScale(zoomScale * value.magnification)
-            }
+    private func imageDisplaySize(for image: NSImage) -> CGSize {
+        if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            return CGSize(width: cgImage.width, height: cgImage.height)
+        }
+
+        if let representation = image.representations.first(where: {
+            $0.pixelsWide > 0 && $0.pixelsHigh > 0
+        }) {
+            return CGSize(width: representation.pixelsWide, height: representation.pixelsHigh)
+        }
+
+        return image.size
     }
 
-    private func clampedScale(_ value: CGFloat) -> CGFloat {
-        min(max(value, 0.4), 5)
+    private func handlePan(translation: CGPoint, state: NSGestureRecognizer.State) {
+        guard canPanContent else { return }
+
+        switch state {
+        case .began:
+            panStartOrigin = contentView.bounds.origin
+        case .changed:
+            let targetOrigin = CGPoint(
+                x: panStartOrigin.x - translation.x,
+                y: panStartOrigin.y - translation.y
+            )
+            scroll(to: clampedContentOrigin(targetOrigin))
+        default:
+            break
+        }
+    }
+
+    private func scroll(to origin: CGPoint) {
+        contentView.scroll(to: origin)
+        reflectScrolledClipView(contentView)
+    }
+
+    private func clampedContentOrigin(_ origin: CGPoint) -> CGPoint {
+        let visibleSize = contentView.bounds.size
+        let maxX = max(0, containerView.frame.width - visibleSize.width)
+        let maxY = max(0, containerView.frame.height - visibleSize.height)
+        return CGPoint(
+            x: min(max(origin.x, 0), maxX),
+            y: min(max(origin.y, 0), maxY)
+        )
+    }
+
+    private var canPanContent: Bool {
+        let visibleSize = contentView.bounds.size
+        return containerView.frame.width > visibleSize.width + 1 ||
+            containerView.frame.height > visibleSize.height + 1
+    }
+
+    private func updateCursor() {
+        if canPanContent {
+            containerView.cursor = .openHand
+        } else {
+            containerView.cursor = .arrow
+        }
+        window?.invalidateCursorRects(for: containerView)
+    }
+}
+
+private final class PannableImageContainerView: NSView {
+    var onPan: ((CGPoint, NSGestureRecognizer.State) -> Void)?
+    var cursor: NSCursor = .arrow
+
+    private lazy var panGestureRecognizer: NSPanGestureRecognizer = {
+        let gesture = NSPanGestureRecognizer(target: self, action: #selector(handlePanGesture(_:)))
+        gesture.buttonMask = 0x1
+        return gesture
+    }()
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        addGestureRecognizer(panGestureRecognizer)
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        addGestureRecognizer(panGestureRecognizer)
+    }
+
+    override func resetCursorRects() {
+        addCursorRect(bounds, cursor: cursor)
+    }
+
+    @objc
+    private func handlePanGesture(_ gesture: NSPanGestureRecognizer) {
+        let translation = gesture.translation(in: self)
+        if gesture.state == .began || gesture.state == .changed {
+            gesture.view?.window?.invalidateCursorRects(for: self)
+            cursor = .closedHand
+        } else if gesture.state == .ended || gesture.state == .cancelled || gesture.state == .failed {
+            cursor = .openHand
+            gesture.view?.window?.invalidateCursorRects(for: self)
+        }
+        onPan?(translation, gesture.state)
     }
 }
 
@@ -1464,7 +1670,7 @@ private struct FileSystemPreviewView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(L10n.tr("preview.file_system_title"))
                     .font(.system(size: 20, weight: .semibold, design: .rounded))
-                Text(item.title)
+                Text(headerTitleText)
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -1483,6 +1689,16 @@ private struct FileSystemPreviewView: View {
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
         .background(.ultraThinMaterial)
+    }
+
+    private var headerTitleText: String {
+        guard item.singleFileSystemItemKind == .folder,
+              let folderURL = item.fileURLs?.first,
+              item.fileURLs?.count == 1 else {
+            return item.title
+        }
+
+        return folderURL.lastPathComponent
     }
 
     private var loadingView: some View {

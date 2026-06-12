@@ -6,6 +6,9 @@
 "clipboard.folder_count" = "%d 個資料夾";
 "clipboard.subtitle.text" = "文字 • %d 字元";
 "clipboard.subtitle.image" = "圖片 • %d KB";
+"clipboard.subtitle.image_file" = "圖片檔案";
+"clipboard.subtitle.image_file_format" = "圖片檔案 • %@";
+"clipboard.subtitle.image_file_count" = "%d 個圖片檔案";
 "clipboard.subtitle.file" = "檔案";
 "clipboard.subtitle.file_path" = "檔案 • %@";
 "clipboard.subtitle.folder" = "資料夾";
@@ -102,6 +105,9 @@
 "filter.code" = "程式碼";
 "filter.favorites" = "收藏";
 "filter.url" = "URL";
+"filter.move_first" = "移到最前";
+"filter.move_last" = "移到最後";
+"filter.reset_order" = "恢復預設順序";
 "debug.no_data" = "無資料";
 "debug.none" = "無";
 "debug.text" = "文字";
@@ -166,5 +172,5 @@
 "notice.database_recovered" = "本機歷史資料庫已自動恢復，損壞檔案已備份。";
 "settings.recommended_app" = "推薦應用程式";
 "yourtools.title" = "你的工具";
-"yourtools.subtitle" = "AI工具箱";
+"yourtools.subtitle" = "一體化 AI 與媒體工具箱應用。";
 "yourtools.open" = "前往 App Store";

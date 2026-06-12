@@ -92,6 +92,21 @@ struct SkyPasteCoreModelTests {
         #expect(optimized.source == .universalClipboard)
     }
 
+    @Test func imageOptimizerPreservesLocalSourceAppMetadata() {
+        let item = ClipboardItem(
+            id: UUID(),
+            createdAt: Date(),
+            content: .image(data: Data([0x1, 0x2, 0x3]), name: "shot.png", originalByteCount: 3, previewOnly: false),
+            fingerprint: "img:local-source",
+            source: .local,
+            sourceApp: ClipboardSourceApp(bundleID: "com.apple.finder", name: "Finder")
+        )
+
+        let optimized = ClipboardImageOptimizer.memoryOptimizedItem(item)
+
+        #expect(optimized.sourceApp == ClipboardSourceApp(bundleID: "com.apple.finder", name: "Finder"))
+    }
+
     @Test func singleFileClipboardItemUsesFileMetadata() {
         let item = ClipboardItem(
             content: .fileURLs(urls: [URL(fileURLWithPath: "/tmp/Report.pdf")], pasteboardPayload: nil),
@@ -101,7 +116,7 @@ struct SkyPasteCoreModelTests {
         #expect(item.isFileCollection)
         #expect(item.singleFileSystemItemKind == .file)
         #expect(item.title == L10n.format("clipboard.file_single", "Report.pdf"))
-        #expect(item.subtitle == L10n.format("clipboard.subtitle.file_path", "/tmp"))
+        #expect(item.subtitle == L10n.tr("clipboard.subtitle.file"))
         #expect(item.openActionTitle == L10n.tr("menu.open_file"))
         #expect(item.containingFolderURL?.path == "/tmp")
     }
@@ -114,8 +129,8 @@ struct SkyPasteCoreModelTests {
 
         #expect(item.isFileCollection)
         #expect(item.singleFileSystemItemKind == .folder)
-        #expect(item.title == L10n.format("clipboard.folder_single", "SkyPaste Folder"))
-        #expect(item.subtitle == L10n.format("clipboard.subtitle.folder_path", "/tmp"))
+        #expect(item.title == "/tmp/SkyPaste Folder")
+        #expect(item.subtitle == L10n.tr("clipboard.subtitle.folder"))
         #expect(item.openActionTitle == L10n.tr("menu.open_folder"))
     }
 
@@ -165,6 +180,25 @@ struct SkyPasteCoreModelTests {
         #expect(ClipboardFilter.image.matches(imageFileItem))
         #expect(ClipboardSearchQuery(rawValue: "type:image").matches(imageFileItem))
         #expect(!ClipboardSearchQuery(rawValue: "type:file").matches(imageFileItem))
+        #expect(imageFileItem.subtitle == L10n.format("clipboard.subtitle.image_file_format", "PNG"))
+    }
+
+    @Test func clipboardFilterOrderNormalizationKeepsOnlyReorderableItems() {
+        let normalized = ClipboardFilter.normalizedReorderableOrder([
+            .url,
+            .all,
+            .file,
+            .url,
+            .favorites
+        ])
+
+        #expect(normalized == [.url, .file, .text, .image, .folder, .code])
+    }
+
+    @Test func clipboardFilterDisplayOrderKeepsAllFirstAndFavoritesLast() {
+        let displayOrder = ClipboardFilter.displayOrder(from: [.folder, .url])
+
+        #expect(displayOrder == [.all, .folder, .url, .text, .image, .file, .code, .favorites])
     }
 
     @Test func filePasteboardPayloadRoundTripsThroughClipboardDecoder() {
@@ -443,6 +477,45 @@ struct SkyPasteCoreModelTests {
         #expect(ClipboardSearchQuery(rawValue: "type:text source:icloud").matches(item))
         #expect(!ClipboardSearchQuery(rawValue: "type:image").matches(item))
         #expect(!ClipboardSearchQuery(rawValue: "source:phone").matches(item))
+    }
+
+    @Test func searchQueryMatchesLocalSourceAppName() {
+        let item = ClipboardItem(
+            id: UUID(),
+            createdAt: Date(),
+            content: .text("Finder sourced note"),
+            fingerprint: "txt:finder",
+            source: .local,
+            sourceApp: ClipboardSourceApp(bundleID: "com.apple.finder", name: "Finder")
+        )
+
+        #expect(ClipboardSearchQuery(rawValue: "finder").matches(item))
+        #expect(ClipboardSearchQuery(rawValue: "com.apple.finder").matches(item))
+    }
+
+    @Test func clipboardDatabasePersistsLocalSourceAppMetadata() throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+        defer {
+            try? FileManager.default.removeItem(at: databaseURL)
+        }
+
+        let database = try ClipboardDatabase(fileURL: databaseURL)
+        let item = ClipboardItem(
+            id: UUID(),
+            createdAt: Date(),
+            content: .text("Finder sourced note"),
+            fingerprint: "txt:finder-db",
+            source: .local,
+            sourceApp: ClipboardSourceApp(bundleID: "com.apple.finder", name: "Finder")
+        )
+
+        try database.save(item, maxItems: 10)
+        let restored = try database.loadRecent(limit: 10)
+
+        #expect(restored.count == 1)
+        #expect(restored.first?.sourceApp == ClipboardSourceApp(bundleID: "com.apple.finder", name: "Finder"))
     }
 
     @Test func searchQueryMatchesStructuredFileTokens() {

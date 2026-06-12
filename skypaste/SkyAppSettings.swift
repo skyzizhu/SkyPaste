@@ -231,10 +231,18 @@ final class AppSettings: ObservableObject {
         return HotKeyBinding(keyCode: hotKeyCode, modifiers: modifiers)
     }
 
+    var orderedFilters: [ClipboardFilter] {
+        ClipboardFilter.displayOrder(from: filterOrder)
+    }
+
     func setHistoryLimit(_ newValue: Int) {
         let clamped = Self.clampHistoryLimit(newValue)
         guard historyLimit != clamped else { return }
         historyLimit = clamped
+    }
+
+    func saveFilterOrder(_ newValue: [ClipboardFilter]) {
+        setFilterOrder(newValue)
     }
 
     var ignoredBundleIDs: Set<String> {
@@ -248,6 +256,18 @@ final class AppSettings: ObservableObject {
     }
 
     private let defaults = UserDefaults.standard
+    private let filterOrderPersistenceQueue = DispatchQueue(label: "com.huaibor.skypaste.filter-order-persistence", qos: .utility)
+    private var filterOrder: [ClipboardFilter] {
+        didSet {
+            let rawValues = filterOrder.map(\.rawValue)
+            filterOrderPersistenceQueue.async {
+                UserDefaults.standard.set(rawValues, forKey: Keys.filterOrder)
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: .filterOrderSettingsChanged, object: nil)
+                }
+            }
+        }
+    }
 
     private enum Keys {
         static let historyLimit = "settings.historyLimit"
@@ -263,6 +283,7 @@ final class AppSettings: ObservableObject {
         static let iCloudSyncEnabled = "settings.iCloudSyncEnabled"
         static let languageCode = LanguageCatalog.defaultsKey
         static let appearanceMode = "settings.appearanceMode"
+        static let filterOrder = "settings.filterOrder"
     }
 
     private init() {
@@ -285,6 +306,9 @@ final class AppSettings: ObservableObject {
         self.languageCode = LanguageCatalog.isSupported(savedLanguage) ? savedLanguage : LanguageCatalog.system
         let savedAppearance = defaults.string(forKey: Keys.appearanceMode) ?? AppAppearanceMode.system.rawValue
         self.appearanceMode = AppAppearanceMode(rawValue: savedAppearance) ?? .system
+        let savedFilterOrder = (defaults.array(forKey: Keys.filterOrder) as? [String] ?? [])
+            .compactMap(ClipboardFilter.init(rawValue:))
+        self.filterOrder = ClipboardFilter.normalizedReorderableOrder(savedFilterOrder)
 
         applyLaunchAtLoginSetting(reportUnavailable: false)
     }
@@ -337,6 +361,12 @@ final class AppSettings: ObservableObject {
     private static func clampHistoryLimit(_ value: Int) -> Int {
         min(max(value, 20), 1000)
     }
+
+    private func setFilterOrder(_ newValue: [ClipboardFilter]) {
+        let normalized = ClipboardFilter.normalizedReorderableOrder(newValue)
+        guard filterOrder != normalized else { return }
+        filterOrder = normalized
+    }
 }
 
 extension Notification.Name {
@@ -344,4 +374,5 @@ extension Notification.Name {
     static let languageSettingsChanged = Notification.Name("languageSettingsChanged")
     static let iCloudSyncSettingsChanged = Notification.Name("iCloudSyncSettingsChanged")
     static let appearanceSettingsChanged = Notification.Name("appearanceSettingsChanged")
+    static let filterOrderSettingsChanged = Notification.Name("filterOrderSettingsChanged")
 }

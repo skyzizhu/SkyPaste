@@ -14,6 +14,29 @@ enum ClipboardFilter: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    static let fixedLeading: ClipboardFilter = .all
+    static let fixedTrailing: ClipboardFilter = .favorites
+    static let reorderableCases: [ClipboardFilter] = [.text, .image, .file, .folder, .code, .url]
+    static let defaultDisplayOrder: [ClipboardFilter] = [fixedLeading] + reorderableCases + [fixedTrailing]
+
+    var isUserReorderable: Bool {
+        Self.reorderableCases.contains(self)
+    }
+
+    static func normalizedReorderableOrder(_ filters: [ClipboardFilter]) -> [ClipboardFilter] {
+        var seen = Set<ClipboardFilter>()
+        let filtered = filters.filter { filter in
+            filter.isUserReorderable && seen.insert(filter).inserted
+        }
+
+        let missing = reorderableCases.filter { !seen.contains($0) }
+        return filtered + missing
+    }
+
+    static func displayOrder(from reorderableOrder: [ClipboardFilter]) -> [ClipboardFilter] {
+        [fixedLeading] + normalizedReorderableOrder(reorderableOrder) + [fixedTrailing]
+    }
+
     var title: String {
         switch self {
         case .all:
@@ -159,6 +182,11 @@ enum ClipboardSource: Int, Equatable {
     }
 }
 
+struct ClipboardSourceApp: Equatable {
+    let bundleID: String
+    let name: String
+}
+
 struct ClipboardItem: Identifiable, Equatable {
     struct Classification: Equatable {
         let isPlainText: Bool
@@ -174,18 +202,28 @@ struct ClipboardItem: Identifiable, Equatable {
     let classification: Classification
     let searchIndex: String
     let source: ClipboardSource
+    let sourceApp: ClipboardSourceApp?
     var isFavorite: Bool
     var isSnippet: Bool
 
     init(content: ClipboardContent, fingerprint: String) {
-        self.init(id: UUID(), createdAt: Date(), content: content, fingerprint: fingerprint, source: .local, isFavorite: false, isSnippet: false)
+        self.init(id: UUID(), createdAt: Date(), content: content, fingerprint: fingerprint, source: .local, sourceApp: nil, isFavorite: false, isSnippet: false)
     }
 
     init(content: ClipboardContent, fingerprint: String, source: ClipboardSource) {
-        self.init(id: UUID(), createdAt: Date(), content: content, fingerprint: fingerprint, source: source, isFavorite: false, isSnippet: false)
+        self.init(id: UUID(), createdAt: Date(), content: content, fingerprint: fingerprint, source: source, sourceApp: nil, isFavorite: false, isSnippet: false)
     }
 
-    init(id: UUID, createdAt: Date, content: ClipboardContent, fingerprint: String, source: ClipboardSource = .local, isFavorite: Bool = false, isSnippet: Bool = false) {
+    init(
+        id: UUID,
+        createdAt: Date,
+        content: ClipboardContent,
+        fingerprint: String,
+        source: ClipboardSource = .local,
+        sourceApp: ClipboardSourceApp? = nil,
+        isFavorite: Bool = false,
+        isSnippet: Bool = false
+    ) {
         let derivedClassification = Self.makeClassification(for: content)
         self.id = id
         self.createdAt = createdAt
@@ -193,9 +231,28 @@ struct ClipboardItem: Identifiable, Equatable {
         self.fingerprint = fingerprint
         self.classification = derivedClassification
         self.source = source
-        self.searchIndex = Self.makeSearchIndex(for: content, classification: derivedClassification, source: source)
+        self.sourceApp = source == .local ? sourceApp : nil
+        self.searchIndex = Self.makeSearchIndex(
+            for: content,
+            classification: derivedClassification,
+            source: source,
+            sourceApp: source == .local ? sourceApp : nil
+        )
         self.isFavorite = isFavorite
         self.isSnippet = isSnippet
+    }
+
+    func withSourceApp(_ sourceApp: ClipboardSourceApp?) -> ClipboardItem {
+        ClipboardItem(
+            id: id,
+            createdAt: createdAt,
+            content: content,
+            fingerprint: fingerprint,
+            source: source,
+            sourceApp: sourceApp,
+            isFavorite: isFavorite,
+            isSnippet: isSnippet
+        )
     }
 
     var title: String {
@@ -248,6 +305,11 @@ struct ClipboardItem: Identifiable, Equatable {
         return fileURLs.contains { url in
             Self.fileSystemItemKind(for: url) == .file && Self.isImageFileURL(url)
         }
+    }
+
+    var isSingleImageFile: Bool {
+        guard let singleFileURL, singleFileSystemItemKind == .file else { return false }
+        return Self.isImageFileURL(singleFileURL)
     }
 
     var singleFileURL: URL? {
@@ -336,11 +398,11 @@ struct ClipboardItem: Identifiable, Equatable {
         case .fileURLs(let urls, _):
             if urls.count == 1 {
                 let url = urls[0]
-                let itemName = Self.displayName(for: url)
                 switch fileSystemItemKind(for: url) {
                 case .folder:
-                    return L10n.format("clipboard.folder_single", itemName)
+                    return abbreviatedPath(for: url)
                 case .file:
+                    let itemName = Self.displayName(for: url)
                     return L10n.format("clipboard.file_single", itemName)
                 }
             }
@@ -370,22 +432,27 @@ struct ClipboardItem: Identifiable, Equatable {
         case .fileURLs(let urls, _):
             if urls.count == 1 {
                 let url = urls[0]
-                let parentPath = abbreviatedParentPath(for: url)
                 switch fileSystemItemKind(for: url) {
                 case .folder:
-                    return parentPath.isEmpty
-                        ? L10n.tr("clipboard.subtitle.folder")
-                        : L10n.format("clipboard.subtitle.folder_path", parentPath)
+                    return L10n.tr("clipboard.subtitle.folder")
                 case .file:
-                    return parentPath.isEmpty
-                        ? L10n.tr("clipboard.subtitle.file")
-                        : L10n.format("clipboard.subtitle.file_path", parentPath)
+                    if isImageFileURL(url) {
+                        if let ext = imageFileFormatText(for: url) {
+                            return L10n.format("clipboard.subtitle.image_file_format", ext)
+                        }
+                        return L10n.tr("clipboard.subtitle.image_file")
+                    }
+                    return L10n.tr("clipboard.subtitle.file")
                 }
             }
 
             let kinds = urls.map(fileSystemItemKind(for:))
             if kinds.allSatisfy({ $0 == .folder }) {
                 return L10n.format("clipboard.subtitle.folder_count", urls.count)
+            }
+
+            if urls.allSatisfy({ fileSystemItemKind(for: $0) == .file && isImageFileURL($0) }) {
+                return L10n.format("clipboard.subtitle.image_file_count", urls.count)
             }
 
             return L10n.format("clipboard.subtitle.file_count", urls.count)
@@ -413,7 +480,8 @@ struct ClipboardItem: Identifiable, Equatable {
     private static func makeSearchIndex(
         for content: ClipboardContent,
         classification: Classification,
-        source: ClipboardSource
+        source: ClipboardSource,
+        sourceApp: ClipboardSourceApp?
     ) -> String {
         var parts: [String] = []
 
@@ -454,6 +522,10 @@ struct ClipboardItem: Identifiable, Equatable {
         }
 
         parts.append(contentsOf: source.searchKeywords)
+        if let sourceApp {
+            parts.append(sourceApp.name)
+            parts.append(sourceApp.bundleID)
+        }
         return parts.joined(separator: "\n").lowercased()
     }
 
@@ -588,19 +660,26 @@ struct ClipboardItem: Identifiable, Equatable {
         return component.isEmpty ? url.path : component
     }
 
-    private static func abbreviatedParentPath(for url: URL) -> String {
-        let parentPath = url.deletingLastPathComponent().path
-        guard !parentPath.isEmpty else { return "" }
+    private static func imageFileFormatText(for url: URL) -> String? {
+        let ext = url.pathExtension.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !ext.isEmpty else { return nil }
+        return ext.uppercased()
+    }
+
+    private static func abbreviatedPath(for url: URL) -> String {
+        let fullPath = url.path
+        guard !fullPath.isEmpty else { return url.absoluteString }
 
         let homePath = NSHomeDirectory()
-        if parentPath == homePath {
+        if fullPath == homePath {
             return "~"
         }
-        if parentPath.hasPrefix(homePath + "/") {
-            return "~" + parentPath.dropFirst(homePath.count)
+        if fullPath.hasPrefix(homePath + "/") {
+            return "~" + fullPath.dropFirst(homePath.count)
         }
-        return parentPath
+        return fullPath
     }
+
 }
 
 enum ClipboardCaptureResult {
@@ -965,6 +1044,7 @@ enum ClipboardImageOptimizer {
                 ),
                 fingerprint: item.fingerprint,
                 source: item.source,
+                sourceApp: item.sourceApp,
                 isFavorite: item.isFavorite,
                 isSnippet: item.isSnippet
             )
@@ -981,6 +1061,7 @@ enum ClipboardImageOptimizer {
             ),
             fingerprint: item.fingerprint,
             source: item.source,
+            sourceApp: item.sourceApp,
             isFavorite: item.isFavorite,
             isSnippet: item.isSnippet
         )

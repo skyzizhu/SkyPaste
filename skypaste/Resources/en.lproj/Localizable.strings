@@ -6,6 +6,9 @@
 "clipboard.folder_count" = "%d Folders";
 "clipboard.subtitle.text" = "Text • %d chars";
 "clipboard.subtitle.image" = "Image • %d KB";
+"clipboard.subtitle.image_file" = "Image File";
+"clipboard.subtitle.image_file_format" = "Image File • %@";
+"clipboard.subtitle.image_file_count" = "%d image files";
 "clipboard.subtitle.file" = "File";
 "clipboard.subtitle.file_path" = "File • %@";
 "clipboard.subtitle.folder" = "Folder";
@@ -103,6 +106,9 @@
 "filter.code" = "Code";
 "filter.favorites" = "Favorites";
 "filter.url" = "URL";
+"filter.move_first" = "Move to Front";
+"filter.move_last" = "Move to End";
+"filter.reset_order" = "Restore Default Order";
 "debug.no_data" = "No data";
 "debug.none" = "none";
 "debug.text" = "text";
@@ -166,5 +172,5 @@
 "open.missing_item_message" = "SkyPaste could not open this path: %@";
 "notice.database_recovered" = "Local history database was automatically recovered and the damaged files were backed up.";
 "yourtools.title" = "Your Tools";
-"yourtools.subtitle" = "AI Toolbox";
+"yourtools.subtitle" = "All-in-One AI & Media Toolkit App.";
 "yourtools.open" = "Open in App Store";

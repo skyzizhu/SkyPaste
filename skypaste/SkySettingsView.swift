@@ -28,7 +28,6 @@ struct SettingsView: View {
                 behaviorSection
                 syncSection
                 historySection
-                privacySection
                 yourToolsSection
             }
             .padding(16)
@@ -203,27 +202,6 @@ struct SettingsView: View {
                     .labelsHidden()
                     .frame(width: 120, alignment: .trailing)
             }
-        }
-    }
-
-    private var privacySection: some View {
-        SettingsSection(title: L10n.tr("settings.ignore_apps")) {
-            hint(L10n.tr("settings.ignore_apps_hint"))
-
-            TextEditor(text: $settings.ignoredAppsInput)
-                .font(.system(size: 12, design: .monospaced))
-                .frame(minHeight: 104)
-                .padding(10)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color(nsColor: .textBackgroundColor))
-                )
-                .overlay {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
-                }
-
-            infoBadge(L10n.tr("settings.ignore_apps_example"))
         }
     }
 

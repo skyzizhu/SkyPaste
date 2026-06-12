@@ -6,6 +6,9 @@
 "clipboard.folder_count" = "%d 个目录";
 "clipboard.subtitle.text" = "文本 • %d 字符";
 "clipboard.subtitle.image" = "图片 • %d KB";
+"clipboard.subtitle.image_file" = "图片文件";
+"clipboard.subtitle.image_file_format" = "图片文件 • %@";
+"clipboard.subtitle.image_file_count" = "%d 个图片文件";
 "clipboard.subtitle.file" = "文件";
 "clipboard.subtitle.file_path" = "文件 • %@";
 "clipboard.subtitle.folder" = "目录";
@@ -102,6 +105,9 @@
 "filter.code" = "代码";
 "filter.favorites" = "收藏";
 "filter.url" = "URL";
+"filter.move_first" = "移到最前";
+"filter.move_last" = "移到最后";
+"filter.reset_order" = "恢复默认顺序";
 "debug.no_data" = "无数据";
 "debug.none" = "无";
 "debug.text" = "文本";
@@ -166,5 +172,5 @@
 "notice.database_recovered" = "本地历史数据库已自动恢复，损坏文件已备份。";
 "settings.recommended_app" = "推荐应用";
 "yourtools.title" = "你的工具";
-"yourtools.subtitle" = "AI工具箱";
+"yourtools.subtitle" = "一体化 AI 与媒体工具箱应用。";
 "yourtools.open" = "前往 App Store";

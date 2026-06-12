@@ -19,11 +19,14 @@ struct ClipboardRowView: View {
     var onPreview: (() -> Void)? = nil
     var onPreviewDoubleTap: (() -> Void)? = nil
     @State private var loadedPreview: NSImage?
+    @State private var sourceBadgeIcon: NSImage?
+    @State private var previewRequestKey: String?
+    @State private var sourceBadgeRequestKey: String?
     @State private var isHovered = false
 
     var body: some View {
         HStack(spacing: 10) {
-            if item.isImage {
+            if showsImageThumbnail {
                 previewThumbnail
             }
 
@@ -37,6 +40,7 @@ struct ClipboardRowView: View {
                         Text(item.title)
                             .font(.system(size: item.isCode ? 12 : 13, weight: .semibold, design: item.isCode ? .monospaced : .default))
                             .lineLimit(item.isCode ? 2 : 1)
+                            .truncationMode(titleTruncationMode)
                             .fixedSize(horizontal: false, vertical: item.isCode)
                     }
 
@@ -44,18 +48,12 @@ struct ClipboardRowView: View {
                         Text(metadataText)
                             .lineLimit(1)
 
-                        if let deviceIcon = item.source.deviceIconSystemName {
-                            Image(systemName: deviceIcon)
-                                .font(.system(size: 10.5, weight: .semibold))
-                                .foregroundStyle(Color.accentColor.opacity(0.9))
-                                .help(item.source.badgeText ?? "")
-                        }
+                        sourceBadgeView
                     }
                     .font(.system(size: 11, weight: .medium, design: .rounded))
                     .foregroundStyle(.secondary)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.trailing, showSelectionCopyHint ? copyHintReservedWidth : 0)
 
                 favoriteBadge
             }
@@ -88,22 +86,26 @@ struct ClipboardRowView: View {
         }
         .onAppear {
             loadPreviewIfNeeded()
+            loadSourceBadgeIfNeeded()
         }
         .onDisappear {
             loadedPreview = nil
+            previewRequestKey = nil
+            sourceBadgeIcon = nil
+            sourceBadgeRequestKey = nil
         }
         .onChange(of: item.id) {
             loadedPreview = nil
+            previewRequestKey = nil
             loadPreviewIfNeeded()
+            sourceBadgeIcon = nil
+            sourceBadgeRequestKey = nil
+            loadSourceBadgeIfNeeded()
         }
     }
 
     private var showSelectionCopyHint: Bool {
         isSelected
-    }
-
-    private var copyHintReservedWidth: CGFloat {
-        style == .popover ? 86 : 80
     }
 
     private var selectionCopyHint: some View {
@@ -158,6 +160,19 @@ struct ClipboardRowView: View {
         .overlay {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if item.isSingleImageFile {
+                ZStack {
+                    Circle()
+                        .fill(Color(nsColor: .windowBackgroundColor).opacity(0.95))
+                    Image(systemName: "doc.fill")
+                        .font(.system(size: 8, weight: .semibold))
+                        .foregroundStyle(Color.indigo.opacity(0.92))
+                }
+                .frame(width: 16, height: 16)
+                .padding(4)
+            }
         }
 
         if let onPreview {
@@ -214,6 +229,38 @@ struct ClipboardRowView: View {
 
     private var metadataText: String {
         [item.subtitle, timeText].joined(separator: " • ")
+    }
+
+    private var titleTruncationMode: Text.TruncationMode {
+        if item.singleFileSystemItemKind == .file || item.singleFileSystemItemKind == .folder {
+            return .middle
+        }
+        return .tail
+    }
+
+    @ViewBuilder
+    private var sourceBadgeView: some View {
+        if let sourceApp = item.sourceApp {
+            Group {
+                if let sourceBadgeIcon {
+                    Image(nsImage: sourceBadgeIcon)
+                        .resizable()
+                        .interpolation(.high)
+                        .frame(width: 13, height: 13)
+                        .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+                } else {
+                    Image(systemName: "app.badge")
+                        .font(.system(size: 10.5, weight: .semibold))
+                        .foregroundStyle(Color.accentColor.opacity(0.9))
+                }
+            }
+            .help(sourceApp.name)
+        } else if let deviceIcon = item.source.deviceIconSystemName {
+            Image(systemName: deviceIcon)
+                .font(.system(size: 10.5, weight: .semibold))
+                .foregroundStyle(Color.accentColor.opacity(0.9))
+                .help(item.source.badgeText ?? "")
+        }
     }
 
     private var iconSystemName: String {
@@ -299,8 +346,92 @@ struct ClipboardRowView: View {
     }
 
     private func loadPreviewIfNeeded() {
-        guard loadedPreview == nil, let data = item.previewImageData else { return }
-        loadedPreview = NSImage(data: data)
+        guard loadedPreview == nil else { return }
+        if let data = item.previewImageData {
+            loadedPreview = NSImage(data: data)
+            return
+        }
+        if item.isSingleImageFile, let url = item.singleFileURL {
+            let requestKey = url.path
+            previewRequestKey = requestKey
+            ClipboardPreviewImageProvider.shared.loadImage(at: url) { image in
+                guard previewRequestKey == requestKey else { return }
+                loadedPreview = image
+            }
+        }
+    }
+
+    private func loadSourceBadgeIfNeeded() {
+        guard sourceBadgeIcon == nil, let sourceApp = item.sourceApp else { return }
+        let requestKey = sourceApp.bundleID
+        sourceBadgeRequestKey = requestKey
+        ClipboardSourceAppIconProvider.shared.loadIcon(for: sourceApp) { icon in
+            guard sourceBadgeRequestKey == requestKey else { return }
+            sourceBadgeIcon = icon
+        }
+    }
+
+    private var showsImageThumbnail: Bool {
+        item.isImage || item.isSingleImageFile
+    }
+}
+
+private final class ClipboardPreviewImageProvider {
+    static let shared = ClipboardPreviewImageProvider()
+
+    private let cache = NSCache<NSString, NSImage>()
+    private let queue = DispatchQueue(label: "com.huaibor.skypaste.preview-image-provider", qos: .userInitiated)
+
+    func loadImage(at url: URL, completion: @escaping (NSImage?) -> Void) {
+        let cacheKey = url.path as NSString
+        if let cached = cache.object(forKey: cacheKey) {
+            completion(cached)
+            return
+        }
+
+        queue.async {
+            let image = NSImage(contentsOf: url)
+            if let image {
+                self.cache.setObject(image, forKey: cacheKey)
+            }
+            DispatchQueue.main.async {
+                completion(image)
+            }
+        }
+    }
+}
+
+private final class ClipboardSourceAppIconProvider {
+    static let shared = ClipboardSourceAppIconProvider()
+
+    private let cache = NSCache<NSString, NSImage>()
+    private let queue = DispatchQueue(label: "com.huaibor.skypaste.source-app-icon-provider", qos: .utility)
+
+    func loadIcon(for sourceApp: ClipboardSourceApp, completion: @escaping (NSImage?) -> Void) {
+        let cacheKey = sourceApp.bundleID as NSString
+        if let cached = cache.object(forKey: cacheKey) {
+            completion(cached)
+            return
+        }
+
+        queue.async {
+            let image: NSImage?
+            if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: sourceApp.bundleID) {
+                let icon = NSWorkspace.shared.icon(forFile: appURL.path)
+                icon.size = NSSize(width: 16, height: 16)
+                image = icon
+            } else {
+                image = nil
+            }
+
+            if let image {
+                self.cache.setObject(image, forKey: cacheKey)
+            }
+
+            DispatchQueue.main.async {
+                completion(image)
+            }
+        }
     }
 }
 

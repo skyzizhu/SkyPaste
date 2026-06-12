@@ -6,6 +6,9 @@
 "clipboard.folder_count" = "%d 個のフォルダ";
 "clipboard.subtitle.text" = "テキスト • %d 文字";
 "clipboard.subtitle.image" = "画像 • %d KB";
+"clipboard.subtitle.image_file" = "画像ファイル";
+"clipboard.subtitle.image_file_format" = "画像ファイル • %@";
+"clipboard.subtitle.image_file_count" = "%d 個の画像ファイル";
 "clipboard.subtitle.file" = "ファイル";
 "clipboard.subtitle.file_path" = "ファイル • %@";
 "clipboard.subtitle.folder" = "フォルダ";
@@ -102,6 +105,9 @@
 "filter.code" = "コード";
 "filter.favorites" = "お気に入り";
 "filter.url" = "URL";
+"filter.move_first" = "先頭に移動";
+"filter.move_last" = "最後尾に移動";
+"filter.reset_order" = "既定の順序に戻す";
 "debug.no_data" = "データなし";
 "debug.none" = "なし";
 "debug.text" = "テキスト";
@@ -166,5 +172,5 @@
 "notice.database_recovered" = "ローカル履歴データベースを自動復旧し、破損ファイルはバックアップされました。";
 "settings.recommended_app" = "おすすめアプリ";
 "yourtools.title" = "Your Tools";
-"yourtools.subtitle" = "AIツールボックス";
+"yourtools.subtitle" = "オールインワンのAI・メディアツールアプリ。";
 "yourtools.open" = "App Storeで開く";

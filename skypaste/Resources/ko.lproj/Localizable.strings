@@ -6,6 +6,9 @@
 "clipboard.folder_count" = "%d개 폴더";
 "clipboard.subtitle.text" = "텍스트 • %d자";
 "clipboard.subtitle.image" = "이미지 • %d KB";
+"clipboard.subtitle.image_file" = "이미지 파일";
+"clipboard.subtitle.image_file_format" = "이미지 파일 • %@";
+"clipboard.subtitle.image_file_count" = "%d개 이미지 파일";
 "clipboard.subtitle.file" = "파일";
 "clipboard.subtitle.file_path" = "파일 • %@";
 "clipboard.subtitle.folder" = "폴더";
@@ -102,6 +105,9 @@
 "filter.code" = "코드";
 "filter.favorites" = "즐겨찾기";
 "filter.url" = "URL";
+"filter.move_first" = "맨 앞으로 이동";
+"filter.move_last" = "맨 뒤로 이동";
+"filter.reset_order" = "기본 순서로 복원";
 "debug.no_data" = "데이터 없음";
 "debug.none" = "없음";
 "debug.text" = "텍스트";
@@ -166,5 +172,5 @@
 "notice.database_recovered" = "로컬 기록 데이터베이스를 자동으로 복구했고 손상된 파일은 백업했습니다.";
 "settings.recommended_app" = "Recommended App";
 "yourtools.title" = "Your Tools";
-"yourtools.subtitle" = "AI Toolbox";
+"yourtools.subtitle" = "올인원 AI 및 미디어 툴킷 앱.";
 "yourtools.open" = "Open in App Store";

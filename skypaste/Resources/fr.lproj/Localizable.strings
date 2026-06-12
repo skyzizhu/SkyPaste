@@ -6,6 +6,9 @@
 "clipboard.folder_count" = "%d dossiers";
 "clipboard.subtitle.text" = "Texte • %d caractères";
 "clipboard.subtitle.image" = "Image • %d KB";
+"clipboard.subtitle.image_file" = "Fichier image";
+"clipboard.subtitle.image_file_format" = "Fichier image • %@";
+"clipboard.subtitle.image_file_count" = "%d fichiers image";
 "clipboard.subtitle.file" = "Fichier";
 "clipboard.subtitle.file_path" = "Fichier • %@";
 "clipboard.subtitle.folder" = "Dossier";
@@ -102,6 +105,9 @@
 "filter.code" = "Code";
 "filter.favorites" = "Favoris";
 "filter.url" = "URL";
+"filter.move_first" = "Déplacer au début";
+"filter.move_last" = "Déplacer à la fin";
+"filter.reset_order" = "Rétablir l'ordre par défaut";
 "debug.no_data" = "Aucune donnée";
 "debug.none" = "aucun";
 "debug.text" = "texte";
@@ -166,5 +172,5 @@
 "notice.database_recovered" = "La base d’historique locale a été réparée automatiquement et les fichiers endommagés ont été sauvegardés.";
 "settings.recommended_app" = "Recommended App";
 "yourtools.title" = "Your Tools";
-"yourtools.subtitle" = "AI Toolbox";
+"yourtools.subtitle" = "Application tout-en-un d'outils IA et médias.";
 "yourtools.open" = "Open in App Store";

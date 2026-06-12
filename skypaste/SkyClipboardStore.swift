@@ -272,16 +272,17 @@ final class ClipboardStore: ObservableObject {
         switch ClipboardDecoder.decode(from: NSPasteboard.general) {
         case .none:
             return
-        case .item(let item):
-            if item.source == .universalClipboard, !settings.receiveUniversalClipboardEnabled {
+        case .item(let decodedItem):
+            if decodedItem.source == .universalClipboard, !settings.receiveUniversalClipboardEnabled {
                 return
             }
-            if item.source == .local, !acceptsLocalContent {
+            if decodedItem.source == .local, !acceptsLocalContent {
                 return
             }
-            if item.source == .local, shouldIgnoreCurrentFrontApp() {
+            if decodedItem.source == .local, shouldIgnoreCurrentFrontApp() {
                 return
             }
+            let item = attachCurrentFrontmostSourceApp(to: decodedItem)
             add(item)
         }
     }
@@ -363,6 +364,25 @@ final class ClipboardStore: ObservableObject {
         }
 
         return settings.ignoredBundleIDs.contains(front)
+    }
+
+    private func attachCurrentFrontmostSourceApp(to item: ClipboardItem) -> ClipboardItem {
+        guard item.source == .local else { return item }
+
+        guard
+            let app = NSWorkspace.shared.frontmostApplication,
+            let bundleID = app.bundleIdentifier?.trimmingCharacters(in: .whitespacesAndNewlines),
+            !bundleID.isEmpty
+        else {
+            return item.withSourceApp(nil)
+        }
+
+        let name = app.localizedName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        guard !name.isEmpty else {
+            return item.withSourceApp(nil)
+        }
+
+        return item.withSourceApp(ClipboardSourceApp(bundleID: bundleID, name: name))
     }
 
     private func persist(_ item: ClipboardItem) {
@@ -545,28 +565,36 @@ final class ClipboardStore: ObservableObject {
         filterQueue.async(execute: workItem)
     }
 
-    private static func filter(items: [ClipboardItem], query: String) -> [ClipboardItem] {
-        guard !query.isEmpty else { return items }
-
-        let parsedQuery = ClipboardSearchQuery(rawValue: query)
-        return items.filter { parsedQuery.matches($0) }
-    }
-
     private static func makeFilteredItemsByFilter(items: [ClipboardItem], query: String) -> [ClipboardFilter: [ClipboardItem]] {
-        var result: [ClipboardFilter: [ClipboardItem]] = [:]
+        let parsedQuery = query.isEmpty ? nil : ClipboardSearchQuery(rawValue: query)
+        var result = Dictionary(uniqueKeysWithValues: ClipboardFilter.allCases.map { ($0, [ClipboardItem]()) })
 
-        for filter in ClipboardFilter.allCases {
-            let scopedItems: [ClipboardItem]
-            switch filter {
-            case .all:
-                scopedItems = items
-            case .favorites:
-                scopedItems = items.filter(\.isFavorite)
-            default:
-                scopedItems = items.filter { filter.matches($0) }
+        for item in items {
+            guard parsedQuery?.matches(item) ?? true else { continue }
+
+            result[.all, default: []].append(item)
+
+            if item.isFavorite {
+                result[.favorites, default: []].append(item)
             }
-
-            result[filter] = Self.filter(items: scopedItems, query: query)
+            if ClipboardFilter.text.matches(item) {
+                result[.text, default: []].append(item)
+            }
+            if ClipboardFilter.image.matches(item) {
+                result[.image, default: []].append(item)
+            }
+            if ClipboardFilter.file.matches(item) {
+                result[.file, default: []].append(item)
+            }
+            if ClipboardFilter.folder.matches(item) {
+                result[.folder, default: []].append(item)
+            }
+            if ClipboardFilter.code.matches(item) {
+                result[.code, default: []].append(item)
+            }
+            if ClipboardFilter.url.matches(item) {
+                result[.url, default: []].append(item)
+            }
         }
 
         return result
