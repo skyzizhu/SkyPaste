@@ -1,9 +1,9 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct PanelView: View {
     @Environment(\.colorScheme) private var colorScheme
-    @FocusState private var isSearchFocused: Bool
 
     private struct DaySection: Identifiable {
         let day: Date
@@ -16,6 +16,8 @@ struct PanelView: View {
         let favoriteItems: [ClipboardItem]
         let orderedItems: [ClipboardItem]
         let daySections: [DaySection]
+
+        static let empty = Presentation(favoriteItems: [], orderedItems: [], daySections: [])
     }
 
     @ObservedObject var store: ClipboardStore
@@ -38,44 +40,9 @@ struct PanelView: View {
     @State private var showToast = false
     @State private var toastTask: DispatchWorkItem?
     @State private var pendingPrimaryAction: DispatchWorkItem?
-
-    private var presentation: Presentation {
-        let filteredItems = store.filteredItems.filter { selectedFilter.matches($0) }
-        let favoriteItems: [ClipboardItem]
-        let daySource: [ClipboardItem]
-
-        switch selectedFilter {
-        case .all:
-            favoriteItems = []
-            daySource = filteredItems
-        case .favorites:
-            favoriteItems = filteredItems
-            daySource = []
-        default:
-            favoriteItems = []
-            daySource = filteredItems
-        }
-
-        let orderedItems = favoriteItems + daySource
-
-        let calendar = Calendar.current
-        let grouped = Dictionary(grouping: daySource) { item in
-            calendar.startOfDay(for: item.createdAt)
-        }
-
-        let daySections = grouped.keys.sorted(by: >).map { day in
-            DaySection(
-                day: day,
-                items: (grouped[day] ?? []).sorted { $0.createdAt > $1.createdAt }
-            )
-        }
-
-        return Presentation(
-            favoriteItems: favoriteItems,
-            orderedItems: orderedItems,
-            daySections: daySections
-        )
-    }
+    @State private var draggedFilter: ClipboardFilter?
+    @State private var displayedFilters = ClipboardFilter.defaultDisplayOrder
+    @State private var presentation = Presentation.empty
 
     private func copyTimeText(_ date: Date) -> String {
         L10n.timeText(date)
@@ -117,6 +84,82 @@ struct PanelView: View {
         filter == .favorites ? 9 : 11
     }
 
+    private func selectFilter(_ filter: ClipboardFilter) {
+        withAnimation(.easeOut(duration: 0.1)) {
+            selectedFilter = filter
+        }
+    }
+
+    private func persistDisplayedFilterOrder() {
+        settings.saveFilterOrder(displayedFilters.filter(\.isUserReorderable))
+    }
+
+    private func moveFilterToFront(_ filter: ClipboardFilter) {
+        guard filter.isUserReorderable else { return }
+        var reorderable = displayedFilters.filter(\.isUserReorderable)
+        reorderable.removeAll { $0 == filter }
+        reorderable.insert(filter, at: 0)
+        displayedFilters = ClipboardFilter.displayOrder(from: reorderable)
+        persistDisplayedFilterOrder()
+    }
+
+    private func moveFilterToBack(_ filter: ClipboardFilter) {
+        guard filter.isUserReorderable else { return }
+        var reorderable = displayedFilters.filter(\.isUserReorderable)
+        reorderable.removeAll { $0 == filter }
+        reorderable.append(filter)
+        displayedFilters = ClipboardFilter.displayOrder(from: reorderable)
+        persistDisplayedFilterOrder()
+    }
+
+    private func resetDisplayedFilterOrder() {
+        displayedFilters = ClipboardFilter.defaultDisplayOrder
+        persistDisplayedFilterOrder()
+    }
+
+    private func refreshPresentation() {
+        presentation = Self.makePresentation(
+            filteredItems: store.items(for: selectedFilter),
+            selectedFilter: selectedFilter
+        )
+    }
+
+    private static func makePresentation(filteredItems: [ClipboardItem], selectedFilter: ClipboardFilter) -> Presentation {
+        let favoriteItems: [ClipboardItem]
+        let daySource: [ClipboardItem]
+
+        switch selectedFilter {
+        case .all:
+            favoriteItems = []
+            daySource = filteredItems
+        case .favorites:
+            favoriteItems = filteredItems
+            daySource = []
+        default:
+            favoriteItems = []
+            daySource = filteredItems
+        }
+
+        let orderedItems = favoriteItems + daySource
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: daySource) { item in
+            calendar.startOfDay(for: item.createdAt)
+        }
+
+        let daySections = grouped.keys.sorted(by: >).map { day in
+            DaySection(
+                day: day,
+                items: (grouped[day] ?? []).sorted { $0.createdAt > $1.createdAt }
+            )
+        }
+
+        return Presentation(
+            favoriteItems: favoriteItems,
+            orderedItems: orderedItems,
+            daySections: daySections
+        )
+    }
+
     private func separatorInset(after item: ClipboardItem) -> CGFloat {
         item.isImage ? 64 : 12
     }
@@ -134,11 +177,11 @@ struct PanelView: View {
     }
 
     private var isSearchActive: Bool {
-        isSearchVisible || !store.searchText.isEmpty
+        isSearchVisible || !store.appliedSearchText.isEmpty
     }
 
     private var contentScrollResetID: String {
-        "\(selectedFilter.id)|\(store.searchText)"
+        "\(selectedFilter.id)|\(store.appliedSearchText)"
     }
 
     private var searchButtonFill: Color {
@@ -223,8 +266,17 @@ struct PanelView: View {
             }
         }
         .onAppear {
+            displayedFilters = settings.orderedFilters
+            refreshPresentation()
             selectedID = presentation.orderedItems.first?.id
-            isSearchVisible = !store.searchText.isEmpty
+            isSearchVisible = !store.appliedSearchText.isEmpty
+        }
+        .onReceive(store.$filteredItemsByFilter) { _ in
+            refreshPresentation()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .filterOrderSettingsChanged)) { _ in
+            guard draggedFilter == nil else { return }
+            displayedFilters = settings.orderedFilters
         }
         .onChange(of: presentation.orderedItems.map(\.id)) { _, ids in
             guard let selectedID else {
@@ -237,12 +289,14 @@ struct PanelView: View {
             }
         }
         .onChange(of: selectedFilter) { _, _ in
+            refreshPresentation()
             selectedID = presentation.orderedItems.first?.id
         }
-        .onChange(of: store.searchText) { _, _ in
-            if !store.searchText.isEmpty {
+        .onChange(of: store.appliedSearchText) { _, _ in
+            if !store.appliedSearchText.isEmpty {
                 isSearchVisible = true
             }
+            refreshPresentation()
             selectedID = presentation.orderedItems.first?.id
         }
         .onMoveCommand(perform: moveSelection)
@@ -333,34 +387,18 @@ struct PanelView: View {
     }
 
     private var searchBar: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-
-            TextField(L10n.tr("panel.search_placeholder"), text: $store.searchText)
-                .textFieldStyle(.plain)
-                .font(.system(size: 15, weight: .medium))
-                .focused($isSearchFocused)
-
-            Button {
-                closeSearch()
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(.thinMaterial)
+        DeferredSearchField(
+            placeholder: L10n.tr("panel.search_placeholder"),
+            query: store.appliedSearchText,
+            font: .system(size: 15, weight: .medium),
+            iconFont: .system(size: 14, weight: .medium),
+            clearIconFont: .system(size: 13, weight: .semibold),
+            horizontalPadding: 14,
+            verticalPadding: 12,
+            cornerRadius: 16,
+            onQueryChange: store.setSearchQuery,
+            onClose: closeSearch
         )
-        .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
-        }
     }
 
     private func toggleSearch() {
@@ -372,15 +410,10 @@ struct PanelView: View {
         withAnimation(.snappy(duration: 0.18)) {
             isSearchVisible = true
         }
-
-        DispatchQueue.main.async {
-            isSearchFocused = true
-        }
     }
 
     private func closeSearch() {
-        store.searchText = ""
-        isSearchFocused = false
+        store.setSearchQuery("")
         withAnimation(.snappy(duration: 0.18)) {
             isSearchVisible = false
         }
@@ -423,38 +456,9 @@ struct PanelView: View {
         ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(ClipboardFilter.allCases) { filter in
-                    Button {
-                        withAnimation(.easeOut(duration: 0.12)) {
-                            selectedFilter = filter
-                        }
-                    } label: {
-                            HStack(spacing: 5) {
-                                if let symbolSystemName = filter.symbolSystemName {
-                                    Image(systemName: symbolSystemName)
-                                        .font(.system(size: filter == .favorites ? 8 : 10, weight: .semibold))
-                                }
-                                Text(filter.title)
-                                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                            }
-                            .foregroundStyle(filterChipTextColor(for: filter))
-                            .padding(.horizontal, filterChipHorizontalPadding(for: filter))
-                            .padding(.vertical, 6)
-                            .background(
-                                Capsule(style: .continuous)
-                                    .fill(selectedFilter == filter ? selectedFilterChipFill : filterChipFill)
-                            )
-                            .overlay {
-                                Capsule(style: .continuous)
-                                    .stroke(
-                                        filterChipStrokeColor(for: filter),
-                                        lineWidth: colorScheme == .dark ? 1 : 0.75
-                                    )
-                            }
-                            .shadow(color: filterChipShadowColor(for: filter), radius: 6, y: 2)
-                        }
-                        .buttonStyle(.plain)
-                        .id(filter)
+                    ForEach(displayedFilters) { filter in
+                        filterChip(for: filter)
+                            .id(filter)
                     }
                 }
                 .padding(.horizontal, 2)
@@ -470,13 +474,81 @@ struct PanelView: View {
         }
     }
 
+    @ViewBuilder
+    private func filterChip(for filter: ClipboardFilter) -> some View {
+        let chip = Button {
+            selectFilter(filter)
+        } label: {
+            HStack(spacing: 5) {
+                if let symbolSystemName = filter.symbolSystemName {
+                    Image(systemName: symbolSystemName)
+                        .font(.system(size: filter == .favorites ? 8 : 10, weight: .semibold))
+                }
+                Text(filter.title)
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+            }
+            .foregroundStyle(filterChipTextColor(for: filter))
+            .padding(.horizontal, filterChipHorizontalPadding(for: filter))
+            .padding(.vertical, 6)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(selectedFilter == filter ? selectedFilterChipFill : filterChipFill)
+            )
+            .overlay {
+                Capsule(style: .continuous)
+                    .stroke(
+                        filterChipStrokeColor(for: filter),
+                        lineWidth: colorScheme == .dark ? 1 : 0.75
+                    )
+            }
+            .shadow(color: filterChipShadowColor(for: filter), radius: 6, y: 2)
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            if filter.isUserReorderable {
+                Button(L10n.tr("filter.move_first")) {
+                    moveFilterToFront(filter)
+                }
+                Button(L10n.tr("filter.move_last")) {
+                    moveFilterToBack(filter)
+                }
+                Divider()
+            }
+            Button(L10n.tr("filter.reset_order")) {
+                resetDisplayedFilterOrder()
+            }
+        }
+
+        if filter.isUserReorderable {
+            chip
+                .opacity(draggedFilter == filter ? 0.78 : 1)
+                .onDrag {
+                    draggedFilter = filter
+                    return NSItemProvider(object: filter.rawValue as NSString)
+                }
+                .onDrop(
+                    of: [UTType.plainText.identifier],
+                    delegate: ClipboardFilterDropDelegate(
+                        destinationFilter: filter,
+                        displayedFilters: $displayedFilters,
+                        draggedFilter: $draggedFilter,
+                        onCommit: { _ in
+                            persistDisplayedFilterOrder()
+                        }
+                    )
+                )
+        } else {
+            chip
+        }
+    }
+
     private var contentArea: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 16) {
                 if presentation.orderedItems.isEmpty {
                     emptyStateCard(
                         title: isSearchActive ? L10n.tr("panel.search_empty_title") : L10n.tr("panel.empty_title"),
-                        message: isSearchActive ? L10n.tr("panel.search_empty_message") : L10n.tr("panel.empty_message"),
+                        message: emptyStateMessage,
                         showsClearSearch: isSearchActive
                     )
                 } else {
@@ -511,6 +583,21 @@ struct PanelView: View {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(Color.primary.opacity(0.05), lineWidth: 1)
         }
+    }
+
+    private var emptyStateMessage: String {
+        if isSearchActive {
+            if selectedFilter == .all {
+                return L10n.tr("panel.search_empty_message")
+            }
+            return L10n.format("panel.search_empty_message_scoped", selectedFilter.title)
+        }
+
+        if selectedFilter == .all {
+            return L10n.tr("panel.empty_message")
+        }
+
+        return L10n.format("panel.empty_message_scoped", selectedFilter.title)
     }
 
     private func emptyStateCard(title: String, message: String, showsClearSearch: Bool) -> some View {
@@ -812,6 +899,110 @@ struct PanelView: View {
                 }
         }
         .buttonStyle(.plain)
+    }
+}
+
+struct DeferredSearchField: View {
+    let placeholder: String
+    let query: String
+    let font: Font
+    let iconFont: Font
+    let clearIconFont: Font
+    let horizontalPadding: CGFloat
+    let verticalPadding: CGFloat
+    let cornerRadius: CGFloat
+    let onQueryChange: (String) -> Void
+    let onClose: () -> Void
+
+    @FocusState private var isFocused: Bool
+    @State private var draft: String
+    @State private var pendingUpdate: DispatchWorkItem?
+
+    init(
+        placeholder: String,
+        query: String,
+        font: Font,
+        iconFont: Font,
+        clearIconFont: Font,
+        horizontalPadding: CGFloat,
+        verticalPadding: CGFloat,
+        cornerRadius: CGFloat,
+        onQueryChange: @escaping (String) -> Void,
+        onClose: @escaping () -> Void
+    ) {
+        self.placeholder = placeholder
+        self.query = query
+        self.font = font
+        self.iconFont = iconFont
+        self.clearIconFont = clearIconFont
+        self.horizontalPadding = horizontalPadding
+        self.verticalPadding = verticalPadding
+        self.cornerRadius = cornerRadius
+        self.onQueryChange = onQueryChange
+        self.onClose = onClose
+        _draft = State(initialValue: query)
+    }
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "magnifyingglass")
+                .font(iconFont)
+                .foregroundStyle(.secondary)
+
+            TextField(placeholder, text: $draft)
+                .textFieldStyle(.plain)
+                .font(font)
+                .focused($isFocused)
+
+            Button {
+                pendingUpdate?.cancel()
+                draft = ""
+                onQueryChange("")
+                onClose()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(clearIconFont)
+                    .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, horizontalPadding)
+        .padding(.vertical, verticalPadding)
+        .background(
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .fill(.thinMaterial)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        }
+        .onAppear {
+            draft = query
+            DispatchQueue.main.async {
+                isFocused = true
+            }
+        }
+        .onChange(of: query) { _, newValue in
+            if newValue != draft {
+                draft = newValue
+            }
+        }
+        .onChange(of: draft) { _, newValue in
+            scheduleQueryUpdate(for: newValue)
+        }
+        .onDisappear {
+            pendingUpdate?.cancel()
+        }
+    }
+
+    private func scheduleQueryUpdate(for value: String) {
+        pendingUpdate?.cancel()
+
+        let task = DispatchWorkItem {
+            onQueryChange(value)
+        }
+        pendingUpdate = task
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.10, execute: task)
     }
 }
 

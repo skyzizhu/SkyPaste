@@ -1,9 +1,9 @@
 import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct MenuBarClipboardView: View {
     @Environment(\.colorScheme) private var colorScheme
-    @FocusState private var isSearchFocused: Bool
 
     private struct DaySection: Identifiable {
         let day: Date
@@ -16,6 +16,8 @@ struct MenuBarClipboardView: View {
         let favoriteItems: [ClipboardItem]
         let orderedItems: [ClipboardItem]
         let daySections: [DaySection]
+
+        static let empty = Presentation(favoriteItems: [], orderedItems: [], daySections: [])
     }
 
     @ObservedObject var store: ClipboardStore
@@ -40,44 +42,9 @@ struct MenuBarClipboardView: View {
     @State private var isSearchVisible = false
     @State private var toastTask: DispatchWorkItem?
     @State private var pendingPrimaryAction: DispatchWorkItem?
-
-    private var presentation: Presentation {
-        let filteredItems = Array(store.filteredItems.lazy.filter { selectedFilter.matches($0) }.prefix(80))
-        let favoriteItems: [ClipboardItem]
-        let daySource: [ClipboardItem]
-
-        switch selectedFilter {
-        case .all:
-            favoriteItems = []
-            daySource = filteredItems
-        case .favorites:
-            favoriteItems = filteredItems
-            daySource = []
-        default:
-            favoriteItems = []
-            daySource = filteredItems
-        }
-
-        let orderedItems = favoriteItems + daySource
-
-        let calendar = Calendar.current
-        let grouped = Dictionary(grouping: daySource) { item in
-            calendar.startOfDay(for: item.createdAt)
-        }
-
-        let daySections = grouped.keys.sorted(by: >).map { day in
-            DaySection(
-                day: day,
-                items: (grouped[day] ?? []).sorted { $0.createdAt > $1.createdAt }
-            )
-        }
-
-        return Presentation(
-            favoriteItems: favoriteItems,
-            orderedItems: orderedItems,
-            daySections: daySections
-        )
-    }
+    @State private var draggedFilter: ClipboardFilter?
+    @State private var displayedFilters = ClipboardFilter.defaultDisplayOrder
+    @State private var presentation = Presentation.empty
 
     private func copyTimeText(_ date: Date) -> String {
         L10n.timeText(date)
@@ -135,6 +102,82 @@ struct MenuBarClipboardView: View {
         filter == .favorites ? 9 : 11
     }
 
+    private func selectFilter(_ filter: ClipboardFilter) {
+        withAnimation(.easeOut(duration: 0.1)) {
+            selectedFilter = filter
+        }
+    }
+
+    private func persistDisplayedFilterOrder() {
+        settings.saveFilterOrder(displayedFilters.filter(\.isUserReorderable))
+    }
+
+    private func moveFilterToFront(_ filter: ClipboardFilter) {
+        guard filter.isUserReorderable else { return }
+        var reorderable = displayedFilters.filter(\.isUserReorderable)
+        reorderable.removeAll { $0 == filter }
+        reorderable.insert(filter, at: 0)
+        displayedFilters = ClipboardFilter.displayOrder(from: reorderable)
+        persistDisplayedFilterOrder()
+    }
+
+    private func moveFilterToBack(_ filter: ClipboardFilter) {
+        guard filter.isUserReorderable else { return }
+        var reorderable = displayedFilters.filter(\.isUserReorderable)
+        reorderable.removeAll { $0 == filter }
+        reorderable.append(filter)
+        displayedFilters = ClipboardFilter.displayOrder(from: reorderable)
+        persistDisplayedFilterOrder()
+    }
+
+    private func resetDisplayedFilterOrder() {
+        displayedFilters = ClipboardFilter.defaultDisplayOrder
+        persistDisplayedFilterOrder()
+    }
+
+    private func refreshPresentation() {
+        presentation = Self.makePresentation(
+            filteredItems: Array(store.items(for: selectedFilter).prefix(80)),
+            selectedFilter: selectedFilter
+        )
+    }
+
+    private static func makePresentation(filteredItems: [ClipboardItem], selectedFilter: ClipboardFilter) -> Presentation {
+        let favoriteItems: [ClipboardItem]
+        let daySource: [ClipboardItem]
+
+        switch selectedFilter {
+        case .all:
+            favoriteItems = []
+            daySource = filteredItems
+        case .favorites:
+            favoriteItems = filteredItems
+            daySource = []
+        default:
+            favoriteItems = []
+            daySource = filteredItems
+        }
+
+        let orderedItems = favoriteItems + daySource
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: daySource) { item in
+            calendar.startOfDay(for: item.createdAt)
+        }
+
+        let daySections = grouped.keys.sorted(by: >).map { day in
+            DaySection(
+                day: day,
+                items: (grouped[day] ?? []).sorted { $0.createdAt > $1.createdAt }
+            )
+        }
+
+        return Presentation(
+            favoriteItems: favoriteItems,
+            orderedItems: orderedItems,
+            daySections: daySections
+        )
+    }
+
     private func separatorInset(after item: ClipboardItem) -> CGFloat {
         item.isImage ? 64 : 12
     }
@@ -152,11 +195,11 @@ struct MenuBarClipboardView: View {
     }
 
     private var isSearchActive: Bool {
-        isSearchVisible || !store.searchText.isEmpty
+        isSearchVisible || !store.appliedSearchText.isEmpty
     }
 
     private var contentScrollResetID: String {
-        "\(selectedFilter.id)|\(store.searchText)"
+        "\(selectedFilter.id)|\(store.appliedSearchText)"
     }
 
     private var searchButtonFill: Color {
@@ -223,8 +266,17 @@ struct MenuBarClipboardView: View {
             }
         }
         .onAppear {
+            displayedFilters = settings.orderedFilters
+            refreshPresentation()
             selectedID = presentation.orderedItems.first?.id
-            isSearchVisible = !store.searchText.isEmpty
+            isSearchVisible = !store.appliedSearchText.isEmpty
+        }
+        .onReceive(store.$filteredItemsByFilter) { _ in
+            refreshPresentation()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .filterOrderSettingsChanged)) { _ in
+            guard draggedFilter == nil else { return }
+            displayedFilters = settings.orderedFilters
         }
         .onChange(of: presentation.orderedItems.map(\.id)) { _, ids in
             guard let selectedID else {
@@ -237,12 +289,14 @@ struct MenuBarClipboardView: View {
             }
         }
         .onChange(of: selectedFilter) { _, _ in
+            refreshPresentation()
             selectedID = presentation.orderedItems.first?.id
         }
-        .onChange(of: store.searchText) { _, _ in
-            if !store.searchText.isEmpty {
+        .onChange(of: store.appliedSearchText) { _, _ in
+            if !store.appliedSearchText.isEmpty {
                 isSearchVisible = true
             }
+            refreshPresentation()
             selectedID = presentation.orderedItems.first?.id
         }
         .alert(
@@ -271,35 +325,18 @@ struct MenuBarClipboardView: View {
     }
 
     private var searchBar: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.secondary)
-
-            TextField(L10n.tr("panel.search_placeholder"), text: $store.searchText)
-                .textFieldStyle(.plain)
-                .font(.system(size: 13, weight: .medium))
-                .focused($isSearchFocused)
-
-            Button {
-                closeSearch()
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(.thinMaterial)
+        DeferredSearchField(
+            placeholder: L10n.tr("panel.search_placeholder"),
+            query: store.appliedSearchText,
+            font: .system(size: 13, weight: .medium),
+            iconFont: .system(size: 12, weight: .semibold),
+            clearIconFont: .system(size: 12, weight: .semibold),
+            horizontalPadding: 12,
+            verticalPadding: 10,
+            cornerRadius: 14,
+            onQueryChange: store.setSearchQuery,
+            onClose: closeSearch
         )
-        .overlay {
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
-        }
     }
 
     private var header: some View {
@@ -357,15 +394,10 @@ struct MenuBarClipboardView: View {
         withAnimation(.snappy(duration: 0.18)) {
             isSearchVisible = true
         }
-
-        DispatchQueue.main.async {
-            isSearchFocused = true
-        }
     }
 
     private func closeSearch() {
-        store.searchText = ""
-        isSearchFocused = false
+        store.setSearchQuery("")
         withAnimation(.snappy(duration: 0.18)) {
             isSearchVisible = false
         }
@@ -375,38 +407,9 @@ struct MenuBarClipboardView: View {
         ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(ClipboardFilter.allCases) { filter in
-                    Button {
-                        withAnimation(.easeOut(duration: 0.12)) {
-                            selectedFilter = filter
-                        }
-                    } label: {
-                            HStack(spacing: 5) {
-                                if let symbolSystemName = filter.symbolSystemName {
-                                    Image(systemName: symbolSystemName)
-                                        .font(.system(size: filter == .favorites ? 8 : 10, weight: .semibold))
-                                }
-                                Text(filter.title)
-                                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                            }
-                            .foregroundStyle(filterChipTextColor(for: filter))
-                            .padding(.horizontal, filterChipHorizontalPadding(for: filter))
-                            .padding(.vertical, 6)
-                            .background(
-                                Capsule(style: .continuous)
-                                    .fill(selectedFilter == filter ? selectedFilterChipFill : filterChipFill)
-                            )
-                            .overlay {
-                                Capsule(style: .continuous)
-                                    .stroke(
-                                        filterChipStrokeColor(for: filter),
-                                        lineWidth: colorScheme == .dark ? 1 : 0.75
-                                    )
-                            }
-                            .shadow(color: filterChipShadowColor(for: filter), radius: 6, y: 2)
-                        }
-                        .buttonStyle(.plain)
-                        .id(filter)
+                    ForEach(displayedFilters) { filter in
+                        filterChip(for: filter)
+                            .id(filter)
                     }
                 }
                 .padding(.horizontal, 2)
@@ -419,6 +422,74 @@ struct MenuBarClipboardView: View {
                     proxy.scrollTo(filter, anchor: .center)
                 }
             }
+        }
+    }
+
+    @ViewBuilder
+    private func filterChip(for filter: ClipboardFilter) -> some View {
+        let chip = Button {
+            selectFilter(filter)
+        } label: {
+            HStack(spacing: 5) {
+                if let symbolSystemName = filter.symbolSystemName {
+                    Image(systemName: symbolSystemName)
+                        .font(.system(size: filter == .favorites ? 8 : 10, weight: .semibold))
+                }
+                Text(filter.title)
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+            }
+            .foregroundStyle(filterChipTextColor(for: filter))
+            .padding(.horizontal, filterChipHorizontalPadding(for: filter))
+            .padding(.vertical, 6)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(selectedFilter == filter ? selectedFilterChipFill : filterChipFill)
+            )
+            .overlay {
+                Capsule(style: .continuous)
+                    .stroke(
+                        filterChipStrokeColor(for: filter),
+                        lineWidth: colorScheme == .dark ? 1 : 0.75
+                    )
+            }
+            .shadow(color: filterChipShadowColor(for: filter), radius: 6, y: 2)
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            if filter.isUserReorderable {
+                Button(L10n.tr("filter.move_first")) {
+                    moveFilterToFront(filter)
+                }
+                Button(L10n.tr("filter.move_last")) {
+                    moveFilterToBack(filter)
+                }
+                Divider()
+            }
+            Button(L10n.tr("filter.reset_order")) {
+                resetDisplayedFilterOrder()
+            }
+        }
+
+        if filter.isUserReorderable {
+            chip
+                .opacity(draggedFilter == filter ? 0.78 : 1)
+                .onDrag {
+                    draggedFilter = filter
+                    return NSItemProvider(object: filter.rawValue as NSString)
+                }
+                .onDrop(
+                    of: [UTType.plainText.identifier],
+                    delegate: ClipboardFilterDropDelegate(
+                        destinationFilter: filter,
+                        displayedFilters: $displayedFilters,
+                        draggedFilter: $draggedFilter,
+                        onCommit: { _ in
+                            persistDisplayedFilterOrder()
+                        }
+                    )
+                )
+        } else {
+            chip
         }
     }
 
@@ -461,7 +532,7 @@ struct MenuBarClipboardView: View {
                 if presentation.orderedItems.isEmpty {
                     emptyStateCard(
                         title: isSearchActive ? L10n.tr("panel.search_empty_title") : L10n.tr("panel.empty_title"),
-                        message: isSearchActive ? L10n.tr("panel.search_empty_message") : L10n.tr("panel.empty_message"),
+                        message: emptyStateMessage,
                         showsClearSearch: isSearchActive
                     )
                 } else {
@@ -497,6 +568,21 @@ struct MenuBarClipboardView: View {
                 .stroke(Color.primary.opacity(0.05), lineWidth: 1)
         }
         .shadow(color: .black.opacity(0.03), radius: 14, y: 8)
+    }
+
+    private var emptyStateMessage: String {
+        if isSearchActive {
+            if selectedFilter == .all {
+                return L10n.tr("panel.search_empty_message")
+            }
+            return L10n.format("panel.search_empty_message_scoped", selectedFilter.title)
+        }
+
+        if selectedFilter == .all {
+            return L10n.tr("panel.empty_message")
+        }
+
+        return L10n.format("panel.empty_message_scoped", selectedFilter.title)
     }
 
     private func emptyStateCard(title: String, message: String, showsClearSearch: Bool) -> some View {
@@ -749,7 +835,7 @@ struct MenuBarClipboardView: View {
     private func actionButton(title: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
                 .foregroundStyle(Color.primary.opacity(0.82))
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)

@@ -222,9 +222,16 @@ final class AppCoordinator {
 
     func showTextPreview(for item: ClipboardItem) {
         guard let text = item.previewText else { return }
-        let rootView = TextPreviewView(item: item, text: text) { [weak self] in
-            self?.copyOnly(item)
-        }
+        let rootView = TextPreviewView(
+            item: item,
+            text: text,
+            onCopy: { [weak self] in
+                self?.copyOnly(item)
+            },
+            onOpenURL: item.browserURL != nil ? { [weak self] in
+                self?.openURLInBrowser(for: item)
+            } : nil
+        )
 
         if textPreviewWindow == nil {
             let window = NSWindow(
@@ -271,9 +278,9 @@ final class AppCoordinator {
             onOpen: { [weak self] in
                 self?.openFileSystemItem(for: item)
             },
-            onRevealInFinder: item.isSingleFile ? { [weak self] in
+            onRevealInFinder: { [weak self] in
                 self?.revealInFinder(for: item)
-            } : nil
+            }
         )
 
         if fileSystemPreviewWindow == nil {
@@ -803,15 +810,12 @@ private struct ImagePreviewView: View {
     let item: ClipboardItem
     let onCopy: () -> Void
     @State private var zoomScale: CGFloat = 1
-    @GestureState private var gestureScale: CGFloat = 1
 
     private var image: NSImage? {
         item.previewImage
     }
 
     var body: some View {
-        let liveScale = clampedScale(zoomScale * gestureScale)
-
         VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -840,7 +844,7 @@ private struct ImagePreviewView: View {
                     Button {
                         zoomScale = 1
                     } label: {
-                        Text("\(Int(liveScale * 100))%")
+                        Text("\(Int(zoomScale * 100))%")
                             .font(.system(size: 12, weight: .semibold, design: .rounded))
                             .monospacedDigit()
                     }
@@ -884,22 +888,15 @@ private struct ImagePreviewView: View {
                         }
 
                     if let image {
-                        let fittedSize = fittedImageSize(
-                            imageSize: image.size,
+                        MagnifiableImagePreviewRepresentable(
+                            image: image,
+                            zoomScale: $zoomScale,
                             availableSize: CGSize(
                                 width: max(proxy.size.width - 120, 280),
                                 height: max(proxy.size.height - 120, 280)
                             )
                         )
-
-                        Image(nsImage: image)
-                            .resizable()
-                            .interpolation(.high)
-                            .frame(
-                                width: max(120, fittedSize.width * liveScale),
-                                height: max(120, fittedSize.height * liveScale)
-                            )
-                            .shadow(color: .black.opacity(0.08), radius: 14, y: 8)
+                        .shadow(color: .black.opacity(0.08), radius: 14, y: 8)
                     } else {
                         ContentUnavailableView(
                             L10n.tr("preview.unavailable"),
@@ -910,7 +907,6 @@ private struct ImagePreviewView: View {
                     }
                 }
                 .padding(24)
-                .gesture(magnifyGesture)
                 .clipped()
                 .background(
                     LinearGradient(
@@ -928,6 +924,138 @@ private struct ImagePreviewView: View {
         .background(Color(nsColor: .windowBackgroundColor))
     }
 
+    private func clampedScale(_ value: CGFloat) -> CGFloat {
+        min(max(value, 0.4), 5)
+    }
+}
+
+private struct MagnifiableImagePreviewRepresentable: NSViewRepresentable {
+    let image: NSImage
+    @Binding var zoomScale: CGFloat
+    let availableSize: CGSize
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(zoomScale: $zoomScale)
+    }
+
+    func makeNSView(context: Context) -> MagnifiableImageScrollView {
+        let scrollView = MagnifiableImageScrollView()
+        scrollView.onMagnificationChanged = { magnification in
+            context.coordinator.updateZoomScale(magnification)
+        }
+        return scrollView
+    }
+
+    func updateNSView(_ nsView: MagnifiableImageScrollView, context: Context) {
+        nsView.onMagnificationChanged = { magnification in
+            context.coordinator.updateZoomScale(magnification)
+        }
+        nsView.update(
+            image: image,
+            zoomScale: zoomScale,
+            availableSize: availableSize
+        )
+    }
+
+    final class Coordinator {
+        @Binding private var zoomScale: CGFloat
+
+        init(zoomScale: Binding<CGFloat>) {
+            _zoomScale = zoomScale
+        }
+
+        func updateZoomScale(_ magnification: CGFloat) {
+            DispatchQueue.main.async {
+                let clamped = min(max(magnification, 0.4), 5)
+                if abs(self.zoomScale - clamped) > 0.001 {
+                    self.zoomScale = clamped
+                }
+            }
+        }
+    }
+}
+
+private final class MagnifiableImageScrollView: NSScrollView {
+    var onMagnificationChanged: ((CGFloat) -> Void)?
+
+    private let containerView = PannableImageContainerView()
+    private let imageView = NSImageView()
+    private var baseImageSize: CGSize = CGSize(width: 240, height: 240)
+    private var currentScale: CGFloat = 1
+    private var panStartOrigin: CGPoint = .zero
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        configure()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        configure()
+    }
+
+    func update(image: NSImage, zoomScale: CGFloat, availableSize: CGSize) {
+        imageView.image = image
+        baseImageSize = fittedImageSize(imageSize: imageDisplaySize(for: image), availableSize: availableSize)
+        if abs(currentScale - zoomScale) > 0.001 {
+            currentScale = zoomScale
+        }
+        layoutImage()
+    }
+
+    override func layout() {
+        super.layout()
+        layoutImage()
+    }
+
+    override func magnify(with event: NSEvent) {
+        currentScale = min(max(currentScale + event.magnification, 0.4), 5)
+        onMagnificationChanged?(currentScale)
+        layoutImage()
+    }
+
+    private func configure() {
+        drawsBackground = false
+        hasVerticalScroller = true
+        hasHorizontalScroller = true
+        autohidesScrollers = true
+        borderType = .noBorder
+        currentScale = 1
+
+        imageView.imageScaling = .scaleProportionallyUpOrDown
+        imageView.imageAlignment = .alignCenter
+        imageView.wantsLayer = true
+
+        containerView.wantsLayer = true
+        containerView.layer?.backgroundColor = NSColor.clear.cgColor
+        containerView.addSubview(imageView)
+        containerView.onPan = { [weak self] translation, state in
+            self?.handlePan(translation: translation, state: state)
+        }
+        documentView = containerView
+    }
+
+    private func layoutImage() {
+        let scaledSize = CGSize(
+            width: max(120, baseImageSize.width * currentScale),
+            height: max(120, baseImageSize.height * currentScale)
+        )
+        let visibleSize = contentView.bounds.size
+        let containerSize = CGSize(
+            width: max(visibleSize.width, scaledSize.width),
+            height: max(visibleSize.height, scaledSize.height)
+        )
+
+        containerView.frame = CGRect(origin: .zero, size: containerSize)
+        imageView.frame = CGRect(
+            x: max(0, (containerSize.width - scaledSize.width) / 2),
+            y: max(0, (containerSize.height - scaledSize.height) / 2),
+            width: scaledSize.width,
+            height: scaledSize.height
+        )
+        updateCursor()
+    }
+
     private func fittedImageSize(imageSize: CGSize, availableSize: CGSize) -> CGSize {
         guard imageSize.width > 0, imageSize.height > 0 else {
             return CGSize(width: 240, height: 240)
@@ -943,18 +1071,103 @@ private struct ImagePreviewView: View {
         )
     }
 
-    private var magnifyGesture: some Gesture {
-        MagnifyGesture()
-            .updating($gestureScale) { value, state, _ in
-                state = value.magnification
-            }
-            .onEnded { value in
-                zoomScale = clampedScale(zoomScale * value.magnification)
-            }
+    private func imageDisplaySize(for image: NSImage) -> CGSize {
+        if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            return CGSize(width: cgImage.width, height: cgImage.height)
+        }
+
+        if let representation = image.representations.first(where: {
+            $0.pixelsWide > 0 && $0.pixelsHigh > 0
+        }) {
+            return CGSize(width: representation.pixelsWide, height: representation.pixelsHigh)
+        }
+
+        return image.size
     }
 
-    private func clampedScale(_ value: CGFloat) -> CGFloat {
-        min(max(value, 0.4), 5)
+    private func handlePan(translation: CGPoint, state: NSGestureRecognizer.State) {
+        guard canPanContent else { return }
+
+        switch state {
+        case .began:
+            panStartOrigin = contentView.bounds.origin
+        case .changed:
+            let targetOrigin = CGPoint(
+                x: panStartOrigin.x - translation.x,
+                y: panStartOrigin.y - translation.y
+            )
+            scroll(to: clampedContentOrigin(targetOrigin))
+        default:
+            break
+        }
+    }
+
+    private func scroll(to origin: CGPoint) {
+        contentView.scroll(to: origin)
+        reflectScrolledClipView(contentView)
+    }
+
+    private func clampedContentOrigin(_ origin: CGPoint) -> CGPoint {
+        let visibleSize = contentView.bounds.size
+        let maxX = max(0, containerView.frame.width - visibleSize.width)
+        let maxY = max(0, containerView.frame.height - visibleSize.height)
+        return CGPoint(
+            x: min(max(origin.x, 0), maxX),
+            y: min(max(origin.y, 0), maxY)
+        )
+    }
+
+    private var canPanContent: Bool {
+        let visibleSize = contentView.bounds.size
+        return containerView.frame.width > visibleSize.width + 1 ||
+            containerView.frame.height > visibleSize.height + 1
+    }
+
+    private func updateCursor() {
+        if canPanContent {
+            containerView.cursor = .openHand
+        } else {
+            containerView.cursor = .arrow
+        }
+        window?.invalidateCursorRects(for: containerView)
+    }
+}
+
+private final class PannableImageContainerView: NSView {
+    var onPan: ((CGPoint, NSGestureRecognizer.State) -> Void)?
+    var cursor: NSCursor = .arrow
+
+    private lazy var panGestureRecognizer: NSPanGestureRecognizer = {
+        let gesture = NSPanGestureRecognizer(target: self, action: #selector(handlePanGesture(_:)))
+        gesture.buttonMask = 0x1
+        return gesture
+    }()
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        addGestureRecognizer(panGestureRecognizer)
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        addGestureRecognizer(panGestureRecognizer)
+    }
+
+    override func resetCursorRects() {
+        addCursorRect(bounds, cursor: cursor)
+    }
+
+    @objc
+    private func handlePanGesture(_ gesture: NSPanGestureRecognizer) {
+        let translation = gesture.translation(in: self)
+        if gesture.state == .began || gesture.state == .changed {
+            gesture.view?.window?.invalidateCursorRects(for: self)
+            cursor = .closedHand
+        } else if gesture.state == .ended || gesture.state == .cancelled || gesture.state == .failed {
+            cursor = .openHand
+            gesture.view?.window?.invalidateCursorRects(for: self)
+        }
+        onPan?(translation, gesture.state)
     }
 }
 
@@ -974,6 +1187,29 @@ private struct TextPreviewView: View {
     let item: ClipboardItem
     let text: String
     let onCopy: () -> Void
+    let onOpenURL: (() -> Void)?
+
+    private var headerActions: [PreviewHeaderAction] {
+        var actions = [
+            PreviewHeaderAction(
+                title: item.isURL ? L10n.tr("menu.copy_link") : L10n.tr("menu.copy"),
+                systemImage: "doc.on.doc",
+                action: onCopy
+            )
+        ]
+
+        if let onOpenURL {
+            actions.append(
+                PreviewHeaderAction(
+                    title: L10n.tr("menu.open_in_browser"),
+                    systemImage: "safari",
+                    action: onOpenURL
+                )
+            )
+        }
+
+        return actions
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -988,11 +1224,7 @@ private struct TextPreviewView: View {
 
                 Spacer()
 
-                Button(action: onCopy) {
-                    Label(L10n.tr("menu.copy"), systemImage: "doc.on.doc")
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.regular)
+                PreviewHeaderActionBar(actions: headerActions)
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
@@ -1060,7 +1292,11 @@ struct FileSystemPreviewSnapshot: Equatable {
     let sizeBytes: Int64?
     let sizeText: String
     let pathText: String
+    let fileExtensionText: String?
+    let modifiedAtText: String?
     let itemCount: Int?
+    let directFileCount: Int?
+    let directFolderCount: Int?
     let directoryEntries: [FileSystemPreviewDirectoryEntry]
 
     var isMissing: Bool {
@@ -1097,7 +1333,11 @@ struct FileSystemPreviewSnapshot: Equatable {
                     sizeBytes: sizeBytes,
                     sizeText: sizeBytes.map(formatByteCount) ?? L10n.tr("preview.file_system_unavailable"),
                     pathText: pathText,
+                    fileExtensionText: nil,
+                    modifiedAtText: nil,
                     itemCount: availableURLs.isEmpty ? nil : entries.count,
+                    directFileCount: availableURLs.isEmpty ? nil : entries.filter { $0.kind == .file }.count,
+                    directFolderCount: availableURLs.isEmpty ? nil : entries.filter { $0.kind == .folder }.count,
                     directoryEntries: entries
                 )
             case .file:
@@ -1112,7 +1352,11 @@ struct FileSystemPreviewSnapshot: Equatable {
                     sizeBytes: sizeBytes,
                     sizeText: sizeBytes.map(formatByteCount) ?? L10n.tr("preview.file_system_unavailable"),
                     pathText: pathText,
+                    fileExtensionText: fileExtensionText(for: singleURL),
+                    modifiedAtText: availableURLs.isEmpty ? nil : modifiedDateText(for: singleURL),
                     itemCount: nil,
+                    directFileCount: nil,
+                    directFolderCount: nil,
                     directoryEntries: []
                 )
             }
@@ -1135,7 +1379,11 @@ struct FileSystemPreviewSnapshot: Equatable {
             sizeBytes: sizeBytes,
             sizeText: sizeBytes.map(formatByteCount) ?? L10n.tr("preview.file_system_unavailable"),
             pathText: L10n.tr("preview.file_system_multiple_locations"),
+            fileExtensionText: nil,
+            modifiedAtText: nil,
             itemCount: urls.count,
+            directFileCount: nil,
+            directFolderCount: nil,
             directoryEntries: urls.map(selectionEntry(for:))
         )
     }
@@ -1259,7 +1507,25 @@ struct FileSystemPreviewSnapshot: Equatable {
         }
     }
 
+    private static func fileExtensionText(for url: URL) -> String {
+        let ext = url.pathExtension.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !ext.isEmpty else { return L10n.tr("preview.file_system_unavailable") }
+        return ext.uppercased()
+    }
+
+    private static func modifiedDateText(for url: URL) -> String? {
+        let values = withSecurityScopedAccess(to: url) {
+            try? url.resourceValues(forKeys: [.contentModificationDateKey])
+        }
+        guard let date = values?.contentModificationDate else { return nil }
+        return L10n.dateTimeText(date)
+    }
+
     private static func typeDescription(for url: URL, fallbackKind: ClipboardFileSystemItemKind?) -> String {
+        if fallbackKind == .folder {
+            return L10n.tr("preview.file_system_type_folder")
+        }
+
         if let values = withSecurityScopedAccess(to: url, {
             try? url.resourceValues(forKeys: [.localizedTypeDescriptionKey])
         }),
@@ -1320,6 +1586,41 @@ private struct FileSystemPreviewView: View {
     let onRevealInFinder: (() -> Void)?
     @StateObject private var model: FileSystemPreviewModel
 
+    private var headerActions: [PreviewHeaderAction] {
+        var actions = [
+            PreviewHeaderAction(
+                title: L10n.tr("menu.copy"),
+                systemImage: "doc.on.doc",
+                action: onCopy
+            ),
+            PreviewHeaderAction(
+                title: L10n.tr("menu.copy_path"),
+                systemImage: "text.alignleft",
+                action: onCopyPath
+            )
+        ]
+
+        if let onRevealInFinder {
+            actions.append(
+                PreviewHeaderAction(
+                    title: L10n.tr("menu.reveal_in_finder"),
+                    systemImage: "folder.badge.gearshape",
+                    action: onRevealInFinder
+                )
+            )
+        }
+
+        actions.append(
+            PreviewHeaderAction(
+                title: item.openActionTitle,
+                systemImage: item.singleFileSystemItemKind == .folder ? "folder" : "arrow.up.right.square",
+                action: onOpen
+            )
+        )
+
+        return actions
+    }
+
     init(
         item: ClipboardItem,
         onCopy: @escaping () -> Void,
@@ -1369,7 +1670,7 @@ private struct FileSystemPreviewView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(L10n.tr("preview.file_system_title"))
                     .font(.system(size: 20, weight: .semibold, design: .rounded))
-                Text(item.title)
+                Text(headerTitleText)
                     .font(.system(size: 13, weight: .semibold, design: .rounded))
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -1382,36 +1683,22 @@ private struct FileSystemPreviewView: View {
 
             Spacer()
 
-            HStack(spacing: 8) {
-                Button(action: onCopy) {
-                    Label(L10n.tr("menu.copy"), systemImage: "doc.on.doc")
-                }
-                .fixedSize()
-
-                Button(action: onCopyPath) {
-                    Label(L10n.tr("menu.copy_path"), systemImage: "text.alignleft")
-                }
-                .fixedSize()
-
-                Button(action: onOpen) {
-                    Label(item.openActionTitle, systemImage: item.singleFileSystemItemKind == .folder ? "folder" : "arrow.up.right.square")
-                }
-                .fixedSize()
-
-                if let onRevealInFinder {
-                    Button(action: onRevealInFinder) {
-                        Label(L10n.tr("menu.reveal_in_finder"), systemImage: "folder.badge.gearshape")
-                    }
-                    .fixedSize()
-                }
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.regular)
-            .layoutPriority(1)
+            PreviewHeaderActionBar(actions: headerActions)
+                .layoutPriority(1)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
         .background(.ultraThinMaterial)
+    }
+
+    private var headerTitleText: String {
+        guard item.singleFileSystemItemKind == .folder,
+              let folderURL = item.fileURLs?.first,
+              item.fileURLs?.count == 1 else {
+            return item.title
+        }
+
+        return folderURL.lastPathComponent
     }
 
     private var loadingView: some View {
@@ -1479,10 +1766,22 @@ private struct FileSystemPreviewView: View {
             VStack(spacing: 12) {
                 infoRow(label: L10n.tr("preview.file_system_label_name"), value: snapshot.displayName)
                 infoRow(label: L10n.tr("preview.file_system_label_type"), value: snapshot.typeDescription)
+                if let fileExtensionText = snapshot.fileExtensionText {
+                    infoRow(label: L10n.tr("preview.file_system_label_extension"), value: fileExtensionText)
+                }
                 infoRow(label: L10n.tr("preview.file_system_label_size"), value: snapshot.sizeText)
+                if let modifiedAtText = snapshot.modifiedAtText {
+                    infoRow(label: L10n.tr("preview.file_system_label_modified"), value: modifiedAtText)
+                }
                 infoRow(label: L10n.tr("preview.file_system_label_path"), value: snapshot.pathText, monospaced: true)
                 if let itemCount = snapshot.itemCount {
                     infoRow(label: L10n.tr("preview.file_system_label_items"), value: L10n.format("preview.file_system_item_count", itemCount))
+                }
+                if let directFileCount = snapshot.directFileCount {
+                    infoRow(label: L10n.tr("preview.file_system_label_files"), value: L10n.format("preview.file_system_file_count", directFileCount))
+                }
+                if let directFolderCount = snapshot.directFolderCount {
+                    infoRow(label: L10n.tr("preview.file_system_label_folders"), value: L10n.format("preview.file_system_folder_count", directFolderCount))
                 }
             }
         }
@@ -1546,6 +1845,31 @@ private struct FileSystemPreviewView: View {
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .stroke(Color.primary.opacity(0.06), lineWidth: 1)
         }
+    }
+}
+
+private struct PreviewHeaderAction: Identifiable {
+    let title: String
+    let systemImage: String
+    let action: () -> Void
+
+    var id: String { "\(systemImage)|\(title)" }
+}
+
+private struct PreviewHeaderActionBar: View {
+    let actions: [PreviewHeaderAction]
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(actions) { action in
+                Button(action: action.action) {
+                    Label(action.title, systemImage: action.systemImage)
+                }
+                .fixedSize()
+            }
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.regular)
     }
 }
 

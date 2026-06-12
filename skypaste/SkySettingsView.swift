@@ -23,13 +23,12 @@ struct SettingsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
                 hero
-                appearanceSection
-                generalSection
+                generalSettingsSection
                 hotKeySection
                 behaviorSection
                 syncSection
                 historySection
-                privacySection
+                yourToolsSection
             }
             .padding(16)
             .frame(maxWidth: 740, alignment: .leading)
@@ -51,12 +50,30 @@ struct SettingsView: View {
         .frame(minWidth: 700, idealWidth: 740, minHeight: 620, idealHeight: 700)
     }
 
-    private var appearanceSection: some View {
-        SettingsSection(title: L10n.tr("settings.appearance")) {
+    private var generalSettingsSection: some View {
+        SettingsSection(
+            title: L10n.tr("settings.general"),
+            contentSpacing: 10,
+            contentPadding: 12
+        ) {
             SettingsRow(title: L10n.tr("settings.appearance")) {
                 Picker("", selection: $settings.appearanceMode) {
                     ForEach(AppAppearanceMode.allCases) { option in
                         Text(L10n.tr(option.titleKey)).tag(option)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .frame(width: 220, alignment: .trailing)
+            }
+
+            Divider()
+                .padding(.vertical, 0.5)
+
+            SettingsRow(title: L10n.tr("settings.language")) {
+                Picker("", selection: $settings.languageCode) {
+                    ForEach(LanguageCatalog.options) { option in
+                        Text(L10n.tr(option.titleKey)).tag(option.id)
                     }
                 }
                 .labelsHidden()
@@ -96,21 +113,6 @@ struct SettingsView: View {
         .overlay {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-        }
-    }
-
-    private var generalSection: some View {
-        SettingsSection(title: L10n.tr("settings.language")) {
-            SettingsRow(title: L10n.tr("settings.language")) {
-                Picker("", selection: $settings.languageCode) {
-                    ForEach(LanguageCatalog.options) { option in
-                        Text(L10n.tr(option.titleKey)).tag(option.id)
-                    }
-                }
-                .labelsHidden()
-                .pickerStyle(.menu)
-                .frame(width: 220, alignment: .trailing)
-            }
         }
     }
 
@@ -203,24 +205,36 @@ struct SettingsView: View {
         }
     }
 
-    private var privacySection: some View {
-        SettingsSection(title: L10n.tr("settings.ignore_apps")) {
-            hint(L10n.tr("settings.ignore_apps_hint"))
+    private var yourToolsSection: some View {
+        SettingsSection(title: L10n.tr("settings.recommended_app")) {
+            HStack(alignment: .center, spacing: 14) {
+                yourToolsLogo
 
-            TextEditor(text: $settings.ignoredAppsInput)
-                .font(.system(size: 12, design: .monospaced))
-                .frame(minHeight: 128)
-                .padding(10)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color(nsColor: .textBackgroundColor))
-                )
-                .overlay {
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L10n.tr("yourtools.title"))
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.primary)
+
+                    Text(L10n.tr("yourtools.subtitle"))
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(.secondary)
                 }
 
-            infoBadge(L10n.tr("settings.ignore_apps_example"))
+                Spacer(minLength: 12)
+
+                Button(action: openYourTools) {
+                    Text(L10n.tr("yourtools.open"))
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(
+                            Capsule(style: .continuous)
+                                .fill(Color.accentColor.opacity(colorScheme == .dark ? 0.22 : 0.12))
+                        )
+                }
+                .buttonStyle(.plain)
+                .help(L10n.tr("yourtools.open"))
+            }
         }
     }
 
@@ -228,6 +242,36 @@ struct SettingsView: View {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
         let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
         return L10n.format("settings.version_format", version, build)
+    }
+
+    private var yourToolsLogo: some View {
+        Group {
+            if let imageURL = Bundle.main.url(forResource: "yourtools-logo", withExtension: "jpeg"),
+               let image = NSImage(contentsOf: imageURL) {
+                Image(nsImage: image)
+                    .resizable()
+                    .interpolation(.high)
+            } else {
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.accentColor.opacity(0.12))
+                    .overlay {
+                        Image(systemName: "sparkles.rectangle.stack.fill")
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundStyle(Color.accentColor)
+                    }
+            }
+        }
+        .frame(width: 64, height: 64)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+        }
+    }
+
+    private func openYourTools() {
+        guard let url = URL(string: "https://apps.apple.com/us/app/your-tools-ai-toolbox/id6670400942") else { return }
+        NSWorkspace.shared.open(url)
     }
 
     private var syncStatusText: String {
@@ -303,25 +347,46 @@ struct SettingsView: View {
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
+
+    private func pickerOnlyRow<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        HStack {
+            Spacer(minLength: 0)
+            content()
+        }
+    }
 }
 
 private struct SettingsSection<Content: View>: View {
     @Environment(\.colorScheme) private var colorScheme
     let title: String
+    let contentSpacing: CGFloat
+    let contentPadding: CGFloat
     @ViewBuilder let content: Content
+
+    init(
+        title: String,
+        contentSpacing: CGFloat = 12,
+        contentPadding: CGFloat = 14,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.contentSpacing = contentSpacing
+        self.contentPadding = contentPadding
+        self.content = content()
+    }
 
     private var sectionBackgroundColor: Color {
         colorScheme == .dark ? Color(nsColor: .controlBackgroundColor) : Color.white.opacity(0.62)
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: contentSpacing) {
             Text(title)
                 .font(.system(size: 15, weight: .semibold, design: .rounded))
 
             content
         }
-        .padding(14)
+        .padding(contentPadding)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 18, style: .continuous)

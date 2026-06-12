@@ -38,7 +38,9 @@ final class ClipboardDatabase {
               fingerprint TEXT NOT NULL UNIQUE,
               is_favorite INTEGER NOT NULL DEFAULT 0,
               is_snippet INTEGER NOT NULL DEFAULT 0,
-              source_kind INTEGER NOT NULL DEFAULT 0
+              source_kind INTEGER NOT NULL DEFAULT 0,
+              source_app_bundle_id TEXT,
+              source_app_name TEXT
             );
             """
         )
@@ -58,7 +60,7 @@ final class ClipboardDatabase {
 
         var statement: OpaquePointer?
         let sql =
-            "SELECT id, created_at, kind, text_value, blob_value, image_name, file_urls_json, fingerprint, is_favorite, is_snippet, source_kind, pasteboard_payload FROM clipboard_items ORDER BY created_at DESC LIMIT ?;"
+            "SELECT id, created_at, kind, text_value, blob_value, image_name, file_urls_json, fingerprint, is_favorite, is_snippet, source_kind, pasteboard_payload, source_app_bundle_id, source_app_name FROM clipboard_items ORDER BY created_at DESC LIMIT ?;"
 
         guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
             throw ClipboardDatabaseError.prepareFailed(String(cString: sqlite3_errmsg(db)))
@@ -84,6 +86,9 @@ final class ClipboardDatabase {
             let fingerprint = String(cString: fingerprintC)
             let isFavorite = sqlite3_column_int(statement, 8) != 0
             let source = ClipboardSource(rawValue: Int(sqlite3_column_int(statement, 10))) ?? .local
+            let sourceAppBundleID = sqlite3_column_text(statement, 12).map { String(cString: $0) }
+            let sourceAppName = sqlite3_column_text(statement, 13).map { String(cString: $0) }
+            let sourceApp = Self.makeSourceApp(bundleID: sourceAppBundleID, name: sourceAppName)
 
             let content: ClipboardContent?
             switch kind {
@@ -118,7 +123,18 @@ final class ClipboardDatabase {
             }
 
             if let content {
-                result.append(ClipboardItem(id: id, createdAt: createdAt, content: content, fingerprint: fingerprint, source: source, isFavorite: isFavorite, isSnippet: false))
+                result.append(
+                    ClipboardItem(
+                        id: id,
+                        createdAt: createdAt,
+                        content: content,
+                        fingerprint: fingerprint,
+                        source: source,
+                        sourceApp: sourceApp,
+                        isFavorite: isFavorite,
+                        isSnippet: false
+                    )
+                )
             }
         }
 
@@ -128,7 +144,7 @@ final class ClipboardDatabase {
     func loadItem(id: UUID) throws -> ClipboardItem? {
         var statement: OpaquePointer?
         let sql =
-            "SELECT id, created_at, kind, text_value, blob_value, image_name, file_urls_json, fingerprint, is_favorite, is_snippet, source_kind, pasteboard_payload FROM clipboard_items WHERE id = ? LIMIT 1;"
+            "SELECT id, created_at, kind, text_value, blob_value, image_name, file_urls_json, fingerprint, is_favorite, is_snippet, source_kind, pasteboard_payload, source_app_bundle_id, source_app_name FROM clipboard_items WHERE id = ? LIMIT 1;"
 
         guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
             throw ClipboardDatabaseError.prepareFailed(String(cString: sqlite3_errmsg(db)))
@@ -154,6 +170,9 @@ final class ClipboardDatabase {
         let fingerprint = String(cString: fingerprintC)
         let isFavorite = sqlite3_column_int(statement, 8) != 0
         let source = ClipboardSource(rawValue: Int(sqlite3_column_int(statement, 10))) ?? .local
+        let sourceAppBundleID = sqlite3_column_text(statement, 12).map { String(cString: $0) }
+        let sourceAppName = sqlite3_column_text(statement, 13).map { String(cString: $0) }
+        let sourceApp = Self.makeSourceApp(bundleID: sourceAppBundleID, name: sourceAppName)
 
         let content: ClipboardContent?
         switch kind {
@@ -185,7 +204,16 @@ final class ClipboardDatabase {
         }
 
         guard let content else { return nil }
-        return ClipboardItem(id: resolvedID, createdAt: createdAt, content: content, fingerprint: fingerprint, source: source, isFavorite: isFavorite, isSnippet: false)
+        return ClipboardItem(
+            id: resolvedID,
+            createdAt: createdAt,
+            content: content,
+            fingerprint: fingerprint,
+            source: source,
+            sourceApp: sourceApp,
+            isFavorite: isFavorite,
+            isSnippet: false
+        )
     }
 
     func save(_ item: ClipboardItem, maxItems: Int) throws {
@@ -296,7 +324,7 @@ final class ClipboardDatabase {
     private func insert(_ item: ClipboardItem) throws {
         var statement: OpaquePointer?
         let sql =
-            "INSERT INTO clipboard_items (id, created_at, kind, text_value, blob_value, image_name, file_urls_json, fingerprint, is_favorite, is_snippet, source_kind, pasteboard_payload) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
+            "INSERT INTO clipboard_items (id, created_at, kind, text_value, blob_value, image_name, file_urls_json, fingerprint, is_favorite, is_snippet, source_kind, pasteboard_payload, source_app_bundle_id, source_app_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);"
 
         guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
             throw ClipboardDatabaseError.prepareFailed(String(cString: sqlite3_errmsg(db)))
@@ -349,6 +377,13 @@ final class ClipboardDatabase {
         sqlite3_bind_int(statement, 9, item.isFavorite ? 1 : 0)
         sqlite3_bind_int(statement, 10, 0)
         sqlite3_bind_int(statement, 11, Int32(item.source.rawValue))
+        if let sourceApp = item.sourceApp {
+            bindText(sourceApp.bundleID, statement: statement, index: 13)
+            bindText(sourceApp.name, statement: statement, index: 14)
+        } else {
+            sqlite3_bind_null(statement, 13)
+            sqlite3_bind_null(statement, 14)
+        }
 
         guard sqlite3_step(statement) == SQLITE_DONE else {
             throw ClipboardDatabaseError.stepFailed(String(cString: sqlite3_errmsg(db)))
@@ -409,6 +444,27 @@ final class ClipboardDatabase {
         if !hasColumn(named: "pasteboard_payload") {
             try execute("ALTER TABLE clipboard_items ADD COLUMN pasteboard_payload BLOB;")
         }
+
+        if !hasColumn(named: "source_app_bundle_id") {
+            try execute("ALTER TABLE clipboard_items ADD COLUMN source_app_bundle_id TEXT;")
+        }
+
+        if !hasColumn(named: "source_app_name") {
+            try execute("ALTER TABLE clipboard_items ADD COLUMN source_app_name TEXT;")
+        }
+    }
+
+    private static func makeSourceApp(bundleID: String?, name: String?) -> ClipboardSourceApp? {
+        guard
+            let trimmedBundleID = bundleID?.trimmingCharacters(in: .whitespacesAndNewlines),
+            let trimmedName = name?.trimmingCharacters(in: .whitespacesAndNewlines),
+            !trimmedBundleID.isEmpty,
+            !trimmedName.isEmpty
+        else {
+            return nil
+        }
+
+        return ClipboardSourceApp(bundleID: trimmedBundleID, name: trimmedName)
     }
 
     private func hasColumn(named columnName: String) -> Bool {

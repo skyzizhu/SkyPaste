@@ -60,6 +60,12 @@ enum L10n {
         return date.formatted(formatStyle)
     }
 
+    static func dateTimeText(_ date: Date) -> String {
+        var formatStyle = Date.FormatStyle(date: .abbreviated, time: .shortened)
+        formatStyle.locale = locale
+        return date.formatted(formatStyle)
+    }
+
     private static func resolvedSystemLanguageCode() -> String {
         let preferred = Locale.preferredLanguages
         for candidate in preferred {
