@@ -24,6 +24,7 @@ SkyPaste is a simple macOS clipboard manager for text, images, and file URLs, de
 - Faster list updates with smoother deletion and clipboard browsing
 - Source app filtering with app icons, so you can narrow history by where content was copied from
 - Improved centered copy-success toast with better light and dark theme support
+- Improved day-delete confirmation with localized text, light/dark theme support, and faster deletion feedback
 - Refined image preview with animated zoom, drag navigation, and better fit behavior
 - Restored ignore-app settings with recent source app suggestions
 
@@ -159,6 +160,7 @@ SkyPaste 是一个 macOS 剪贴板管理工具，支持文本、图片、文件�
 - 优化列表刷新与删除反馈，浏览历史记录更顺畅
 - 新增来源应用筛选和应用图标展示，可按复制来源快速过滤内容
 - 优化屏幕中间的复制成功提示，并兼容浅色和深色主题
+- 优化按天删除确认弹框，支持多语言、浅色/深色主题，并提升删除反馈速度
 - 改进图片详情预览，支持更顺滑的缩放动画、拖动浏览与适应显示
 - 恢复忽略应用设置，并增加最近来源应用建议
 

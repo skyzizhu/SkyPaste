@@ -295,6 +295,11 @@ struct MenuBarClipboardView: View {
                     .fill(popoverGlossGradient)
             }
         )
+        .overlay {
+            if let pendingDeleteDay {
+                deleteDayConfirmationOverlay(for: pendingDeleteDay)
+            }
+        }
         .onAppear {
             displayedFilters = settings.orderedFilters
             loadSourceAppIconsIfNeeded()
@@ -340,29 +345,92 @@ struct MenuBarClipboardView: View {
         .onChange(of: availableSourceAppOptions.map(\.bundleID)) { _, _ in
             loadSourceAppIconsIfNeeded()
         }
-        .alert(
-            L10n.tr("menu.delete_day_title"),
-            isPresented: Binding(
-                get: { pendingDeleteDay != nil },
-                set: { if !$0 { pendingDeleteDay = nil } }
-            )
-        ) {
-            Button(L10n.tr("menu.delete"), role: .destructive) {
-                if let day = pendingDeleteDay {
-                    store.deleteAllItems(onDay: day)
+    }
+
+    private func deleteDayConfirmationOverlay(for day: Date) -> some View {
+        ZStack {
+            Color.black
+                .opacity(colorScheme == .dark ? 0.32 : 0.14)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation(.easeOut(duration: 0.14)) {
+                        pendingDeleteDay = nil
+                    }
                 }
-                pendingDeleteDay = nil
-            }
-            Button(L10n.tr("menu.cancel"), role: .cancel) {
-                pendingDeleteDay = nil
-            }
-        } message: {
-            if let day = pendingDeleteDay {
+
+            VStack(alignment: .leading, spacing: 10) {
+                Text(L10n.tr("menu.delete_day_title"))
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .foregroundStyle(Color.primary)
+
                 Text(L10n.format("menu.delete_day_message", L10n.sectionTitle(for: day)))
-            } else {
-                Text("")
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(Color.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                HStack(spacing: 8) {
+                    Spacer()
+                    confirmationButton(title: L10n.tr("menu.cancel"), role: .cancel) {
+                        withAnimation(.easeOut(duration: 0.14)) {
+                            pendingDeleteDay = nil
+                        }
+                    }
+                    confirmationButton(title: L10n.tr("menu.delete"), role: .destructive) {
+                        withAnimation(.easeOut(duration: 0.14)) {
+                            pendingDeleteDay = nil
+                        }
+                        DispatchQueue.main.async {
+                            store.deleteAllItems(onDay: day)
+                        }
+                    }
+                }
+                .padding(.top, 4)
+            }
+            .padding(16)
+            .frame(width: 336)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(.regularMaterial)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .fill(deleteConfirmationCardTint)
+                    }
+                    .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.40 : 0.14), radius: 22, y: 10)
+            )
+            .overlay {
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.primary.opacity(colorScheme == .dark ? 0.12 : 0.08), lineWidth: 1)
             }
         }
+        .transition(.opacity.combined(with: .scale(scale: 0.98)))
+        .zIndex(50)
+    }
+
+    private var deleteConfirmationCardTint: Color {
+        colorScheme == .dark
+            ? Color(nsColor: .controlBackgroundColor).opacity(0.74)
+            : Color(nsColor: .windowBackgroundColor).opacity(0.88)
+    }
+
+    private func confirmationButton(title: String, role: ButtonRole?, action: @escaping () -> Void) -> some View {
+        Button(role: role, action: action) {
+            Text(title)
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .foregroundStyle(role == .destructive ? Color(nsColor: .systemRed) : Color.primary.opacity(0.84))
+                .lineLimit(1)
+                .minimumScaleFactor(0.78)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(role == .destructive ? Color(nsColor: .systemRed).opacity(colorScheme == .dark ? 0.20 : 0.10) : actionButtonFill)
+                )
+                .overlay {
+                    Capsule(style: .continuous)
+                        .stroke(role == .destructive ? Color(nsColor: .systemRed).opacity(0.18) : Color.primary.opacity(0.08), lineWidth: 1)
+                }
+        }
+        .buttonStyle(.plain)
     }
 
     private var searchBar: some View {
