@@ -72,8 +72,6 @@
 "menu.reveal_in_finder" = "Finder에서 보기";
 "menu.copy_path" = "경로 복사";
 "menu.copy_link" = "링크 복사";
-"menu.copy_plain_text" = "일반 텍스트로 복사";
-"menu.paste_plain_text" = "일반 텍스트로 붙여넣기";
 "menu.open_in_browser" = "브라우저에서 열기";
 "menu.favorite" = "즐겨찾기";
 "menu.unfavorite" = "즐겨찾기 해제";

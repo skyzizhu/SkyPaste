@@ -73,8 +73,6 @@
 "menu.reveal_in_finder" = "Reveal in Finder";
 "menu.copy_path" = "Copy Path";
 "menu.copy_link" = "Copy Link";
-"menu.copy_plain_text" = "Copy as Plain Text";
-"menu.paste_plain_text" = "Paste as Plain Text";
 "menu.open_in_browser" = "Open in Browser";
 "menu.favorite" = "Favorite";
 "menu.unfavorite" = "Remove Favorite";

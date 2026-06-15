@@ -72,8 +72,6 @@
 "menu.reveal_in_finder" = "Révéler dans le Finder";
 "menu.copy_path" = "Copier le chemin";
 "menu.copy_link" = "Copier le lien";
-"menu.copy_plain_text" = "Copier en texte brut";
-"menu.paste_plain_text" = "Coller en texte brut";
 "menu.open_in_browser" = "Ouvrir dans le navigateur";
 "menu.favorite" = "Ajouter aux favoris";
 "menu.unfavorite" = "Retirer des favoris";

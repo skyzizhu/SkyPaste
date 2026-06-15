@@ -76,10 +76,6 @@ private extension AppCoordinator {
             self?.paste(item)
         }, onCopy: { [weak self] item in
             self?.copyOnly(item)
-        }, onCopyPlainText: { [weak self] item in
-            self?.copyPlainTextOnly(item)
-        }, onPastePlainText: { [weak self] item in
-            self?.pastePlainText(item)
         }, onPreview: { [weak self] item in
             self?.showImagePreview(for: item)
         }, onTextPreview: { [weak self] item in
@@ -244,12 +240,6 @@ private extension AppCoordinator {
             text: text,
             onCopy: { [weak self] in
                 self?.copyOnly(item)
-            },
-            onCopyPlainText: { [weak self] in
-                self?.copyPlainTextOnly(item)
-            },
-            onPastePlainText: { [weak self] in
-                self?.pastePlainText(item)
             },
             onOpenURL: item.browserURL != nil ? { [weak self] in
                 self?.openURLInBrowser(for: item)
@@ -419,11 +409,6 @@ private extension AppCoordinator {
         showGlobalCopyToast()
     }
 
-    func copyPlainTextOnly(_ item: ClipboardItem) {
-        store.copyPlainTextToPasteboard(item)
-        showGlobalCopyToast()
-    }
-
     func paste(_ item: ClipboardItem) {
         store.copyToPasteboard(item)
         closePanel()
@@ -433,16 +418,6 @@ private extension AppCoordinator {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
             self?.sendCommandV()
-        }
-    }
-
-    func pastePlainText(_ item: ClipboardItem) {
-        store.copyPlainTextToPasteboard(item)
-        closePanel()
-        previousApp?.activate(options: [])
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
-            self?.sendPasteAsPlainTextShortcut()
         }
     }
 
@@ -459,18 +434,6 @@ private extension AppCoordinator {
         keyUp?.post(tap: .cghidEventTap)
     }
 
-    private func sendPasteAsPlainTextShortcut() {
-        guard let source = CGEventSource(stateID: .combinedSessionState) else { return }
-
-        let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: true)
-        keyDown?.flags = [.maskCommand, .maskShift, .maskAlternate]
-
-        let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: false)
-        keyUp?.flags = [.maskCommand, .maskShift, .maskAlternate]
-
-        keyDown?.post(tap: .cghidEventTap)
-        keyUp?.post(tap: .cghidEventTap)
-    }
 }
 
 // MARK: - AppCoordinator Feedback & Helpers
@@ -823,13 +786,6 @@ private extension AppDelegate {
             },
             onCopy: { [weak self] item in
                 self?.coordinator.copyOnly(item)
-            },
-            onCopyPlainText: { [weak self] item in
-                self?.coordinator.copyPlainTextOnly(item)
-            },
-            onPastePlainText: { [weak self] item in
-                self?.closeStatusPopover()
-                self?.coordinator.pastePlainText(item)
             },
             onPreview: { [weak self] item in
                 self?.closeStatusPopover()
@@ -1472,8 +1428,6 @@ private struct TextPreviewView: View {
     let item: ClipboardItem
     let text: String
     let onCopy: () -> Void
-    let onCopyPlainText: () -> Void
-    let onPastePlainText: () -> Void
     let onOpenURL: (() -> Void)?
 
     private var headerActions: [PreviewHeaderAction] {
@@ -1482,16 +1436,6 @@ private struct TextPreviewView: View {
                 title: item.isURL ? L10n.tr("menu.copy_link") : L10n.tr("menu.copy"),
                 systemImage: "doc.on.doc",
                 action: onCopy
-            ),
-            PreviewHeaderAction(
-                title: L10n.tr("menu.copy_plain_text"),
-                systemImage: "text.badge.checkmark",
-                action: onCopyPlainText
-            ),
-            PreviewHeaderAction(
-                title: L10n.tr("menu.paste_plain_text"),
-                systemImage: "arrow.down.doc",
-                action: onPastePlainText
             )
         ]
 

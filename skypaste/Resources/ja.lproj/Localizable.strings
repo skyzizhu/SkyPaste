@@ -72,8 +72,6 @@
 "menu.reveal_in_finder" = "Finderで表示";
 "menu.copy_path" = "パスをコピー";
 "menu.copy_link" = "リンクをコピー";
-"menu.copy_plain_text" = "プレーンテキストでコピー";
-"menu.paste_plain_text" = "プレーンテキストで貼り付け";
 "menu.open_in_browser" = "ブラウザで開く";
 "menu.favorite" = "お気に入りに追加";
 "menu.unfavorite" = "お気に入りから削除";

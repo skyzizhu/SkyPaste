@@ -72,8 +72,6 @@
 "menu.reveal_in_finder" = "在 Finder 中显示";
 "menu.copy_path" = "复制路径";
 "menu.copy_link" = "复制链接";
-"menu.copy_plain_text" = "复制为纯文本";
-"menu.paste_plain_text" = "以纯文本粘贴";
 "menu.open_in_browser" = "浏览器打开";
 "menu.favorite" = "收藏";
 "menu.unfavorite" = "取消收藏";

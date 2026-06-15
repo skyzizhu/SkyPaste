@@ -31,8 +31,6 @@ struct MenuBarClipboardView: View {
     @ObservedObject var settings: AppSettings
     let onPick: (ClipboardItem) -> Void
     let onCopy: (ClipboardItem) -> Void
-    let onCopyPlainText: (ClipboardItem) -> Void
-    let onPastePlainText: (ClipboardItem) -> Void
     let onPreview: (ClipboardItem) -> Void
     let onTextPreview: (ClipboardItem) -> Void
     let onFileSystemPreview: (ClipboardItem) -> Void
@@ -932,12 +930,6 @@ struct MenuBarClipboardView: View {
                 selectedID = item.id
                 copy(item)
             }
-            if item.supportsPlainTextActions {
-                Button(L10n.tr("menu.copy_plain_text")) {
-                    selectedID = item.id
-                    onCopyPlainText(item)
-                }
-            }
             if item.isFileCollection {
                 Button(item.openActionTitle) {
                     selectedID = item.id
@@ -972,12 +964,6 @@ struct MenuBarClipboardView: View {
                 Button(L10n.tr("preview.text_open")) {
                     selectedID = item.id
                     onTextPreview(item)
-                }
-            }
-            if item.supportsPlainTextActions {
-                Button(L10n.tr("menu.paste_plain_text")) {
-                    selectedID = item.id
-                    onPastePlainText(item)
                 }
             }
             Button(item.isFavorite ? L10n.tr("menu.unfavorite") : L10n.tr("menu.favorite")) {

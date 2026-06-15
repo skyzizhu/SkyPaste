@@ -296,12 +296,6 @@ final class ClipboardStore: ObservableObject {
         ClipboardDecoder.write(item, to: NSPasteboard.general)
     }
 
-    func copyPlainTextToPasteboard(_ item: ClipboardItem) {
-        guard let text = item.plainTextRepresentation else { return }
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
-    }
-
     func itemForPreview(_ item: ClipboardItem) -> ClipboardItem {
         fullResolutionItemIfNeeded(for: item) ?? item
     }
