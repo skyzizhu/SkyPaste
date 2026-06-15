@@ -53,8 +53,9 @@
 "settings.auto_paste" = "Copie automatique a la selection";
 "settings.auto_paste_hint" = "Lorsque cette option est activee, cliquer sur un element de la liste le copie automatiquement dans le presse-papiers.";
 "settings.ignore_apps" = "Applications ignorées";
-"settings.ignore_apps_hint" = "Séparez les bundle ID par des virgules ou des retours à la ligne.";
-"settings.ignore_apps_example" = "Exemple : com.1password.1password, com.apple.Terminal";
+"settings.ignore_apps_hint" = "Saisissez des noms d’application ou des bundle ID, séparés par des virgules ou des retours à la ligne.";
+"settings.ignore_apps_example" = "Exemple : Finder, Terminal, com.1password.1password.";
+"settings.ignore_apps_suggestions" = "Applications sources récentes";
 "app.title" = "SkyPaste";
 "app.debug_title" = "Débogage SkyPaste";
 "app.menu_title" = "SkyPaste";
@@ -71,6 +72,8 @@
 "menu.reveal_in_finder" = "Révéler dans le Finder";
 "menu.copy_path" = "Copier le chemin";
 "menu.copy_link" = "Copier le lien";
+"menu.copy_plain_text" = "Copier en texte brut";
+"menu.paste_plain_text" = "Coller en texte brut";
 "menu.open_in_browser" = "Ouvrir dans le navigateur";
 "menu.favorite" = "Ajouter aux favoris";
 "menu.unfavorite" = "Retirer des favoris";
@@ -94,8 +97,8 @@
 "panel.empty_message" = "Copiez du texte, des images ou des fichiers et ils apparaitront ici.";
 "panel.empty_message_scoped" = "Il n’y a encore aucun élément dans %1$@. Copiez du contenu de cette catégorie et il apparaîtra ici.";
 "panel.clear_search" = "Effacer la recherche";
-"panel.shortcut_hint" = "Entrée : coller  ·  ↑/↓ : naviguer  ·  Esc : fermer  ·  Cmd+1...9 : collage rapide";
-"panel.shortcut_hint_copy_only" = "Entrée : copier  ·  ↑/↓ : naviguer  ·  Esc : fermer  ·  Cmd+1...9 : collage rapide";
+"panel.shortcut_hint" = "Entrée : coller  ·  ↑/↓ : naviguer  ·  Esc : fermer  ·  Cmd+1...9 : copie rapide";
+"panel.shortcut_hint_copy_only" = "Entrée : copier  ·  ↑/↓ : naviguer  ·  Esc : fermer  ·  Cmd+1...9 : copie rapide";
 "panel.paste_selected" = "Coller la sélection";
 "filter.all" = "Tout";
 "filter.text" = "Texte";
@@ -103,6 +106,8 @@
 "filter.file" = "Fichiers";
 "filter.folder" = "Dossiers";
 "filter.code" = "Code";
+"filter.source_all" = "Toutes les apps";
+"filter.source_label" = "Apps";
 "filter.favorites" = "Favoris";
 "filter.url" = "URL";
 "filter.move_first" = "Déplacer au début";
@@ -165,6 +170,7 @@
 "preview.file_system_file_count" = "%d fichiers";
 "preview.file_system_folder_count" = "%d dossiers";
 "preview.unavailable" = "Aperçu indisponible";
+"preview.fit" = "Ajuster";
 "preview.unavailable_message" = "SkyPaste n’a pas pu charger l’aperçu de cette image.";
 "open.missing_file_title" = "Fichier introuvable";
 "open.missing_folder_title" = "Dossier introuvable";

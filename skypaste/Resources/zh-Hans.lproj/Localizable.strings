@@ -53,8 +53,9 @@
 "settings.auto_paste" = "选中后自动复制";
 "settings.auto_paste_hint" = "启用后，点选列表中的内容时会自动复制到剪贴板。";
 "settings.ignore_apps" = "忽略应用";
-"settings.ignore_apps_hint" = "使用逗号或换行分隔 bundle ID。";
-"settings.ignore_apps_example" = "例如：com.1password.1password, com.apple.Terminal";
+"settings.ignore_apps_hint" = "输入应用名称或 bundle ID，使用逗号或换行分隔。";
+"settings.ignore_apps_example" = "例如：Finder，Terminal，com.1password.1password。";
+"settings.ignore_apps_suggestions" = "最近的复制来源应用";
 "app.title" = "SkyPaste";
 "app.debug_title" = "SkyPaste 调试";
 "app.menu_title" = "SkyPaste";
@@ -71,6 +72,8 @@
 "menu.reveal_in_finder" = "在 Finder 中显示";
 "menu.copy_path" = "复制路径";
 "menu.copy_link" = "复制链接";
+"menu.copy_plain_text" = "复制为纯文本";
+"menu.paste_plain_text" = "以纯文本粘贴";
 "menu.open_in_browser" = "浏览器打开";
 "menu.favorite" = "收藏";
 "menu.unfavorite" = "取消收藏";
@@ -94,8 +97,8 @@
 "panel.empty_message" = "复制一些文本、图片或文件后，它们会出现在这里。";
 "panel.empty_message_scoped" = "当前“%1$@”分类下还没有内容，复制这一类内容后会显示在这里。";
 "panel.clear_search" = "清空搜索";
-"panel.shortcut_hint" = "Enter：粘贴  ·  ↑/↓：导航  ·  Esc：关闭  ·  Cmd+1...9：快速粘贴";
-"panel.shortcut_hint_copy_only" = "Enter：复制  ·  ↑/↓：导航  ·  Esc：关闭  ·  Cmd+1...9：快速粘贴";
+"panel.shortcut_hint" = "Enter：粘贴  ·  ↑/↓：导航  ·  Esc：关闭  ·  Cmd+1...9：快捷复制";
+"panel.shortcut_hint_copy_only" = "Enter：复制  ·  ↑/↓：导航  ·  Esc：关闭  ·  Cmd+1...9：快捷复制";
 "panel.paste_selected" = "粘贴选中项";
 "filter.all" = "全部";
 "filter.text" = "文本";
@@ -103,6 +106,8 @@
 "filter.file" = "文件";
 "filter.folder" = "目录";
 "filter.code" = "代码";
+"filter.source_all" = "全部应用";
+"filter.source_label" = "应用";
 "filter.favorites" = "收藏";
 "filter.url" = "URL";
 "filter.move_first" = "移到最前";
@@ -165,6 +170,7 @@
 "preview.file_system_file_count" = "%d 个文件";
 "preview.file_system_folder_count" = "%d 个子目录";
 "preview.unavailable" = "无法预览";
+"preview.fit" = "适应";
 "preview.unavailable_message" = "SkyPaste 无法加载这张图片的预览。";
 "open.missing_file_title" = "找不到该文件";
 "open.missing_folder_title" = "找不到该目录";

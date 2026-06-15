@@ -53,8 +53,9 @@
 "settings.auto_paste" = "選取後自動複製";
 "settings.auto_paste_hint" = "啟用後，點選清單中的內容時會自動複製到剪貼簿。";
 "settings.ignore_apps" = "忽略應用程式";
-"settings.ignore_apps_hint" = "使用逗號或換行分隔 bundle ID。";
-"settings.ignore_apps_example" = "例如：com.1password.1password, com.apple.Terminal";
+"settings.ignore_apps_hint" = "輸入應用程式名稱或 bundle ID，使用逗號或換行分隔。";
+"settings.ignore_apps_example" = "例如：Finder、Terminal、com.1password.1password。";
+"settings.ignore_apps_suggestions" = "最近的複製來源應用程式";
 "app.title" = "SkyPaste";
 "app.debug_title" = "SkyPaste 偵錯";
 "app.menu_title" = "SkyPaste";
@@ -71,6 +72,8 @@
 "menu.reveal_in_finder" = "在 Finder 中顯示";
 "menu.copy_path" = "複製路徑";
 "menu.copy_link" = "複製連結";
+"menu.copy_plain_text" = "複製為純文字";
+"menu.paste_plain_text" = "以純文字貼上";
 "menu.open_in_browser" = "以瀏覽器開啟";
 "menu.favorite" = "收藏";
 "menu.unfavorite" = "取消收藏";
@@ -94,8 +97,8 @@
 "panel.empty_message" = "複製一些文字、圖片或檔案後，它們就會顯示在這裡。";
 "panel.empty_message_scoped" = "目前「%1$@」分類下還沒有內容，複製這一類內容後會顯示在這裡。";
 "panel.clear_search" = "清除搜尋";
-"panel.shortcut_hint" = "Enter：貼上  ·  ↑/↓：導覽  ·  Esc：關閉  ·  Cmd+1...9：快速貼上";
-"panel.shortcut_hint_copy_only" = "Enter：複製  ·  ↑/↓：導覽  ·  Esc：關閉  ·  Cmd+1...9：快速貼上";
+"panel.shortcut_hint" = "Enter：貼上  ·  ↑/↓：導覽  ·  Esc：關閉  ·  Cmd+1...9：快捷複製";
+"panel.shortcut_hint_copy_only" = "Enter：複製  ·  ↑/↓：導覽  ·  Esc：關閉  ·  Cmd+1...9：快捷複製";
 "panel.paste_selected" = "貼上所選項目";
 "filter.all" = "全部";
 "filter.text" = "文字";
@@ -103,6 +106,8 @@
 "filter.file" = "檔案";
 "filter.folder" = "資料夾";
 "filter.code" = "程式碼";
+"filter.source_all" = "全部應用程式";
+"filter.source_label" = "應用程式";
 "filter.favorites" = "收藏";
 "filter.url" = "URL";
 "filter.move_first" = "移到最前";
@@ -165,6 +170,7 @@
 "preview.file_system_file_count" = "%d 個檔案";
 "preview.file_system_folder_count" = "%d 個子目錄";
 "preview.unavailable" = "無法預覽";
+"preview.fit" = "適應";
 "preview.unavailable_message" = "SkyPaste 無法載入這張圖片的預覽。";
 "open.missing_file_title" = "找不到該檔案";
 "open.missing_folder_title" = "找不到該資料夾";

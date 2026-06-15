@@ -53,8 +53,9 @@
 "settings.auto_paste" = "선택 시 자동 복사";
 "settings.auto_paste_hint" = "켜면 목록의 항목을 클릭할 때 자동으로 클립보드에 복사됩니다.";
 "settings.ignore_apps" = "무시할 앱";
-"settings.ignore_apps_hint" = "bundle ID를 쉼표나 줄바꿈으로 구분해 입력하세요.";
-"settings.ignore_apps_example" = "예: com.1password.1password, com.apple.Terminal";
+"settings.ignore_apps_hint" = "앱 이름이나 bundle ID를 쉼표 또는 줄바꿈으로 구분해 입력하세요.";
+"settings.ignore_apps_example" = "예: Finder, Terminal, com.1password.1password.";
+"settings.ignore_apps_suggestions" = "최근 복사 원본 앱";
 "app.title" = "SkyPaste";
 "app.debug_title" = "SkyPaste 디버그";
 "app.menu_title" = "SkyPaste";
@@ -71,6 +72,8 @@
 "menu.reveal_in_finder" = "Finder에서 보기";
 "menu.copy_path" = "경로 복사";
 "menu.copy_link" = "링크 복사";
+"menu.copy_plain_text" = "일반 텍스트로 복사";
+"menu.paste_plain_text" = "일반 텍스트로 붙여넣기";
 "menu.open_in_browser" = "브라우저에서 열기";
 "menu.favorite" = "즐겨찾기";
 "menu.unfavorite" = "즐겨찾기 해제";
@@ -94,8 +97,8 @@
 "panel.empty_message" = "텍스트, 이미지 또는 파일을 복사하면 여기에 표시됩니다.";
 "panel.empty_message_scoped" = "%1$@ 분류에는 아직 항목이 없습니다. 이 분류의 내용을 복사하면 여기에 표시됩니다.";
 "panel.clear_search" = "검색 지우기";
-"panel.shortcut_hint" = "Enter: 붙여넣기  ·  ↑/↓: 이동  ·  Esc: 닫기  ·  Cmd+1...9: 빠른 붙여넣기";
-"panel.shortcut_hint_copy_only" = "Enter: 복사  ·  ↑/↓: 이동  ·  Esc: 닫기  ·  Cmd+1...9: 빠른 붙여넣기";
+"panel.shortcut_hint" = "Enter: 붙여넣기  ·  ↑/↓: 이동  ·  Esc: 닫기  ·  Cmd+1...9: 빠른 복사";
+"panel.shortcut_hint_copy_only" = "Enter: 복사  ·  ↑/↓: 이동  ·  Esc: 닫기  ·  Cmd+1...9: 빠른 복사";
 "panel.paste_selected" = "선택 항목 붙여넣기";
 "filter.all" = "전체";
 "filter.text" = "텍스트";
@@ -103,6 +106,8 @@
 "filter.file" = "파일";
 "filter.folder" = "폴더";
 "filter.code" = "코드";
+"filter.source_all" = "모든 앱";
+"filter.source_label" = "앱";
 "filter.favorites" = "즐겨찾기";
 "filter.url" = "URL";
 "filter.move_first" = "맨 앞으로 이동";
@@ -165,6 +170,7 @@
 "preview.file_system_file_count" = "%d개 파일";
 "preview.file_system_folder_count" = "%d개 폴더";
 "preview.unavailable" = "미리보기를 사용할 수 없음";
+"preview.fit" = "맞춤";
 "preview.unavailable_message" = "SkyPaste가 이 이미지 미리보기를 불러오지 못했습니다.";
 "open.missing_file_title" = "파일을 찾을 수 없음";
 "open.missing_folder_title" = "폴더를 찾을 수 없음";

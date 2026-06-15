@@ -296,6 +296,12 @@ final class ClipboardStore: ObservableObject {
         ClipboardDecoder.write(item, to: NSPasteboard.general)
     }
 
+    func copyPlainTextToPasteboard(_ item: ClipboardItem) {
+        guard let text = item.plainTextRepresentation else { return }
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+    }
+
     func itemForPreview(_ item: ClipboardItem) -> ClipboardItem {
         fullResolutionItemIfNeeded(for: item) ?? item
     }
@@ -359,11 +365,18 @@ final class ClipboardStore: ObservableObject {
     }
 
     private func shouldIgnoreCurrentFrontApp() -> Bool {
-        guard let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier else {
+        guard let app = NSWorkspace.shared.frontmostApplication else {
             return false
         }
 
-        return settings.ignoredBundleIDs.contains(front)
+        let candidates = [
+            app.bundleIdentifier,
+            app.localizedName
+        ]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .map { $0.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current) }
+
+        return candidates.contains { settings.ignoredApps.contains($0) }
     }
 
     private func attachCurrentFrontmostSourceApp(to item: ClipboardItem) -> ClipboardItem {

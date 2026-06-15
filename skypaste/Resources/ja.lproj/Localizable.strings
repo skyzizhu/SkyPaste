@@ -53,8 +53,9 @@
 "settings.auto_paste" = "選択時に自動コピー";
 "settings.auto_paste_hint" = "有効にすると、リスト内の項目をクリックしたときに自動でクリップボードへコピーします。";
 "settings.ignore_apps" = "除外アプリ";
-"settings.ignore_apps_hint" = "bundle ID をカンマまたは改行で区切って入力します。";
-"settings.ignore_apps_example" = "例: com.1password.1password, com.apple.Terminal";
+"settings.ignore_apps_hint" = "アプリ名または bundle ID をカンマか改行で区切って入力します。";
+"settings.ignore_apps_example" = "例: Finder, Terminal, com.1password.1password。";
+"settings.ignore_apps_suggestions" = "最近のコピー元アプリ";
 "app.title" = "SkyPaste";
 "app.debug_title" = "SkyPaste デバッグ";
 "app.menu_title" = "SkyPaste";
@@ -71,6 +72,8 @@
 "menu.reveal_in_finder" = "Finderで表示";
 "menu.copy_path" = "パスをコピー";
 "menu.copy_link" = "リンクをコピー";
+"menu.copy_plain_text" = "プレーンテキストでコピー";
+"menu.paste_plain_text" = "プレーンテキストで貼り付け";
 "menu.open_in_browser" = "ブラウザで開く";
 "menu.favorite" = "お気に入りに追加";
 "menu.unfavorite" = "お気に入りから削除";
@@ -94,8 +97,8 @@
 "panel.empty_message" = "テキスト、画像、ファイルをコピーすると、ここに表示されます。";
 "panel.empty_message_scoped" = "%1$@ にはまだ項目がありません。このカテゴリの内容をコピーすると、ここに表示されます。";
 "panel.clear_search" = "検索をクリア";
-"panel.shortcut_hint" = "Enter: 貼り付け  ·  ↑/↓: 移動  ·  Esc: 閉じる  ·  Cmd+1...9: クイック貼り付け";
-"panel.shortcut_hint_copy_only" = "Enter: コピー  ·  ↑/↓: 移動  ·  Esc: 閉じる  ·  Cmd+1...9: クイック貼り付け";
+"panel.shortcut_hint" = "Enter: 貼り付け  ·  ↑/↓: 移動  ·  Esc: 閉じる  ·  Cmd+1...9: クイックコピー";
+"panel.shortcut_hint_copy_only" = "Enter: コピー  ·  ↑/↓: 移動  ·  Esc: 閉じる  ·  Cmd+1...9: クイックコピー";
 "panel.paste_selected" = "選択項目を貼り付け";
 "filter.all" = "すべて";
 "filter.text" = "テキスト";
@@ -103,6 +106,8 @@
 "filter.file" = "ファイル";
 "filter.folder" = "フォルダ";
 "filter.code" = "コード";
+"filter.source_all" = "すべてのアプリ";
+"filter.source_label" = "アプリ";
 "filter.favorites" = "お気に入り";
 "filter.url" = "URL";
 "filter.move_first" = "先頭に移動";
@@ -165,6 +170,7 @@
 "preview.file_system_file_count" = "%d ファイル";
 "preview.file_system_folder_count" = "%d フォルダ";
 "preview.unavailable" = "プレビューできません";
+"preview.fit" = "全体表示";
 "preview.unavailable_message" = "SkyPaste はこの画像のプレビューを読み込めませんでした。";
 "open.missing_file_title" = "ファイルが見つかりません";
 "open.missing_folder_title" = "フォルダが見つかりません";

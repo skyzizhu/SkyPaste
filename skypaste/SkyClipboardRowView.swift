@@ -401,7 +401,7 @@ private final class ClipboardPreviewImageProvider {
     }
 }
 
-private final class ClipboardSourceAppIconProvider {
+final class ClipboardSourceAppIconProvider {
     static let shared = ClipboardSourceAppIconProvider()
 
     private let cache = NSCache<NSString, NSImage>()

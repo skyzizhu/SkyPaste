@@ -53,8 +53,9 @@
 "settings.auto_paste" = "Auto copy on selection";
 "settings.auto_paste_hint" = "When enabled, clicking an item in the list automatically copies it to the clipboard.";
 "settings.ignore_apps" = "Ignore Apps";
-"settings.ignore_apps_hint" = "Comma or newline separated bundle IDs.";
-"settings.ignore_apps_example" = "Example: com.1password.1password, com.apple.Terminal";
+"settings.ignore_apps_hint" = "Enter app names or bundle IDs, separated by commas or new lines.";
+"settings.ignore_apps_example" = "Example: Finder, Terminal, com.1password.1password.";
+"settings.ignore_apps_suggestions" = "Recent source apps";
 "settings.recommended_app" = "Recommended App";
 "app.title" = "SkyPaste";
 "app.debug_title" = "Pasteboard Debug";
@@ -72,6 +73,8 @@
 "menu.reveal_in_finder" = "Reveal in Finder";
 "menu.copy_path" = "Copy Path";
 "menu.copy_link" = "Copy Link";
+"menu.copy_plain_text" = "Copy as Plain Text";
+"menu.paste_plain_text" = "Paste as Plain Text";
 "menu.open_in_browser" = "Open in Browser";
 "menu.favorite" = "Favorite";
 "menu.unfavorite" = "Remove Favorite";
@@ -95,8 +98,8 @@
 "panel.empty_message" = "Copy some text, images, or files and they will show up here.";
 "panel.empty_message_scoped" = "There are no items in %1$@ yet. Copy some content in this category and it will show up here.";
 "panel.clear_search" = "Clear Search";
-"panel.shortcut_hint" = "Enter: Paste  ·  ↑/↓: Navigate  ·  Esc: Close  ·  Cmd+1...9: Quick Paste";
-"panel.shortcut_hint_copy_only" = "Enter: Copy  ·  ↑/↓: Navigate  ·  Esc: Close  ·  Cmd+1...9: Quick Paste";
+"panel.shortcut_hint" = "Enter: Paste  ·  ↑/↓: Navigate  ·  Esc: Close  ·  Cmd+1...9: Quick Copy";
+"panel.shortcut_hint_copy_only" = "Enter: Copy  ·  ↑/↓: Navigate  ·  Esc: Close  ·  Cmd+1...9: Quick Copy";
 "panel.paste_selected" = "Paste Selected";
 "filter.all" = "All";
 "filter.text" = "Text";
@@ -104,6 +107,8 @@
 "filter.file" = "Files";
 "filter.folder" = "Folders";
 "filter.code" = "Code";
+"filter.source_all" = "All Apps";
+"filter.source_label" = "Apps";
 "filter.favorites" = "Favorites";
 "filter.url" = "URL";
 "filter.move_first" = "Move to Front";
@@ -166,6 +171,7 @@
 "preview.file_system_file_count" = "%d files";
 "preview.file_system_folder_count" = "%d folders";
 "preview.unavailable" = "Preview unavailable";
+"preview.fit" = "Fit";
 "preview.unavailable_message" = "SkyPaste could not load this image preview.";
 "open.missing_file_title" = "File Not Found";
 "open.missing_folder_title" = "Folder Not Found";

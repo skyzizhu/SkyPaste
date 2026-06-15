@@ -369,6 +369,15 @@ struct ClipboardItem: Identifiable, Equatable {
         return value
     }
 
+    var plainTextRepresentation: String? {
+        guard case .text(let value) = content else { return nil }
+        return value
+    }
+
+    var supportsPlainTextActions: Bool {
+        plainTextRepresentation != nil
+    }
+
     var supportsTextPreview: Bool {
         previewText != nil
     }

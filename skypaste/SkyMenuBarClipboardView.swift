@@ -20,10 +20,19 @@ struct MenuBarClipboardView: View {
         static let empty = Presentation(favoriteItems: [], orderedItems: [], daySections: [])
     }
 
+    private struct SourceAppFilterOption: Identifiable, Hashable {
+        let bundleID: String
+        let name: String
+
+        var id: String { bundleID }
+    }
+
     @ObservedObject var store: ClipboardStore
     @ObservedObject var settings: AppSettings
     let onPick: (ClipboardItem) -> Void
     let onCopy: (ClipboardItem) -> Void
+    let onCopyPlainText: (ClipboardItem) -> Void
+    let onPastePlainText: (ClipboardItem) -> Void
     let onPreview: (ClipboardItem) -> Void
     let onTextPreview: (ClipboardItem) -> Void
     let onFileSystemPreview: (ClipboardItem) -> Void
@@ -36,14 +45,14 @@ struct MenuBarClipboardView: View {
     let onQuit: () -> Void
 
     @State private var selectedID: ClipboardItem.ID?
-    @State private var showToast = false
     @State private var pendingDeleteDay: Date?
     @State private var selectedFilter: ClipboardFilter = .all
     @State private var isSearchVisible = false
-    @State private var toastTask: DispatchWorkItem?
     @State private var pendingPrimaryAction: DispatchWorkItem?
     @State private var draggedFilter: ClipboardFilter?
     @State private var displayedFilters = ClipboardFilter.defaultDisplayOrder
+    @State private var selectedSourceAppBundleID: String?
+    @State private var sourceAppIcons: [String: NSImage] = [:]
     @State private var presentation = Presentation.empty
 
     private func copyTimeText(_ date: Date) -> String {
@@ -137,9 +146,16 @@ struct MenuBarClipboardView: View {
 
     private func refreshPresentation() {
         presentation = Self.makePresentation(
-            filteredItems: Array(store.items(for: selectedFilter).prefix(80)),
+            filteredItems: Array(filteredItemsForSelectedScope.prefix(80)),
             selectedFilter: selectedFilter
         )
+    }
+
+    private func delete(_ item: ClipboardItem) {
+        pendingPrimaryAction?.cancel()
+        store.deleteItem(item.id)
+        refreshPresentation()
+        selectedID = presentation.orderedItems.first?.id
     }
 
     private static func makePresentation(filteredItems: [ClipboardItem], selectedFilter: ClipboardFilter) -> Presentation {
@@ -199,7 +215,36 @@ struct MenuBarClipboardView: View {
     }
 
     private var contentScrollResetID: String {
-        "\(selectedFilter.id)|\(store.appliedSearchText)"
+        "\(selectedFilter.id)|\(store.appliedSearchText)|\(selectedSourceAppBundleID ?? "all-apps")"
+    }
+
+    private var baseItemsForSelectedFilter: [ClipboardItem] {
+        store.items(for: selectedFilter)
+    }
+
+    private var availableSourceAppOptions: [SourceAppFilterOption] {
+        var seen = Set<String>()
+        return baseItemsForSelectedFilter
+            .compactMap(\.sourceApp)
+            .compactMap { app in
+                guard seen.insert(app.bundleID).inserted else { return nil }
+                return SourceAppFilterOption(bundleID: app.bundleID, name: app.name)
+            }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    private var filteredItemsForSelectedScope: [ClipboardItem] {
+        let items = baseItemsForSelectedFilter
+        guard let selectedSourceAppBundleID else { return items }
+        return items.filter { $0.sourceApp?.bundleID == selectedSourceAppBundleID }
+    }
+
+    private func validateSourceAppSelection() {
+        guard let selectedSourceAppBundleID else { return }
+        guard availableSourceAppOptions.contains(where: { $0.bundleID == selectedSourceAppBundleID }) else {
+            self.selectedSourceAppBundleID = nil
+            return
+        }
     }
 
     private var searchButtonFill: Color {
@@ -252,26 +297,15 @@ struct MenuBarClipboardView: View {
                     .fill(popoverGlossGradient)
             }
         )
-        .overlay(alignment: .top) {
-            if showToast {
-                Text(L10n.tr("menu.copy_success"))
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Capsule())
-                    .padding(.top, 6)
-                    .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-        }
         .onAppear {
             displayedFilters = settings.orderedFilters
+            loadSourceAppIconsIfNeeded()
             refreshPresentation()
             selectedID = presentation.orderedItems.first?.id
             isSearchVisible = !store.appliedSearchText.isEmpty
         }
         .onReceive(store.$filteredItemsByFilter) { _ in
+            validateSourceAppSelection()
             refreshPresentation()
         }
         .onReceive(NotificationCenter.default.publisher(for: .filterOrderSettingsChanged)) { _ in
@@ -289,6 +323,7 @@ struct MenuBarClipboardView: View {
             }
         }
         .onChange(of: selectedFilter) { _, _ in
+            validateSourceAppSelection()
             refreshPresentation()
             selectedID = presentation.orderedItems.first?.id
         }
@@ -296,8 +331,16 @@ struct MenuBarClipboardView: View {
             if !store.appliedSearchText.isEmpty {
                 isSearchVisible = true
             }
+            validateSourceAppSelection()
             refreshPresentation()
             selectedID = presentation.orderedItems.first?.id
+        }
+        .onChange(of: selectedSourceAppBundleID) { _, _ in
+            refreshPresentation()
+            selectedID = presentation.orderedItems.first?.id
+        }
+        .onChange(of: availableSourceAppOptions.map(\.bundleID)) { _, _ in
+            loadSourceAppIconsIfNeeded()
         }
         .alert(
             L10n.tr("menu.delete_day_title"),
@@ -337,6 +380,19 @@ struct MenuBarClipboardView: View {
             onQueryChange: store.setSearchQuery,
             onClose: closeSearch
         )
+    }
+
+    private var sourceAppFilterTitle: String {
+        guard let selectedSourceAppBundleID,
+              let app = availableSourceAppOptions.first(where: { $0.bundleID == selectedSourceAppBundleID }) else {
+            return L10n.tr("filter.source_label")
+        }
+        return app.name
+    }
+
+    private var selectedSourceAppOption: SourceAppFilterOption? {
+        guard let selectedSourceAppBundleID else { return nil }
+        return availableSourceAppOptions.first(where: { $0.bundleID == selectedSourceAppBundleID })
     }
 
     private var header: some View {
@@ -404,23 +460,130 @@ struct MenuBarClipboardView: View {
     }
 
     private var filterBar: some View {
-        ScrollViewReader { proxy in
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(displayedFilters) { filter in
-                        filterChip(for: filter)
-                            .id(filter)
+        HStack(spacing: 8) {
+            ScrollViewReader { proxy in
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(displayedFilters) { filter in
+                            filterChip(for: filter)
+                                .id(filter)
+                        }
+                    }
+                    .padding(.horizontal, 2)
+                }
+                .onAppear {
+                    proxy.scrollTo(selectedFilter, anchor: .center)
+                }
+                .onChange(of: selectedFilter) { _, filter in
+                    withAnimation(.easeOut(duration: 0.12)) {
+                        proxy.scrollTo(filter, anchor: .center)
                     }
                 }
-                .padding(.horizontal, 2)
             }
-            .onAppear {
-                proxy.scrollTo(selectedFilter, anchor: .center)
+            if !availableSourceAppOptions.isEmpty {
+                sourceAppMenu
             }
-            .onChange(of: selectedFilter) { _, filter in
-                withAnimation(.easeOut(duration: 0.12)) {
-                    proxy.scrollTo(filter, anchor: .center)
+        }
+    }
+
+    private var sourceAppMenu: some View {
+        let isActive = selectedSourceAppBundleID != nil
+
+        return Menu {
+            Button {
+                withAnimation(.easeOut(duration: 0.1)) {
+                    selectedSourceAppBundleID = nil
                 }
+            } label: {
+                HStack(spacing: 8) {
+                    sourceAppMenuIcon(bundleID: nil, size: 13)
+                    Text(L10n.tr("filter.source_all"))
+                    if selectedSourceAppBundleID == nil {
+                        Spacer()
+                        Image(systemName: "checkmark")
+                    }
+                }
+            }
+
+            Divider()
+
+            ForEach(availableSourceAppOptions) { app in
+                Button {
+                    withAnimation(.easeOut(duration: 0.1)) {
+                        selectedSourceAppBundleID = app.bundleID
+                    }
+                } label: {
+                    HStack(spacing: 8) {
+                        sourceAppMenuIcon(bundleID: app.bundleID, size: 13)
+                        Text(app.name)
+                        if selectedSourceAppBundleID == app.bundleID {
+                            Spacer()
+                            Image(systemName: "checkmark")
+                        }
+                    }
+                }
+            }
+        } label: {
+            sourceAppButtonIcon(size: 15)
+            .foregroundStyle(isActive ? selectedFilterChipText : Color.primary.opacity(colorScheme == .dark ? 0.82 : 0.72))
+            .padding(.horizontal, 9)
+            .padding(.vertical, 6)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(isActive ? selectedFilterChipFill : filterChipFill)
+            )
+            .overlay {
+                Capsule(style: .continuous)
+                    .stroke(
+                        isActive
+                            ? (colorScheme == .dark ? Color.primary.opacity(0.24) : Color.accentColor.opacity(0.16))
+                            : Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.05),
+                        lineWidth: 1
+                    )
+            }
+        }
+        .menuStyle(.borderlessButton)
+        .menuIndicator(.hidden)
+        .fixedSize(horizontal: true, vertical: false)
+        .help(selectedSourceAppOption?.name ?? sourceAppFilterTitle)
+    }
+
+    @ViewBuilder
+    private func sourceAppButtonIcon(size: CGFloat) -> some View {
+        if let selectedSourceAppOption, let icon = sourceAppIcons[selectedSourceAppOption.bundleID] {
+            Image(nsImage: icon)
+                .resizable()
+                .interpolation(.high)
+                .frame(width: size, height: size)
+                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+        } else {
+            Image(systemName: "square.grid.2x2")
+                .font(.system(size: size - 2, weight: .semibold))
+        }
+    }
+
+    @ViewBuilder
+    private func sourceAppMenuIcon(bundleID: String?, size: CGFloat) -> some View {
+        if let bundleID, let icon = sourceAppIcons[bundleID] {
+            Image(nsImage: icon)
+                .resizable()
+                .interpolation(.high)
+                .frame(width: size, height: size)
+                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+        } else {
+            Image(systemName: "square.grid.2x2")
+                .font(.system(size: size - 2, weight: .semibold))
+                .frame(width: size, height: size)
+        }
+    }
+
+    private func loadSourceAppIconsIfNeeded() {
+        for app in availableSourceAppOptions where sourceAppIcons[app.bundleID] == nil {
+            ClipboardSourceAppIconProvider.shared.loadIcon(
+                for: ClipboardSourceApp(bundleID: app.bundleID, name: app.name)
+            ) { icon in
+                guard let icon else { return }
+                sourceAppIcons[app.bundleID] = icon
             }
         }
     }
@@ -668,7 +831,8 @@ struct MenuBarClipboardView: View {
             }
 
             VStack(spacing: 0) {
-                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                ForEach(items.indices, id: \.self) { index in
+                    let item = items[index]
                     rowView(for: item)
 
                     if index < items.count - 1 {
@@ -699,23 +863,6 @@ struct MenuBarClipboardView: View {
     private func copy(_ item: ClipboardItem) {
         selectedID = item.id
         onCopy(item)
-        showCopyToast()
-    }
-
-    private func showCopyToast() {
-        toastTask?.cancel()
-
-        withAnimation(.easeOut(duration: 0.15)) {
-            showToast = true
-        }
-
-        let dismissTask = DispatchWorkItem {
-            withAnimation(.easeIn(duration: 0.2)) {
-                showToast = false
-            }
-        }
-        toastTask = dismissTask
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0, execute: dismissTask)
     }
 
     private func handleRowTap(_ item: ClipboardItem) {
@@ -785,6 +932,12 @@ struct MenuBarClipboardView: View {
                 selectedID = item.id
                 copy(item)
             }
+            if item.supportsPlainTextActions {
+                Button(L10n.tr("menu.copy_plain_text")) {
+                    selectedID = item.id
+                    onCopyPlainText(item)
+                }
+            }
             if item.isFileCollection {
                 Button(item.openActionTitle) {
                     selectedID = item.id
@@ -801,7 +954,6 @@ struct MenuBarClipboardView: View {
                 Button(L10n.tr("menu.copy_path")) {
                     selectedID = item.id
                     onCopyFileSystemPath(item)
-                    showCopyToast()
                 }
             }
             if item.isURL {
@@ -822,12 +974,18 @@ struct MenuBarClipboardView: View {
                     onTextPreview(item)
                 }
             }
+            if item.supportsPlainTextActions {
+                Button(L10n.tr("menu.paste_plain_text")) {
+                    selectedID = item.id
+                    onPastePlainText(item)
+                }
+            }
             Button(item.isFavorite ? L10n.tr("menu.unfavorite") : L10n.tr("menu.favorite")) {
                 selectedID = item.id
                 store.toggleFavorite(for: item.id)
             }
             Button(L10n.tr("menu.delete"), role: .destructive) {
-                store.deleteItem(item.id)
+                delete(item)
             }
         }
     }
