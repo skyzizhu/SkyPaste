@@ -55,7 +55,7 @@
 "settings.ignore_apps" = "除外アプリ";
 "settings.ignore_apps_hint" = "アプリ名または bundle ID をカンマか改行で区切って入力します。";
 "settings.ignore_apps_example" = "例: Finder, Terminal, com.1password.1password。";
-"settings.ignore_apps_suggestions" = "最近のコピー元アプリ";
+"settings.ignore_apps_suggestions" = "最近";
 "app.title" = "SkyPaste";
 "app.debug_title" = "SkyPaste デバッグ";
 "app.menu_title" = "SkyPaste";

@@ -353,9 +353,7 @@ struct MenuBarClipboardView: View {
                 .opacity(colorScheme == .dark ? 0.32 : 0.14)
                 .ignoresSafeArea()
                 .onTapGesture {
-                    withAnimation(.easeOut(duration: 0.14)) {
-                        pendingDeleteDay = nil
-                    }
+                    dismissDeleteConfirmation()
                 }
 
             VStack(alignment: .leading, spacing: 10) {
@@ -371,14 +369,10 @@ struct MenuBarClipboardView: View {
                 HStack(spacing: 8) {
                     Spacer()
                     confirmationButton(title: L10n.tr("menu.cancel"), role: .cancel) {
-                        withAnimation(.easeOut(duration: 0.14)) {
-                            pendingDeleteDay = nil
-                        }
+                        dismissDeleteConfirmation()
                     }
                     confirmationButton(title: L10n.tr("menu.delete"), role: .destructive) {
-                        withAnimation(.easeOut(duration: 0.14)) {
-                            pendingDeleteDay = nil
-                        }
+                        dismissDeleteConfirmation()
                         DispatchQueue.main.async {
                             store.deleteAllItems(onDay: day)
                         }
@@ -402,8 +396,12 @@ struct MenuBarClipboardView: View {
                     .stroke(Color.primary.opacity(colorScheme == .dark ? 0.12 : 0.08), lineWidth: 1)
             }
         }
-        .transition(.opacity.combined(with: .scale(scale: 0.98)))
         .zIndex(50)
+    }
+
+    private func dismissDeleteConfirmation() {
+        // Avoid an animated removal here: a fading overlay can keep intercepting clicks in popovers.
+        pendingDeleteDay = nil
     }
 
     private var deleteConfirmationCardTint: Color {

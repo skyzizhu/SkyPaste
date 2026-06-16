@@ -55,7 +55,7 @@
 "settings.ignore_apps" = "Ignore Apps";
 "settings.ignore_apps_hint" = "Enter app names or bundle IDs, separated by commas or new lines.";
 "settings.ignore_apps_example" = "Example: Finder, Terminal, com.1password.1password.";
-"settings.ignore_apps_suggestions" = "Recent source apps";
+"settings.ignore_apps_suggestions" = "Recent";
 "settings.recommended_app" = "Recommended App";
 "app.title" = "SkyPaste";
 "app.debug_title" = "Pasteboard Debug";

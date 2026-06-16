@@ -55,7 +55,7 @@
 "settings.ignore_apps" = "무시할 앱";
 "settings.ignore_apps_hint" = "앱 이름이나 bundle ID를 쉼표 또는 줄바꿈으로 구분해 입력하세요.";
 "settings.ignore_apps_example" = "예: Finder, Terminal, com.1password.1password.";
-"settings.ignore_apps_suggestions" = "최근 복사 원본 앱";
+"settings.ignore_apps_suggestions" = "최근";
 "app.title" = "SkyPaste";
 "app.debug_title" = "SkyPaste 디버그";
 "app.menu_title" = "SkyPaste";

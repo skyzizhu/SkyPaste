@@ -205,7 +205,7 @@ struct SettingsView: View {
     }
 
     private var ignoreAppsSection: some View {
-        SettingsSection(title: L10n.tr("settings.ignore_apps")) {
+        SettingsSection(title: L10n.tr("settings.ignore_apps"), contentSpacing: 8) {
             TextEditor(text: $settings.ignoredAppsInput)
                 .font(.system(size: 12, weight: .regular, design: .rounded))
                 .scrollContentBackground(.hidden)
@@ -224,10 +224,11 @@ struct SettingsView: View {
             hint("\(L10n.tr("settings.ignore_apps_hint")) \(L10n.tr("settings.ignore_apps_example"))")
 
             if !ignoredAppSuggestions.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .center, spacing: 10) {
                     Text(L10n.tr("settings.ignore_apps_suggestions"))
                         .font(.system(size: 11, weight: .medium, design: .rounded))
                         .foregroundStyle(.secondary)
+                        .lineLimit(1)
 
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
@@ -251,6 +252,9 @@ struct SettingsView: View {
                         .padding(.vertical, 1)
                     }
                 }
+                .padding(.top, -2)
+                .padding(.bottom, -3)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }

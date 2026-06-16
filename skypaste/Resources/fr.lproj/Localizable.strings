@@ -55,7 +55,7 @@
 "settings.ignore_apps" = "Applications ignorées";
 "settings.ignore_apps_hint" = "Saisissez des noms d’application ou des bundle ID, séparés par des virgules ou des retours à la ligne.";
 "settings.ignore_apps_example" = "Exemple : Finder, Terminal, com.1password.1password.";
-"settings.ignore_apps_suggestions" = "Applications sources récentes";
+"settings.ignore_apps_suggestions" = "Récent";
 "app.title" = "SkyPaste";
 "app.debug_title" = "Débogage SkyPaste";
 "app.menu_title" = "SkyPaste";
