@@ -4,18 +4,26 @@ struct SettingsView: View {
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject var settings: AppSettings
     @ObservedObject var cloudSync: CloudClipboardSyncManager
+    @ObservedObject var store: ClipboardStore
 
-    init(settings: AppSettings, cloudSync: CloudClipboardSyncManager? = nil) {
+    init(settings: AppSettings, store: ClipboardStore? = nil, cloudSync: CloudClipboardSyncManager? = nil) {
         _settings = ObservedObject(wrappedValue: settings)
+
+        let resolvedStore: ClipboardStore
+        if let store {
+            resolvedStore = store
+        } else {
+            resolvedStore = ClipboardStore(settings: settings)
+        }
 
         let resolvedCloudSync: CloudClipboardSyncManager
         if let cloudSync {
             resolvedCloudSync = cloudSync
         } else {
-            let previewStore = ClipboardStore(settings: settings)
-            resolvedCloudSync = CloudClipboardSyncManager(store: previewStore, settings: settings)
+            resolvedCloudSync = CloudClipboardSyncManager(store: resolvedStore, settings: settings)
         }
 
+        _store = ObservedObject(wrappedValue: resolvedStore)
         _cloudSync = ObservedObject(wrappedValue: resolvedCloudSync)
     }
 
@@ -28,6 +36,7 @@ struct SettingsView: View {
                 behaviorSection
                 syncSection
                 historySection
+                ignoreAppsSection
                 yourToolsSection
             }
             .padding(16)
@@ -195,6 +204,61 @@ struct SettingsView: View {
         }
     }
 
+    private var ignoreAppsSection: some View {
+        SettingsSection(title: L10n.tr("settings.ignore_apps"), contentSpacing: 8) {
+            TextEditor(text: $settings.ignoredAppsInput)
+                .font(.system(size: 12, weight: .regular, design: .rounded))
+                .scrollContentBackground(.hidden)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
+                .frame(minHeight: 82, maxHeight: 82, alignment: .topLeading)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(settingsControlFill)
+                )
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+                }
+
+            hint("\(L10n.tr("settings.ignore_apps_hint")) \(L10n.tr("settings.ignore_apps_example"))")
+
+            if !ignoredAppSuggestions.isEmpty {
+                HStack(alignment: .center, spacing: 10) {
+                    Text(L10n.tr("settings.ignore_apps_suggestions"))
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 8) {
+                            ForEach(ignoredAppSuggestions, id: \.self) { appName in
+                                Button {
+                                    appendIgnoredApp(appName)
+                                } label: {
+                                    Text(appName)
+                                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                                        .foregroundStyle(.primary)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 6)
+                                        .background(
+                                            Capsule(style: .continuous)
+                                                .fill(settingsControlFill)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.vertical, 1)
+                    }
+                }
+                .padding(.top, -2)
+                .padding(.bottom, -3)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
     private var historySection: some View {
         SettingsSection(title: L10n.tr("settings.history")) {
             SettingsRow(title: L10n.format("settings.max_records", settings.historyLimit)) {
@@ -244,10 +308,28 @@ struct SettingsView: View {
         return L10n.format("settings.version_format", version, build)
     }
 
+    private var ignoredAppSuggestions: [String] {
+        let existing = settings.ignoredApps
+        let suggestions = store.items
+            .compactMap(\.sourceApp?.name)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .reduce(into: [String]()) { partial, name in
+                if !partial.contains(name) {
+                    partial.append(name)
+                }
+            }
+
+        return Array(
+            suggestions
+                .filter { !existing.contains($0.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)) }
+                .prefix(8)
+        )
+    }
+
     private var yourToolsLogo: some View {
         Group {
-            if let imageURL = Bundle.main.url(forResource: "yourtools-logo", withExtension: "jpeg"),
-               let image = NSImage(contentsOf: imageURL) {
+            if let image = Self.cachedYourToolsLogo {
                 Image(nsImage: image)
                     .resizable()
                     .interpolation(.high)
@@ -266,6 +348,28 @@ struct SettingsView: View {
         .overlay {
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+        }
+    }
+
+    private static let cachedYourToolsLogo: NSImage? = {
+        guard let imageURL = Bundle.main.url(forResource: "yourtools-logo", withExtension: "jpeg") else {
+            return nil
+        }
+        return NSImage(contentsOf: imageURL)
+    }()
+
+    private func appendIgnoredApp(_ appName: String) {
+        let trimmed = appName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        let normalized = trimmed.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+        guard !settings.ignoredApps.contains(normalized) else { return }
+
+        let current = settings.ignoredAppsInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        if current.isEmpty {
+            settings.ignoredAppsInput = trimmed
+        } else {
+            settings.ignoredAppsInput = current + "\n" + trimmed
         }
     }
 

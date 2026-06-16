@@ -7,14 +7,18 @@ final class AppCoordinator {
     let settings: AppSettings
     let cloudSync: CloudClipboardSyncManager
 
+    private let toastModel = GlobalToastModel()
     private var panelWindow: NSWindow?
     private var debugWindow: NSWindow?
     private var settingsWindow: NSWindow?
     private var imagePreviewWindow: NSWindow?
     private var textPreviewWindow: NSWindow?
     private var fileSystemPreviewWindow: NSWindow?
+    private var toastWindow: NSPanel?
+    private var toastHostingController: NSHostingController<GlobalToastView>?
     private var settingsWindowController: NSWindowController?
     private var previousApp: NSRunningApplication?
+    private var toastDismissWorkItem: DispatchWorkItem?
 
     init(settings: AppSettings) {
         self.settings = settings
@@ -28,7 +32,12 @@ final class AppCoordinator {
             }
         }
     }
+}
 
+// MARK: - AppCoordinator Panel
+
+@MainActor
+private extension AppCoordinator {
     func configureWindow() {
         let rootView = makePanelView()
         let hostingView = NSHostingView(rootView: rootView)
@@ -63,7 +72,7 @@ final class AppCoordinator {
     }
 
     private func makePanelView() -> PanelView {
-        let rootView = PanelView(store: store, settings: settings, onPick: { [weak self] item in
+        PanelView(store: store, settings: settings, onPick: { [weak self] item in
             self?.paste(item)
         }, onCopy: { [weak self] item in
             self?.copyOnly(item)
@@ -84,7 +93,6 @@ final class AppCoordinator {
         }, onClose: { [weak self] in
             self?.closePanel()
         })
-        return rootView
     }
 
     func togglePanel() {
@@ -145,7 +153,12 @@ final class AppCoordinator {
     var isSettingsWindowVisible: Bool {
         settingsWindow?.isVisible == true
     }
+}
 
+// MARK: - AppCoordinator Preview Windows
+
+@MainActor
+private extension AppCoordinator {
     func showImagePreview(for item: ClipboardItem) {
         guard item.isImage else { return }
         let previewItem = store.itemForPreview(item)
@@ -207,7 +220,7 @@ final class AppCoordinator {
             settingsWindow = window
         }
 
-        let controller = NSHostingController(rootView: SettingsView(settings: settings, cloudSync: cloudSync))
+        let controller = NSHostingController(rootView: SettingsView(settings: settings, store: store, cloudSync: cloudSync))
         settingsWindow?.title = L10n.tr("menu.preferences")
         settingsWindow?.contentViewController = controller
         applyAppearance()
@@ -314,7 +327,12 @@ final class AppCoordinator {
         fileSystemPreviewWindow?.makeKeyAndOrderFront(nil)
         fileSystemPreviewWindow?.orderFrontRegardless()
     }
+}
 
+// MARK: - AppCoordinator Item Actions
+
+@MainActor
+private extension AppCoordinator {
     func openFileSystemItem(for item: ClipboardItem) {
         guard let urls = item.fileURLs, !urls.isEmpty else { return }
 
@@ -378,6 +396,55 @@ final class AppCoordinator {
         let pathText = urls.map(\.path).joined(separator: "\n")
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(pathText, forType: .string)
+        showGlobalCopyToast()
+    }
+}
+
+// MARK: - AppCoordinator Clipboard Actions
+
+@MainActor
+private extension AppCoordinator {
+    func copyOnly(_ item: ClipboardItem) {
+        store.copyToPasteboard(item)
+        showGlobalCopyToast()
+    }
+
+    func paste(_ item: ClipboardItem) {
+        store.copyToPasteboard(item)
+        closePanel()
+        previousApp?.activate(options: [])
+
+        guard settings.autoPasteEnabled else { return }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
+            self?.sendCommandV()
+        }
+    }
+
+    private func sendCommandV() {
+        guard let source = CGEventSource(stateID: .combinedSessionState) else { return }
+
+        let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: true)
+        keyDown?.flags = .maskCommand
+
+        let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: false)
+        keyUp?.flags = .maskCommand
+
+        keyDown?.post(tap: .cghidEventTap)
+        keyUp?.post(tap: .cghidEventTap)
+    }
+
+}
+
+// MARK: - AppCoordinator Feedback & Helpers
+
+@MainActor
+private extension AppCoordinator {
+    func applyAppearance() {
+        let appearance = settings.appearanceMode.nsAppearance
+        [panelWindow, debugWindow, settingsWindow, imagePreviewWindow, textPreviewWindow, fileSystemPreviewWindow].forEach { window in
+            window?.appearance = appearance
+        }
     }
 
     private func centerWindow(_ window: NSWindow?) {
@@ -395,13 +462,6 @@ final class AppCoordinator {
         }
     }
 
-    func applyAppearance() {
-        let appearance = settings.appearanceMode.nsAppearance
-        [panelWindow, debugWindow, settingsWindow, imagePreviewWindow, textPreviewWindow, fileSystemPreviewWindow].forEach { window in
-            window?.appearance = appearance
-        }
-    }
-
     private func captureFrontApp() {
         guard let current = NSWorkspace.shared.frontmostApplication else { return }
         if current.processIdentifier != ProcessInfo.processInfo.processIdentifier {
@@ -409,33 +469,84 @@ final class AppCoordinator {
         }
     }
 
-    private func sendCommandV() {
-        guard let source = CGEventSource(stateID: .combinedSessionState) else { return }
-
-        let keyDown = CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: true)
-        keyDown?.flags = .maskCommand
-
-        let keyUp = CGEvent(keyboardEventSource: source, virtualKey: 9, keyDown: false)
-        keyUp?.flags = .maskCommand
-
-        keyDown?.post(tap: .cghidEventTap)
-        keyUp?.post(tap: .cghidEventTap)
-    }
-
-    func copyOnly(_ item: ClipboardItem) {
-        store.copyToPasteboard(item)
-    }
-
-    func paste(_ item: ClipboardItem) {
-        store.copyToPasteboard(item)
-        closePanel()
-        previousApp?.activate(options: [])
-
-        guard settings.autoPasteEnabled else { return }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
-            self?.sendCommandV()
+    private func showGlobalCopyToast() {
+        if toastWindow == nil {
+            toastModel.message = L10n.tr("menu.copy_success")
+            let toastView = GlobalToastView(model: toastModel)
+            let controller = NSHostingController(rootView: toastView)
+            controller.view.wantsLayer = true
+            controller.view.layer?.backgroundColor = NSColor.clear.cgColor
+            controller.view.layoutSubtreeIfNeeded()
+            let fittingSize = controller.view.fittingSize
+            let panel = NSPanel(
+                contentRect: NSRect(x: 0, y: 0, width: fittingSize.width, height: fittingSize.height),
+                styleMask: [.borderless, .nonactivatingPanel],
+                backing: .buffered,
+                defer: false
+            )
+            panel.isFloatingPanel = true
+            panel.level = .statusBar
+            panel.isOpaque = false
+            panel.backgroundColor = .clear
+            panel.hasShadow = false
+            panel.hidesOnDeactivate = false
+            panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
+            panel.ignoresMouseEvents = true
+            panel.contentViewController = controller
+            controller.view.frame = NSRect(origin: .zero, size: fittingSize)
+            toastWindow = panel
+            toastHostingController = controller
+        } else {
+            toastModel.message = L10n.tr("menu.copy_success")
         }
+
+        guard let toastWindow, let toastHostingController else { return }
+
+        toastDismissWorkItem?.cancel()
+        toastHostingController.view.layoutSubtreeIfNeeded()
+        let fittingSize = toastHostingController.view.fittingSize
+        if toastWindow.frame.size != fittingSize {
+            toastWindow.setContentSize(fittingSize)
+            toastHostingController.view.frame = NSRect(origin: .zero, size: fittingSize)
+        }
+        positionToastWindow(toastWindow)
+        toastWindow.alphaValue = 0
+        toastWindow.orderFrontRegardless()
+
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.14
+            context.timingFunction = CAMediaTimingFunction(name: .easeOut)
+            toastWindow.animator().alphaValue = 1
+        }
+
+        let dismissWorkItem = DispatchWorkItem { [weak self] in
+            guard let self, let toastWindow = self.toastWindow else { return }
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.18
+                context.timingFunction = CAMediaTimingFunction(name: .easeIn)
+                toastWindow.animator().alphaValue = 0
+            } completionHandler: {
+                toastWindow.orderOut(nil)
+            }
+        }
+
+        toastDismissWorkItem = dismissWorkItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.95, execute: dismissWorkItem)
+    }
+
+    private func positionToastWindow(_ window: NSWindow) {
+        let screen = panelWindow?.screen ?? NSApp.keyWindow?.screen ?? NSScreen.main
+        guard let screen else {
+            window.center()
+            return
+        }
+
+        let visibleFrame = screen.visibleFrame
+        let origin = NSPoint(
+            x: visibleFrame.midX - window.frame.width / 2,
+            y: visibleFrame.midY - window.frame.height / 2
+        )
+        window.setFrameOrigin(origin)
     }
 
     private func itemKind(for url: URL) -> ClipboardFileSystemItemKind {
@@ -483,7 +594,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private var isRunningUITests: Bool {
         ProcessInfo.processInfo.arguments.contains("--uitesting")
     }
+}
 
+// MARK: - AppDelegate Lifecycle
+
+@MainActor
+extension AppDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         applyAppearance()
         coordinator.configureWindow()
@@ -542,15 +658,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 
         removePopoverAutoCloseMonitors()
     }
+}
 
-    private func applyHotKeyRegistration() {
+// MARK: - AppDelegate Settings & Status Item
+
+@MainActor
+private extension AppDelegate {
+    func applyHotKeyRegistration() {
         let binding = settings.hotKeyBinding
         hotKeyManager.register(keyCode: binding.keyCode, modifiers: binding.modifiers) { [weak coordinator] in
             coordinator?.togglePanel()
         }
     }
 
-    private func observeSettingsChanges() {
+    func observeSettingsChanges() {
         hotKeyObserver = NotificationCenter.default.addObserver(
             forName: .hotKeySettingsChanged,
             object: nil,
@@ -592,7 +713,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         }
     }
 
-    private func setupStatusItem() {
+    func setupStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         item.button?.title = ""
         item.button?.image = statusBarImage()
@@ -604,7 +725,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         configureStatusPopover()
     }
 
-    private func refreshLocalizedUI() {
+    func refreshLocalizedUI() {
         let oldPopover = statusPopover
         let wasPopoverShown = statusPopover?.isShown == true
         let statusButton = statusItem?.button
@@ -630,7 +751,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         }
     }
 
-    private func statusBarImage() -> NSImage? {
+    func statusBarImage() -> NSImage? {
         guard let appIcon = NSApp.applicationIconImage.copy() as? NSImage else { return nil }
 
         let iconSide = max(19, NSStatusBar.system.thickness - 2)
@@ -655,7 +776,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         return statusImage
     }
 
-    private func configureStatusPopover() {
+    func configureStatusPopover() {
         let view = MenuBarClipboardView(
             store: coordinator.store,
             settings: settings,
@@ -718,15 +839,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         statusPopover = popover
     }
 
-    private func applyAppearance() {
+    func applyAppearance() {
         let appearance = settings.appearanceMode.nsAppearance
         NSApp.appearance = appearance
         coordinator.applyAppearance()
         statusPopover?.contentViewController?.view.appearance = appearance
         statusPopover?.contentViewController?.view.window?.appearance = appearance
     }
+}
 
-    @objc private func toggleStatusPopover() {
+// MARK: - AppDelegate Popover
+
+@MainActor
+extension AppDelegate {
+    @objc func toggleStatusPopover() {
         guard let button = statusItem?.button, let popover = statusPopover else { return }
 
         if popover.isShown {
@@ -739,12 +865,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         }
     }
 
-    private func closeStatusPopover() {
+    func popoverDidClose(_ notification: Notification) {
+        removePopoverAutoCloseMonitors()
+    }
+}
+
+@MainActor
+private extension AppDelegate {
+    func closeStatusPopover() {
         statusPopover?.performClose(nil)
         removePopoverAutoCloseMonitors()
     }
 
-    private func installPopoverAutoCloseMonitors() {
+    func installPopoverAutoCloseMonitors() {
         guard localPopoverMonitor == nil, globalPopoverMonitor == nil else { return }
 
         localPopoverMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown, .otherMouseDown]) { [weak self] event in
@@ -780,7 +913,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         }
     }
 
-    private func removePopoverAutoCloseMonitors() {
+    func removePopoverAutoCloseMonitors() {
         if let localPopoverMonitor {
             NSEvent.removeMonitor(localPopoverMonitor)
             self.localPopoverMonitor = nil
@@ -792,15 +925,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
         }
     }
 
-    func popoverDidClose(_ notification: Notification) {
-        removePopoverAutoCloseMonitors()
-    }
-
-    @objc private func openPreferences() {
+    @objc func openPreferences() {
         coordinator.showSettingsWindow()
     }
 
-    @objc private func quitApp() {
+    @objc func quitApp() {
         NSApp.terminate(nil)
     }
 }
@@ -810,6 +939,7 @@ private struct ImagePreviewView: View {
     let item: ClipboardItem
     let onCopy: () -> Void
     @State private var zoomScale: CGFloat = 1
+    @State private var zoomAnimationNonce = 0
 
     private var image: NSImage? {
         item.previewImage
@@ -836,21 +966,20 @@ private struct ImagePreviewView: View {
                     }
 
                     Button {
-                        zoomScale = clampedScale(zoomScale - 0.2)
+                        updateZoomScale(clampedScale(zoomScale - 0.2), animated: true)
                     } label: {
                         Image(systemName: "minus.magnifyingglass")
                     }
 
                     Button {
-                        zoomScale = 1
+                        updateZoomScale(1, animated: true)
                     } label: {
-                        Text("\(Int(zoomScale * 100))%")
+                        Text(resetButtonTitle)
                             .font(.system(size: 12, weight: .semibold, design: .rounded))
-                            .monospacedDigit()
                     }
 
                     Button {
-                        zoomScale = clampedScale(zoomScale + 0.2)
+                        updateZoomScale(clampedScale(zoomScale + 0.2), animated: true)
                     } label: {
                         Image(systemName: "plus.magnifyingglass")
                     }
@@ -891,6 +1020,7 @@ private struct ImagePreviewView: View {
                         MagnifiableImagePreviewRepresentable(
                             image: image,
                             zoomScale: $zoomScale,
+                            zoomAnimationNonce: zoomAnimationNonce,
                             availableSize: CGSize(
                                 width: max(proxy.size.width - 120, 280),
                                 height: max(proxy.size.height - 120, 280)
@@ -927,11 +1057,28 @@ private struct ImagePreviewView: View {
     private func clampedScale(_ value: CGFloat) -> CGFloat {
         min(max(value, 0.4), 5)
     }
+
+    private func updateZoomScale(_ value: CGFloat, animated: Bool) {
+        let clamped = clampedScale(value)
+        guard abs(zoomScale - clamped) > 0.001 else { return }
+        zoomScale = clamped
+        if animated {
+            zoomAnimationNonce += 1
+        }
+    }
+
+    private var resetButtonTitle: String {
+        if abs(zoomScale - 1) < 0.01 {
+            return L10n.tr("preview.fit")
+        }
+        return "\(Int(zoomScale * 100))%"
+    }
 }
 
 private struct MagnifiableImagePreviewRepresentable: NSViewRepresentable {
     let image: NSImage
     @Binding var zoomScale: CGFloat
+    let zoomAnimationNonce: Int
     let availableSize: CGSize
 
     func makeCoordinator() -> Coordinator {
@@ -943,6 +1090,9 @@ private struct MagnifiableImagePreviewRepresentable: NSViewRepresentable {
         scrollView.onMagnificationChanged = { magnification in
             context.coordinator.updateZoomScale(magnification)
         }
+        scrollView.onDoubleClickZoom = { magnification in
+            context.coordinator.updateZoomScale(magnification)
+        }
         return scrollView
     }
 
@@ -950,15 +1100,20 @@ private struct MagnifiableImagePreviewRepresentable: NSViewRepresentable {
         nsView.onMagnificationChanged = { magnification in
             context.coordinator.updateZoomScale(magnification)
         }
+        nsView.onDoubleClickZoom = { magnification in
+            context.coordinator.updateZoomScale(magnification)
+        }
         nsView.update(
             image: image,
             zoomScale: zoomScale,
+            animated: context.coordinator.consumeAnimationFlag(for: zoomAnimationNonce),
             availableSize: availableSize
         )
     }
 
     final class Coordinator {
         @Binding private var zoomScale: CGFloat
+        private var lastAnimationNonce = 0
 
         init(zoomScale: Binding<CGFloat>) {
             _zoomScale = zoomScale
@@ -972,11 +1127,18 @@ private struct MagnifiableImagePreviewRepresentable: NSViewRepresentable {
                 }
             }
         }
+
+        func consumeAnimationFlag(for nonce: Int) -> Bool {
+            guard nonce != lastAnimationNonce else { return false }
+            lastAnimationNonce = nonce
+            return true
+        }
     }
 }
 
 private final class MagnifiableImageScrollView: NSScrollView {
     var onMagnificationChanged: ((CGFloat) -> Void)?
+    var onDoubleClickZoom: ((CGFloat) -> Void)?
 
     private let containerView = PannableImageContainerView()
     private let imageView = NSImageView()
@@ -994,24 +1156,25 @@ private final class MagnifiableImageScrollView: NSScrollView {
         configure()
     }
 
-    func update(image: NSImage, zoomScale: CGFloat, availableSize: CGSize) {
+    func update(image: NSImage, zoomScale: CGFloat, animated: Bool, availableSize: CGSize) {
         imageView.image = image
         baseImageSize = fittedImageSize(imageSize: imageDisplaySize(for: image), availableSize: availableSize)
-        if abs(currentScale - zoomScale) > 0.001 {
+        let scaleChanged = abs(currentScale - zoomScale) > 0.001
+        if scaleChanged {
             currentScale = zoomScale
         }
-        layoutImage()
+        applyLayout(animated: animated && scaleChanged)
     }
 
     override func layout() {
         super.layout()
-        layoutImage()
+        applyLayout(animated: false)
     }
 
     override func magnify(with event: NSEvent) {
         currentScale = min(max(currentScale + event.magnification, 0.4), 5)
         onMagnificationChanged?(currentScale)
-        layoutImage()
+        applyLayout(animated: false)
     }
 
     private func configure() {
@@ -1032,10 +1195,38 @@ private final class MagnifiableImageScrollView: NSScrollView {
         containerView.onPan = { [weak self] translation, state in
             self?.handlePan(translation: translation, state: state)
         }
+        containerView.onDoubleClick = { [weak self] location in
+            self?.handleDoubleClick(at: location)
+        }
         documentView = containerView
     }
 
-    private func layoutImage() {
+    private func applyLayout(animated: Bool) {
+        let metrics = layoutMetrics()
+        let targetBounds = CGRect(origin: .zero, size: metrics.containerSize)
+
+        if animated {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.16
+                context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                containerView.animator().frame = targetBounds
+                imageView.animator().frame = metrics.imageFrame
+                contentView.animator().setBoundsOrigin(metrics.targetOrigin)
+            } completionHandler: { [weak self] in
+                guard let self else { return }
+                self.reflectScrolledClipView(self.contentView)
+                self.updateCursor()
+            }
+            return
+        }
+
+        containerView.frame = targetBounds
+        imageView.frame = metrics.imageFrame
+        scroll(to: metrics.targetOrigin)
+        updateCursor()
+    }
+
+    private func layoutMetrics() -> (containerSize: CGSize, imageFrame: CGRect, targetOrigin: CGPoint) {
         let scaledSize = CGSize(
             width: max(120, baseImageSize.width * currentScale),
             height: max(120, baseImageSize.height * currentScale)
@@ -1045,15 +1236,19 @@ private final class MagnifiableImageScrollView: NSScrollView {
             width: max(visibleSize.width, scaledSize.width),
             height: max(visibleSize.height, scaledSize.height)
         )
-
-        containerView.frame = CGRect(origin: .zero, size: containerSize)
-        imageView.frame = CGRect(
+        let imageFrame = CGRect(
             x: max(0, (containerSize.width - scaledSize.width) / 2),
             y: max(0, (containerSize.height - scaledSize.height) / 2),
             width: scaledSize.width,
             height: scaledSize.height
         )
-        updateCursor()
+        let targetOrigin: CGPoint
+        if currentScale <= 1.001 {
+            targetOrigin = .zero
+        } else {
+            targetOrigin = clampedContentOrigin(contentView.bounds.origin)
+        }
+        return (containerSize, imageFrame, targetOrigin)
     }
 
     private func fittedImageSize(imageSize: CGSize, availableSize: CGSize) -> CGSize {
@@ -1102,6 +1297,37 @@ private final class MagnifiableImageScrollView: NSScrollView {
         }
     }
 
+    private func handleDoubleClick(at location: CGPoint) {
+        currentScale = currentScale > 1.01 ? 1 : 3
+        onDoubleClickZoom?(currentScale)
+        let metrics = layoutMetrics()
+        let targetOrigin: CGPoint
+
+        if currentScale > 1.01 {
+            let visibleSize = contentView.bounds.size
+            targetOrigin = clampedContentOrigin(
+                CGPoint(
+                    x: location.x - (visibleSize.width / 2),
+                    y: location.y - (visibleSize.height / 2)
+                )
+            )
+        } else {
+            targetOrigin = .zero
+        }
+
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = 0.18
+            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            containerView.animator().frame = CGRect(origin: .zero, size: metrics.containerSize)
+            imageView.animator().frame = metrics.imageFrame
+            contentView.animator().setBoundsOrigin(targetOrigin)
+        } completionHandler: { [weak self] in
+            guard let self else { return }
+            self.reflectScrolledClipView(self.contentView)
+            self.updateCursor()
+        }
+    }
+
     private func scroll(to origin: CGPoint) {
         contentView.scroll(to: origin)
         reflectScrolledClipView(contentView)
@@ -1135,6 +1361,7 @@ private final class MagnifiableImageScrollView: NSScrollView {
 
 private final class PannableImageContainerView: NSView {
     var onPan: ((CGPoint, NSGestureRecognizer.State) -> Void)?
+    var onDoubleClick: ((CGPoint) -> Void)?
     var cursor: NSCursor = .arrow
 
     private lazy var panGestureRecognizer: NSPanGestureRecognizer = {
@@ -1143,14 +1370,22 @@ private final class PannableImageContainerView: NSView {
         return gesture
     }()
 
+    private lazy var doubleClickGestureRecognizer: NSClickGestureRecognizer = {
+        let gesture = NSClickGestureRecognizer(target: self, action: #selector(handleDoubleClickGesture(_:)))
+        gesture.numberOfClicksRequired = 2
+        return gesture
+    }()
+
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
         addGestureRecognizer(panGestureRecognizer)
+        addGestureRecognizer(doubleClickGestureRecognizer)
     }
 
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         addGestureRecognizer(panGestureRecognizer)
+        addGestureRecognizer(doubleClickGestureRecognizer)
     }
 
     override func resetCursorRects() {
@@ -1168,6 +1403,12 @@ private final class PannableImageContainerView: NSView {
             gesture.view?.window?.invalidateCursorRects(for: self)
         }
         onPan?(translation, gesture.state)
+    }
+
+    @objc
+    private func handleDoubleClickGesture(_ gesture: NSClickGestureRecognizer) {
+        guard gesture.state == .ended else { return }
+        onDoubleClick?(gesture.location(in: self))
     }
 }
 
@@ -1854,6 +2095,56 @@ private struct PreviewHeaderAction: Identifiable {
     let action: () -> Void
 
     var id: String { "\(systemImage)|\(title)" }
+}
+
+@MainActor
+private final class GlobalToastModel: ObservableObject {
+    @Published var message: String = ""
+}
+
+private struct GlobalToastView: View {
+    @ObservedObject var model: GlobalToastModel
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+
+            Text(model.message)
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .foregroundStyle(foregroundColor)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 13)
+        .fixedSize()
+        .background(backgroundColor)
+        .clipShape(Capsule(style: .continuous))
+        .overlay {
+            Capsule(style: .continuous)
+                .stroke(borderColor, lineWidth: 1)
+        }
+    }
+
+    private var backgroundColor: Color {
+        if colorScheme == .dark {
+            return Color(red: 0.12, green: 0.13, blue: 0.16).opacity(0.96)
+        }
+        return Color.white.opacity(0.96)
+    }
+
+    private var borderColor: Color {
+        if colorScheme == .dark {
+            return Color.white.opacity(0.08)
+        }
+        return Color.black.opacity(0.06)
+    }
+
+    private var foregroundColor: Color {
+        colorScheme == .dark ? Color.white.opacity(0.96) : Color.black.opacity(0.82)
+    }
 }
 
 private struct PreviewHeaderActionBar: View {

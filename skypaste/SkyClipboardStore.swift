@@ -172,9 +172,11 @@ final class ClipboardStore: ObservableObject {
     private let settings: AppSettings
     private let database: ClipboardDatabase?
     private let filterQueue = DispatchQueue(label: "com.huaibor.skypaste.search-filter", qos: .userInitiated)
+    private let databaseWriteQueue = DispatchQueue(label: "com.huaibor.skypaste.database-write", qos: .utility)
     private var cancellables = Set<AnyCancellable>()
     private var filterWorkItem: DispatchWorkItem?
     private var filterGeneration: Int = 0
+    private var suppressNextItemsFilterUpdate = false
 
     init(settings: AppSettings) {
         self.settings = settings
@@ -207,7 +209,12 @@ final class ClipboardStore: ObservableObject {
 
         $items
             .sink { [weak self] items in
-                self?.updateFilteredItems(items: items, query: self?.appliedSearchText ?? "")
+                guard let self else { return }
+                if self.suppressNextItemsFilterUpdate {
+                    self.suppressNextItemsFilterUpdate = false
+                    return
+                }
+                self.updateFilteredItems(items: items, query: self.appliedSearchText)
             }
             .store(in: &cancellables)
 
@@ -326,7 +333,7 @@ final class ClipboardStore: ObservableObject {
             }
         }
 
-        items.removeAll { $0.id == itemID }
+        replaceItemsForImmediateDisplay(items.filter { $0.id != itemID })
     }
 
     func deleteAllItems(onDay day: Date) {
@@ -334,15 +341,25 @@ final class ClipboardStore: ObservableObject {
         let start = calendar.startOfDay(for: day)
         guard let end = calendar.date(byAdding: .day, value: 1, to: start) else { return }
 
-        items.removeAll { item in
-            item.createdAt >= start && item.createdAt < end
+        var idsToDelete: [UUID] = []
+        let remainingItems = items.filter { item in
+            let shouldDelete = item.createdAt >= start && item.createdAt < end
+            if shouldDelete {
+                idsToDelete.append(item.id)
+            }
+            return !shouldDelete
         }
+        guard !idsToDelete.isEmpty else { return }
 
-        guard let database else { return }
-        do {
-            try database.deleteCreatedAtRange(from: start, to: end)
-        } catch {
-            print("[ClipboardStore] Failed to delete day items: \(error)")
+        replaceItemsForImmediateDisplay(remainingItems)
+
+        guard let fileURL = database?.fileURL else { return }
+        databaseWriteQueue.async {
+            do {
+                try ClipboardDatabase.deleteItems(ids: idsToDelete, in: fileURL)
+            } catch {
+                print("[ClipboardStore] Failed to delete day items: \(error)")
+            }
         }
     }
 
@@ -358,12 +375,25 @@ final class ClipboardStore: ObservableObject {
         filteredItemsByFilter[filter] ?? []
     }
 
+    private func replaceItemsForImmediateDisplay(_ newItems: [ClipboardItem]) {
+        suppressNextItemsFilterUpdate = true
+        items = newItems
+        updateFilteredItems(items: newItems, query: appliedSearchText)
+    }
+
     private func shouldIgnoreCurrentFrontApp() -> Bool {
-        guard let front = NSWorkspace.shared.frontmostApplication?.bundleIdentifier else {
+        guard let app = NSWorkspace.shared.frontmostApplication else {
             return false
         }
 
-        return settings.ignoredBundleIDs.contains(front)
+        let candidates = [
+            app.bundleIdentifier,
+            app.localizedName
+        ]
+            .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .map { $0.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current) }
+
+        return candidates.contains { settings.ignoredApps.contains($0) }
     }
 
     private func attachCurrentFrontmostSourceApp(to item: ClipboardItem) -> ClipboardItem {

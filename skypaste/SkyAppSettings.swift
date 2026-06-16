@@ -245,12 +245,13 @@ final class AppSettings: ObservableObject {
         setFilterOrder(newValue)
     }
 
-    var ignoredBundleIDs: Set<String> {
+    var ignoredApps: Set<String> {
         let separators = CharacterSet(charactersIn: ",\n")
         return Set(
             ignoredAppsInput
                 .components(separatedBy: separators)
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .map { $0.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current) }
                 .filter { !$0.isEmpty }
         )
     }

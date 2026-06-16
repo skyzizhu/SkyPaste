@@ -19,13 +19,14 @@
 
 SkyPaste is a simple macOS clipboard manager for text, images, and file URLs, designed for fast menu bar access, searchable history, filters, favorites, and keyboard-driven workflows.
 
-## What's New in 0.2.1
+## What's New in 0.2.2
 
-- Faster search and smoother category switching for large clipboard histories
-- Better support for copied files and folders, including preview, Finder actions, and paste-back compatibility
-- Source app badges for local clipboard items, so you can see where content was copied from
-- Clearer distinction between image content and image files inside the image list
-- Refined settings layout and updated recommended app section
+- Faster list updates with smoother deletion and clipboard browsing
+- Source app filtering with app icons, so you can narrow history by where content was copied from
+- Improved centered copy-success toast with better light and dark theme support
+- Improved day-delete confirmation with localized text, light/dark theme support, and faster deletion feedback
+- Refined image preview with animated zoom, drag navigation, and better fit behavior
+- Restored ignore-app settings with recent source app suggestions
 
 ## Screenshots
 
@@ -49,7 +50,7 @@ SkyPaste is a simple macOS clipboard manager for text, images, and file URLs, de
 
 - Clipboard history for text, images, and file URLs
 - Menu bar popover for quick access
-- Searchable main panel
+- Searchable main panel with source app filtering
 - Filters: All, Text, Image, Files, Folders, URL, Code, Favorites
 - Day-based grouped history sections
 - Favorites with pinned display at the top
@@ -60,7 +61,7 @@ SkyPaste is a simple macOS clipboard manager for text, images, and file URLs, de
 - Image file items are visually distinguished from copied image content
 - `Cmd+C` to copy the currently selected item
 - `Enter` to paste the currently selected item
-- `Cmd+1...9` to quick-paste the first 9 items
+- `Cmd+1...9` to quick-copy the first 9 items
 - Customizable global hotkey to open the panel
 - Built-in multi-language support: English, Simplified Chinese, Traditional Chinese, Japanese, Korean, French
 - Appearance options: follow system, light mode, or dark mode
@@ -122,6 +123,7 @@ Open `Preferences` from the menu bar app to configure:
 - global hotkey
 - history limit
 - iCloud sync
+- ignore apps by name or bundle ID, with recent source app suggestions
 - launch at login
 - recommended companion app entry
 
@@ -153,13 +155,14 @@ To support automatic paste back into the previous app, macOS may request Accessi
 
 SkyPaste 是一个 macOS 剪贴板管理工具，支持文本、图片、文件地址的历史记录、快速检索、菜单栏操作和快捷键调用。
 
-### 0.2.1 更新内容
+### 0.2.2 更新内容
 
-- 优化搜索性能，在较多历史记录下输入和切换分类更顺畅
-- 增强文件与目录复制支持，补齐预览、Finder 操作与重新粘贴兼容性
-- 本地复制内容增加来源应用标识，便于识别内容来自哪个应用
-- 在图片列表中清晰区分“图片内容”和“图片文件”
-- 调整偏好设置布局，并更新底部推荐应用区域
+- 优化列表刷新与删除反馈，浏览历史记录更顺畅
+- 新增来源应用筛选和应用图标展示，可按复制来源快速过滤内容
+- 优化屏幕中间的复制成功提示，并兼容浅色和深色主题
+- 优化按天删除确认弹框，支持多语言、浅色/深色主题，并提升删除反馈速度
+- 改进图片详情预览，支持更顺滑的缩放动画、拖动浏览与适应显示
+- 恢复忽略应用设置，并增加最近来源应用建议
 
 ### 截图
 
@@ -176,7 +179,7 @@ SkyPaste 是一个 macOS 剪贴板管理工具，支持文本、图片、文件�
 
 - 监听并保存剪贴板历史：文本、图片、文件 URL
 - 菜单栏弹窗查看历史记录
-- 主面板搜索与筛选
+- 主面板搜索与筛选，支持来源应用过滤
 - 分类筛选：全部、文本、图片、文件、目录、URL、代码、收藏
 - 按天分组显示历史记录
 - 收藏功能，支持置顶显示
@@ -187,7 +190,7 @@ SkyPaste 是一个 macOS 剪贴板管理工具，支持文本、图片、文件�
 - 图片列表中可区分复制的图片内容与图片文件
 - `Cmd+C` 复制当前选中项
 - `Enter` 粘贴当前选中项
-- `Cmd+1...9` 快速粘贴前 9 条
+- `Cmd+1...9` 快捷复制前 9 条
 - 全局快捷键呼出面板，可在设置中自定义
 - 内置多语言支持：English、简体中文、繁体中文、日本語、한국어、Français
 - 支持主题切换：跟随系统、浅色模式、深色模式
@@ -239,6 +242,7 @@ open skypaste.xcodeproj
 - 全局快捷键
 - 历史记录上限
 - iCloud 同步
+- 忽略应用支持按应用名称或 bundle ID 过滤，并提供最近来源应用建议
 - 登录时启动
 - 推荐应用入口
 
