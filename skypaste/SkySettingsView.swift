@@ -33,7 +33,6 @@ struct SettingsView: View {
                 hero
                 generalSettingsSection
                 hotKeySection
-                behaviorSection
                 syncSection
                 historySection
                 ignoreAppsSection
@@ -89,6 +88,26 @@ struct SettingsView: View {
                 .pickerStyle(.menu)
                 .frame(width: 220, alignment: .trailing)
             }
+
+            Divider()
+                .padding(.vertical, 0.5)
+
+            SettingsRow(title: L10n.tr("settings.launch_at_login")) {
+                Toggle("", isOn: animatedToggleBinding($settings.launchAtLogin))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
+
+            Divider()
+                .padding(.vertical, 0.5)
+
+            SettingsRow(title: L10n.tr("settings.auto_paste")) {
+                Toggle("", isOn: animatedToggleBinding($settings.autoPasteEnabled))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
+
+            hint(L10n.tr("settings.auto_paste_hint"))
         }
     }
 
@@ -162,31 +181,10 @@ struct SettingsView: View {
         }
     }
 
-    private var behaviorSection: some View {
-        SettingsSection(title: L10n.tr("settings.clipboard")) {
-            SettingsRow(title: L10n.tr("settings.launch_at_login")) {
-                Toggle("", isOn: $settings.launchAtLogin)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-            }
-
-            Divider()
-                .padding(.vertical, 1)
-
-            SettingsRow(title: L10n.tr("settings.auto_paste")) {
-                Toggle("", isOn: $settings.autoPasteEnabled)
-                    .labelsHidden()
-                    .toggleStyle(.switch)
-            }
-
-            hint(L10n.tr("settings.auto_paste_hint"))
-        }
-    }
-
     private var syncSection: some View {
         SettingsSection(title: L10n.tr("settings.sync")) {
             SettingsRow(title: L10n.tr("settings.universal_clipboard")) {
-                Toggle("", isOn: $settings.receiveUniversalClipboardEnabled)
+                Toggle("", isOn: animatedToggleBinding($settings.receiveUniversalClipboardEnabled))
                     .labelsHidden()
                     .toggleStyle(.switch)
             }
@@ -197,10 +195,46 @@ struct SettingsView: View {
                 .padding(.vertical, 1)
 
             SettingsRow(title: L10n.tr("settings.icloud_sync")) {
-                Toggle("", isOn: $settings.iCloudSyncEnabled)
+                Toggle("", isOn: animatedToggleBinding($settings.iCloudSyncEnabled))
                     .labelsHidden()
                     .toggleStyle(.switch)
             }
+
+            if settings.iCloudSyncEnabled {
+                VStack(alignment: .leading, spacing: 10) {
+                    Divider()
+                        .padding(.vertical, 1)
+
+                    SettingsRow(title: L10n.tr("settings.icloud_sync_upload")) {
+                        Toggle("", isOn: animatedToggleBinding($settings.iCloudSyncUploadEnabled))
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                    }
+
+                    Divider()
+                        .padding(.vertical, 1)
+
+                    SettingsRow(title: L10n.tr("settings.icloud_sync_receive")) {
+                        Toggle("", isOn: animatedToggleBinding($settings.iCloudSyncReceiveEnabled))
+                            .labelsHidden()
+                            .toggleStyle(.switch)
+                    }
+
+                    hint(L10n.tr("settings.icloud_sync_rules_hint"))
+                }
+                .padding(.leading, 18)
+            }
+
+            Divider()
+                .padding(.vertical, 1)
+
+            SettingsRow(title: L10n.tr("settings.privacy_filter")) {
+                Toggle("", isOn: animatedToggleBinding($settings.privacyContentFilteringEnabled))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
+
+            hint(L10n.tr("settings.privacy_filter_hint"))
         }
     }
 
@@ -409,7 +443,7 @@ struct SettingsView: View {
     }
 
     private func modifierToggle(_ title: String, isOn: Binding<Bool>) -> some View {
-        Toggle(isOn: isOn) {
+        Toggle(isOn: animatedToggleBinding(isOn)) {
             Text(title)
                 .font(.system(size: 12, weight: .medium, design: .rounded))
         }
@@ -450,6 +484,17 @@ struct SettingsView: View {
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func animatedToggleBinding(_ binding: Binding<Bool>) -> Binding<Bool> {
+        Binding(
+            get: { binding.wrappedValue },
+            set: { newValue in
+                withAnimation(.easeInOut(duration: 0.16)) {
+                    binding.wrappedValue = newValue
+                }
+            }
+        )
     }
 
     private func pickerOnlyRow<Content: View>(@ViewBuilder content: () -> Content) -> some View {

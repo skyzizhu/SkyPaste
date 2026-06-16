@@ -50,6 +50,8 @@ struct PanelView: View {
     @State private var selectedSourceAppBundleID: String?
     @State private var sourceAppIcons: [String: NSImage] = [:]
     @State private var presentation = Presentation.empty
+    @State private var isBatchSelectionMode = false
+    @State private var batchSelection = Set<ClipboardItem.ID>()
 
     private func copyTimeText(_ date: Date) -> String {
         L10n.timeText(date)
@@ -134,6 +136,82 @@ struct PanelView: View {
     private func delete(_ item: ClipboardItem) {
         pendingPrimaryAction?.cancel()
         store.deleteItem(item.id)
+        refreshPresentation()
+        selectedID = presentation.orderedItems.first?.id
+    }
+
+    private var selectedBatchItems: [ClipboardItem] {
+        presentation.orderedItems.filter { batchSelection.contains($0.id) }
+    }
+
+    private var batchActionHasSelection: Bool {
+        !batchSelection.isEmpty
+    }
+
+    private var batchFavoriteActionTitle: String {
+        let selectedItems = selectedBatchItems
+        guard !selectedItems.isEmpty else { return L10n.tr("panel.batch_favorite_selected") }
+        return selectedItems.allSatisfy(\.isFavorite)
+            ? L10n.tr("panel.batch_unfavorite_selected")
+            : L10n.tr("panel.batch_favorite_selected")
+    }
+
+    private var batchFavoriteActionValue: Bool {
+        let selectedItems = selectedBatchItems
+        guard !selectedItems.isEmpty else { return true }
+        return !selectedItems.allSatisfy(\.isFavorite)
+    }
+
+    private var allVisibleItemsSelected: Bool {
+        !presentation.orderedItems.isEmpty && batchSelection.count == presentation.orderedItems.count
+    }
+
+    private func toggleBatchSelectionMode() {
+        withAnimation(.easeOut(duration: 0.12)) {
+            isBatchSelectionMode.toggle()
+        }
+
+        pendingPrimaryAction?.cancel()
+
+        if isBatchSelectionMode {
+            if let selectedID {
+                batchSelection = [selectedID]
+            } else {
+                batchSelection.removeAll()
+            }
+        } else {
+            batchSelection.removeAll()
+        }
+    }
+
+    private func toggleBatchSelection(for item: ClipboardItem) {
+        if batchSelection.contains(item.id) {
+            batchSelection.remove(item.id)
+        } else {
+            batchSelection.insert(item.id)
+        }
+        selectedID = item.id
+    }
+
+    private func selectAllVisibleItems() {
+        batchSelection = Set(presentation.orderedItems.map(\.id))
+        selectedID = presentation.orderedItems.first?.id
+    }
+
+    private func clearBatchSelection() {
+        batchSelection.removeAll()
+    }
+
+    private func applyBatchFavorite() {
+        guard batchActionHasSelection else { return }
+        store.setFavorite(batchFavoriteActionValue, for: batchSelection)
+        refreshPresentation()
+    }
+
+    private func deleteSelectedItems() {
+        guard batchActionHasSelection else { return }
+        store.deleteItems(batchSelection)
+        batchSelection.removeAll()
         refreshPresentation()
         selectedID = presentation.orderedItems.first?.id
     }
@@ -316,6 +394,7 @@ struct PanelView: View {
             displayedFilters = settings.orderedFilters
         }
         .onChange(of: presentation.orderedItems.map(\.id)) { _, ids in
+            batchSelection = batchSelection.intersection(Set(ids))
             guard let selectedID else {
                 self.selectedID = ids.first
                 return
@@ -471,6 +550,28 @@ struct PanelView: View {
             }
             .buttonStyle(.plain)
             .help(L10n.tr("menu.search"))
+
+            Button {
+                toggleBatchSelectionMode()
+            } label: {
+                Image(systemName: isBatchSelectionMode ? "checklist.checked" : "checklist")
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(isBatchSelectionMode ? searchButtonForeground : Color.primary.opacity(colorScheme == .dark ? 0.84 : 0.76))
+                    .frame(width: 24, height: 24)
+                    .background(
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .fill(isBatchSelectionMode ? searchButtonFill : actionButtonFill)
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .stroke(
+                                isBatchSelectionMode ? searchButtonStroke : Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.06),
+                                lineWidth: colorScheme == .dark ? 1 : 0.9
+                            )
+                    }
+            }
+            .buttonStyle(.plain)
+            .help(L10n.tr("panel.batch_select"))
 
             Button {
                 onClose()
@@ -863,6 +964,14 @@ struct PanelView: View {
     }
 
     private var footer: some View {
+        if isBatchSelectionMode {
+            return AnyView(batchFooter)
+        }
+
+        return AnyView(defaultFooter)
+    }
+
+    private var defaultFooter: some View {
         HStack(spacing: 10) {
             actionButton(title: settings.autoPasteEnabled ? L10n.tr("panel.paste_selected") : L10n.tr("menu.copy_selected")) {
                 performPrimaryAction()
@@ -876,6 +985,34 @@ struct PanelView: View {
             .disabled(selectedID == nil)
 
             Spacer(minLength: 0)
+        }
+    }
+
+    private var batchFooter: some View {
+        HStack(spacing: 10) {
+            actionButton(title: allVisibleItemsSelected ? L10n.tr("panel.batch_clear_selection") : L10n.tr("panel.batch_select_all")) {
+                if allVisibleItemsSelected {
+                    clearBatchSelection()
+                } else {
+                    selectAllVisibleItems()
+                }
+            }
+
+            actionButton(title: batchFavoriteActionTitle) {
+                applyBatchFavorite()
+            }
+            .disabled(!batchActionHasSelection)
+
+            actionButton(title: L10n.tr("panel.batch_delete_selected")) {
+                deleteSelectedItems()
+            }
+            .disabled(!batchActionHasSelection)
+
+            Spacer(minLength: 0)
+
+            actionButton(title: L10n.tr("panel.batch_done")) {
+                toggleBatchSelectionMode()
+            }
         }
     }
 
@@ -934,6 +1071,7 @@ struct PanelView: View {
     }
 
     private func performPrimaryAction() {
+        guard !isBatchSelectionMode else { return }
         guard let selected = presentation.orderedItems.first(where: { $0.id == selectedID }) else { return }
         if settings.autoPasteEnabled {
             onPick(selected)
@@ -944,11 +1082,13 @@ struct PanelView: View {
     }
 
     private func copySelected() {
+        guard !isBatchSelectionMode else { return }
         guard let selected = presentation.orderedItems.first(where: { $0.id == selectedID }) else { return }
         onCopy(selected)
     }
 
     private func copyItemAtIndex(_ index: Int) {
+        guard !isBatchSelectionMode else { return }
         guard index >= 0, index < presentation.orderedItems.count else { return }
         let item = presentation.orderedItems[index]
         selectedID = item.id
@@ -980,7 +1120,8 @@ struct PanelView: View {
         ClipboardRowView(
             item: item,
             timeText: copyTimeText(item.createdAt),
-            isSelected: selectedID == item.id,
+            isSelected: isBatchSelectionMode ? batchSelection.contains(item.id) : selectedID == item.id,
+            showsSelectionIndicator: isBatchSelectionMode,
             style: .popover,
             iconSize: 44,
             onPrimaryMouseDown: {
@@ -991,12 +1132,12 @@ struct PanelView: View {
                 pendingPrimaryAction?.cancel()
                 selectedID = item.id
             },
-            onPreview: item.isImage ? {
+            onPreview: item.isImage && !isBatchSelectionMode ? {
                 pendingPrimaryAction?.cancel()
                 selectedID = item.id
                 onPreview(item)
             } : nil,
-            onPreviewDoubleTap: item.isImage ? {
+            onPreviewDoubleTap: item.isImage && !isBatchSelectionMode ? {
                 handleRowDoubleTap(item)
             } : nil
         )
@@ -1069,6 +1210,11 @@ struct PanelView: View {
         pendingPrimaryAction?.cancel()
         selectedID = item.id
 
+        if isBatchSelectionMode {
+            toggleBatchSelection(for: item)
+            return
+        }
+
         guard settings.autoPasteEnabled else { return }
 
         let task = DispatchWorkItem {
@@ -1081,6 +1227,10 @@ struct PanelView: View {
     private func handleRowDoubleTap(_ item: ClipboardItem) {
         pendingPrimaryAction?.cancel()
         selectedID = item.id
+        if isBatchSelectionMode {
+            toggleBatchSelection(for: item)
+            return
+        }
         if item.isFileCollection {
             onFileSystemPreview(item)
             return

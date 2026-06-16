@@ -12,6 +12,7 @@ struct ClipboardRowView: View {
     let item: ClipboardItem
     let timeText: String
     var isSelected: Bool = false
+    var showsSelectionIndicator: Bool = false
     var style: Style = .panel
     var iconSize: CGFloat = 40
     var onPrimaryMouseDown: (() -> Void)? = nil
@@ -55,7 +56,7 @@ struct ClipboardRowView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                favoriteBadge
+                trailingBadges
             }
         }
         .padding(.horizontal, horizontalPadding)
@@ -116,12 +117,25 @@ struct ClipboardRowView: View {
     }
 
     @ViewBuilder
-    private var favoriteBadge: some View {
-        if item.isFavorite {
-            Image(systemName: "star.fill")
-                .font(.system(size: 12))
-                .foregroundStyle(Color.yellow)
-                .frame(width: 14, alignment: .center)
+    private var trailingBadges: some View {
+        HStack(spacing: 6) {
+            if item.isFavorite {
+                Image(systemName: "star.fill")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color.yellow)
+                    .frame(width: 14, alignment: .center)
+            }
+
+            if showsSelectionIndicator {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(
+                        isSelected
+                            ? Color.accentColor
+                            : Color.secondary.opacity(colorScheme == .dark ? 0.84 : 0.64)
+                    )
+                    .frame(width: 16, alignment: .center)
+            }
         }
     }
 

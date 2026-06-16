@@ -226,6 +226,7 @@ final class ClipboardStore: ObservableObject {
 
     func add(_ item: ClipboardItem) {
         var item = item
+        guard !shouldFilterSensitiveContent(item) else { return }
         item.isFavorite = preservedFavoriteState(for: item)
         item.isSnippet = false
 
@@ -255,6 +256,7 @@ final class ClipboardStore: ObservableObject {
 
     func addCloudSyncedItem(_ item: ClipboardItem) {
         var item = item
+        guard !shouldFilterSensitiveContent(item) else { return }
         item.isFavorite = preservedFavoriteState(for: item)
         item.isSnippet = false
 
@@ -336,6 +338,23 @@ final class ClipboardStore: ObservableObject {
         replaceItemsForImmediateDisplay(items.filter { $0.id != itemID })
     }
 
+    func deleteItems(_ itemIDs: Set<ClipboardItem.ID>) {
+        guard !itemIDs.isEmpty else { return }
+
+        let remainingItems = items.filter { !itemIDs.contains($0.id) }
+        replaceItemsForImmediateDisplay(remainingItems)
+
+        guard let fileURL = database?.fileURL else { return }
+        let idsToDelete = Array(itemIDs)
+        databaseWriteQueue.async {
+            do {
+                try ClipboardDatabase.deleteItems(ids: idsToDelete, in: fileURL)
+            } catch {
+                print("[ClipboardStore] Failed to delete selected items: \(error)")
+            }
+        }
+    }
+
     func deleteAllItems(onDay day: Date) {
         let calendar = Calendar.current
         let start = calendar.startOfDay(for: day)
@@ -359,6 +378,24 @@ final class ClipboardStore: ObservableObject {
                 try ClipboardDatabase.deleteItems(ids: idsToDelete, in: fileURL)
             } catch {
                 print("[ClipboardStore] Failed to delete day items: \(error)")
+            }
+        }
+    }
+
+    func setFavorite(_ isFavorite: Bool, for itemIDs: Set<ClipboardItem.ID>) {
+        guard !itemIDs.isEmpty else { return }
+
+        for index in items.indices where itemIDs.contains(items[index].id) {
+            items[index].isFavorite = isFavorite
+        }
+
+        guard let fileURL = database?.fileURL else { return }
+        let idsToUpdate = Array(itemIDs)
+        databaseWriteQueue.async {
+            do {
+                try ClipboardDatabase.setFavorites(isFavorite, forIDs: idsToUpdate, in: fileURL)
+            } catch {
+                print("[ClipboardStore] Failed to update selected favorites: \(error)")
             }
         }
     }
@@ -394,6 +431,14 @@ final class ClipboardStore: ObservableObject {
             .map { $0.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current) }
 
         return candidates.contains { settings.ignoredApps.contains($0) }
+    }
+
+    private func shouldFilterSensitiveContent(_ item: ClipboardItem) -> Bool {
+        guard settings.privacyContentFilteringEnabled else {
+            return false
+        }
+
+        return SensitiveClipboardContentFilter.shouldExclude(item)
     }
 
     private func attachCurrentFrontmostSourceApp(to item: ClipboardItem) -> ClipboardItem {
@@ -633,6 +678,141 @@ final class ClipboardStore: ObservableObject {
     private func enforceHistoryLimit(limit: Int? = nil) {
         let resolvedLimit = limit ?? settings.historyLimit
         items = Array(items.prefix(resolvedLimit))
+    }
+}
+
+enum SensitiveClipboardContentFilter {
+    private static let knownPasswordManagerFragments = [
+        "1password",
+        "agilebits",
+        "bitwarden",
+        "lastpass",
+        "dashlane",
+        "keeper",
+        "enpass",
+        "strongbox",
+        "keychain access"
+    ]
+
+    private static let tokenPrefixes = [
+        "sk-",
+        "rk-",
+        "ghp_",
+        "github_pat_",
+        "xoxb-",
+        "xoxp-",
+        "ya29.",
+        "akia",
+        "aiza",
+        "bearer "
+    ]
+
+    static func shouldExclude(_ item: ClipboardItem) -> Bool {
+        guard case .text(let rawText) = item.content else {
+            return false
+        }
+
+        let text = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else {
+            return false
+        }
+
+        if matchesKnownPasswordManager(item.sourceApp) {
+            return true
+        }
+
+        return isVerificationCode(text)
+            || isBankCardNumber(text)
+            || isSensitiveToken(text)
+    }
+
+    private static func matchesKnownPasswordManager(_ sourceApp: ClipboardSourceApp?) -> Bool {
+        guard let sourceApp else { return false }
+        let haystack = [sourceApp.bundleID, sourceApp.name]
+            .map {
+                $0.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: .current)
+            }
+            .joined(separator: " ")
+
+        return knownPasswordManagerFragments.contains { haystack.contains($0) }
+    }
+
+    private static func isVerificationCode(_ text: String) -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if matches(trimmed, pattern: #"^\d{4,8}$"#) {
+            return true
+        }
+
+        if matches(trimmed, pattern: #"^[A-Z0-9]{4,8}$"#) {
+            return true
+        }
+
+        return matches(
+            trimmed,
+            pattern: #"(?i)(验证码|驗證碼|verification code|security code|otp|one[- ]time password)[^0-9A-Z]{0,12}[0-9A-Z]{4,8}"#
+        )
+    }
+
+    private static func isBankCardNumber(_ text: String) -> Bool {
+        let digits = text.unicodeScalars
+            .filter(CharacterSet.decimalDigits.contains)
+            .map(String.init)
+            .joined()
+
+        guard (13...19).contains(digits.count), luhnCheck(digits) else {
+            return false
+        }
+
+        let allowed = CharacterSet(charactersIn: "0123456789 -")
+        return text.unicodeScalars.allSatisfy { allowed.contains($0) || CharacterSet.whitespacesAndNewlines.contains($0) }
+    }
+
+    private static func isSensitiveToken(_ text: String) -> Bool {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let lowercased = trimmed.lowercased()
+
+        if tokenPrefixes.contains(where: { lowercased.hasPrefix($0) }) {
+            return true
+        }
+
+        if matches(trimmed, pattern: #"^-----BEGIN [A-Z ]*PRIVATE KEY-----"#) {
+            return true
+        }
+
+        if matches(trimmed, pattern: #"^[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+\.[A-Za-z0-9\-_]+$"#) {
+            return true
+        }
+
+        if matches(lowercased, pattern: #"(?i)(api[_ -]?key|access[_ -]?token|refresh[_ -]?token|secret[_ -]?key|client[_ -]?secret|private[_ -]?key|token)[:= ]+[A-Za-z0-9_\-\/+=]{12,}"#) {
+            return true
+        }
+
+        return matches(trimmed, pattern: #"^[A-Za-z0-9_\-\/+=]{32,}$"#)
+    }
+
+    private static func matches(_ text: String, pattern: String) -> Bool {
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            return false
+        }
+
+        let range = NSRange(text.startIndex..<text.endIndex, in: text)
+        return regex.firstMatch(in: text, options: [], range: range) != nil
+    }
+
+    private static func luhnCheck(_ digits: String) -> Bool {
+        var sum = 0
+        let reversedDigits = digits.reversed().compactMap { $0.wholeNumberValue }
+
+        for (index, digit) in reversedDigits.enumerated() {
+            if index.isMultiple(of: 2) {
+                sum += digit
+            } else {
+                let doubled = digit * 2
+                sum += doubled > 9 ? doubled - 9 : doubled
+            }
+        }
+
+        return sum > 0 && sum.isMultiple(of: 10)
     }
 }
 
