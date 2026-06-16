@@ -183,6 +183,31 @@ struct SkyPasteCoreModelTests {
         #expect(imageFileItem.subtitle == L10n.format("clipboard.subtitle.image_file_format", "PNG"))
     }
 
+    @Test func sensitiveClipboardFilterDetectsCodesCardsAndTokens() {
+        let otpItem = ClipboardItem(content: .text("123456"), fingerprint: "otp")
+        let cardItem = ClipboardItem(content: .text("4242 4242 4242 4242"), fingerprint: "card")
+        let tokenItem = ClipboardItem(content: .text("sk-1234567890abcdefghijklmnop"), fingerprint: "token")
+
+        #expect(SensitiveClipboardContentFilter.shouldExclude(otpItem))
+        #expect(SensitiveClipboardContentFilter.shouldExclude(cardItem))
+        #expect(SensitiveClipboardContentFilter.shouldExclude(tokenItem))
+    }
+
+    @Test func sensitiveClipboardFilterDetectsKnownPasswordManagerApps() {
+        let item = ClipboardItem(
+            id: UUID(),
+            createdAt: Date(),
+            content: .text("plain-text-copy"),
+            fingerprint: "pwd-app",
+            source: .local,
+            sourceApp: ClipboardSourceApp(bundleID: "com.1password.1password", name: "1Password"),
+            isFavorite: false,
+            isSnippet: false
+        )
+
+        #expect(SensitiveClipboardContentFilter.shouldExclude(item))
+    }
+
     @Test func clipboardFilterOrderNormalizationKeepsOnlyReorderableItems() {
         let normalized = ClipboardFilter.normalizedReorderableOrder([
             .url,
@@ -442,6 +467,32 @@ struct SkyPasteCoreModelTests {
         #expect(candidates.map(\.fingerprint) == ["txt:oldest", "txt:newest"])
     }
 
+    @Test func cloudSyncMissingUploadCandidatesExcludeExistingRemoteRecords() {
+        let now = Date()
+        let first = ClipboardItem(
+            id: UUID(),
+            createdAt: now.addingTimeInterval(-20),
+            content: .text("First"),
+            fingerprint: "txt:first",
+            source: .local
+        )
+        let second = ClipboardItem(
+            id: UUID(),
+            createdAt: now,
+            content: .text("Second"),
+            fingerprint: "txt:second",
+            source: .local
+        )
+
+        let existing = Set([SkyCloudClipboardSchema.recordName(for: first.fingerprint)])
+        let candidates = CloudClipboardSyncPolicy.missingUploadCandidates(
+            from: [second, first],
+            existingRecordNames: existing
+        )
+
+        #expect(candidates.map(\.fingerprint) == ["txt:second"])
+    }
+
     @Test func cloudSyncRecordNameIsStablePerFingerprint() {
         let first = SkyCloudClipboardSchema.recordName(for: "txt:hello")
         let second = SkyCloudClipboardSchema.recordName(for: "txt:hello")
@@ -460,6 +511,30 @@ struct SkyPasteCoreModelTests {
         #expect(predicateFormat.contains(SkyCloudClipboardSchema.Field.createdAt))
         #expect(!predicateFormat.localizedCaseInsensitiveContains("recordName"))
         #expect(query.sortDescriptors?.first?.key == SkyCloudClipboardSchema.Field.createdAt)
+    }
+
+    @Test func cloudSyncSessionCursorTracksNewestFetchedRecord() {
+        let older = Date(timeIntervalSince1970: 1_700_000_000)
+        let newer = older.addingTimeInterval(42)
+
+        let sessionCursor = CloudClipboardSyncPolicy.updatedFetchSessionCursor(
+            current: older,
+            ingesting: newer
+        )
+
+        #expect(sessionCursor == newer)
+    }
+
+    @Test func cloudSyncFinalCursorAdvancesOnlyAfterSuccessfulFetchCompletion() {
+        let previous = Date(timeIntervalSince1970: 1_700_000_000)
+        let fetchedMax = previous.addingTimeInterval(120)
+
+        #expect(
+            CloudClipboardSyncPolicy.finalizedFetchCursor(previous: previous, fetchedMax: nil) == previous
+        )
+        #expect(
+            CloudClipboardSyncPolicy.finalizedFetchCursor(previous: previous, fetchedMax: fetchedMax) == fetchedMax
+        )
     }
 
     @Test func searchQueryMatchesFullTextAndStructuredTokens() {

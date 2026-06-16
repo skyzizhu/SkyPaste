@@ -350,6 +350,52 @@ final class ClipboardDatabase {
         }
     }
 
+    static func setFavorites(_ isFavorite: Bool, forIDs ids: [UUID], in fileURL: URL) throws {
+        guard !ids.isEmpty else { return }
+
+        var db: OpaquePointer?
+        if sqlite3_open(fileURL.path, &db) != SQLITE_OK {
+            let message = String(cString: sqlite3_errmsg(db))
+            sqlite3_close(db)
+            throw ClipboardDatabaseError.openFailed(message)
+        }
+        defer { sqlite3_close(db) }
+
+        guard sqlite3_exec(db, "BEGIN IMMEDIATE TRANSACTION;", nil, nil, nil) == SQLITE_OK else {
+            throw ClipboardDatabaseError.stepFailed(String(cString: sqlite3_errmsg(db)))
+        }
+
+        do {
+            var statement: OpaquePointer?
+            let sql = "UPDATE clipboard_items SET is_favorite = ? WHERE id = ?;"
+
+            guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+                throw ClipboardDatabaseError.prepareFailed(String(cString: sqlite3_errmsg(db)))
+            }
+            defer { sqlite3_finalize(statement) }
+
+            for id in ids {
+                sqlite3_reset(statement)
+                sqlite3_clear_bindings(statement)
+                sqlite3_bind_int(statement, 1, isFavorite ? 1 : 0)
+                _ = id.uuidString.withCString { pointer in
+                    sqlite3_bind_text(statement, 2, pointer, -1, sqliteTransient)
+                }
+
+                guard sqlite3_step(statement) == SQLITE_DONE else {
+                    throw ClipboardDatabaseError.stepFailed(String(cString: sqlite3_errmsg(db)))
+                }
+            }
+
+            guard sqlite3_exec(db, "COMMIT;", nil, nil, nil) == SQLITE_OK else {
+                throw ClipboardDatabaseError.stepFailed(String(cString: sqlite3_errmsg(db)))
+            }
+        } catch {
+            _ = sqlite3_exec(db, "ROLLBACK;", nil, nil, nil)
+            throw error
+        }
+    }
+
     private func removeByFingerprint(_ fingerprint: String) throws {
         var statement: OpaquePointer?
         let sql = "DELETE FROM clipboard_items WHERE fingerprint = ?;"

@@ -39,9 +39,28 @@ enum CloudClipboardSyncPolicy {
             .sorted { $0.createdAt < $1.createdAt }
     }
 
+    static func missingUploadCandidates(
+        from items: [ClipboardItem],
+        existingRecordNames: Set<String>
+    ) -> [ClipboardItem] {
+        backfillUploadCandidates(from: items).filter { item in
+            !existingRecordNames.contains(SkyCloudClipboardSchema.recordName(for: item.fingerprint))
+        }
+    }
+
     static func shouldApplyIncoming(_ incoming: ClipboardItem, over existing: ClipboardItem?) -> Bool {
         guard let existing else { return true }
         return incoming.createdAt > existing.createdAt
+    }
+
+    static func updatedFetchSessionCursor(current: Date?, ingesting createdAt: Date) -> Date {
+        max(current ?? createdAt, createdAt)
+    }
+
+    static func finalizedFetchCursor(previous: Date?, fetchedMax: Date?) -> Date? {
+        guard let fetchedMax else { return previous }
+        guard let previous else { return fetchedMax }
+        return max(previous, fetchedMax)
     }
 }
 
@@ -64,9 +83,16 @@ final class CloudClipboardSyncManager: ObservableObject {
     private var isFetching = false
     private var pendingUploadFingerprints = Set<String>()
     private var lastFetchedCreatedAt: Date?
+    private var fetchSessionMaxCreatedAt: Date?
     private var activeFetchOperation: CKQueryOperation?
     private var activeUploadOperations: [String: CKModifyRecordsOperation] = [:]
+    private var activeBackfillTask: Task<Void, Never>?
     private var syncSessionID = UUID()
+    private let defaults = UserDefaults.standard
+
+    private enum Keys {
+        static let lastFetchedCreatedAt = "cloudSync.lastFetchedCreatedAt"
+    }
 
     init(store: ClipboardStore, settings: AppSettings) {
         self.store = store
@@ -86,12 +112,23 @@ final class CloudClipboardSyncManager: ObservableObject {
         }
 
         status = .syncing
-        backfillExistingLocalItems()
-        fetchNow()
-        timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
-            Task { @MainActor in
-                self?.fetchNow()
+        lastFetchedCreatedAt = persistedFetchCursor
+
+        if settings.iCloudSyncUploadEnabled {
+            activeBackfillTask = Task { [weak self] in
+                await self?.backfillExistingLocalItems()
             }
+        }
+
+        if settings.iCloudSyncReceiveEnabled {
+            fetchNow()
+            timer = Timer.scheduledTimer(withTimeInterval: 10, repeats: true) { [weak self] _ in
+                Task { @MainActor in
+                    self?.fetchNow()
+                }
+            }
+        } else {
+            markSynced()
         }
 
         if let timer {
@@ -103,6 +140,8 @@ final class CloudClipboardSyncManager: ObservableObject {
         syncSessionID = UUID()
         timer?.invalidate()
         timer = nil
+        activeBackfillTask?.cancel()
+        activeBackfillTask = nil
         activeFetchOperation?.cancel()
         activeFetchOperation = nil
         activeUploadOperations.values.forEach { $0.cancel() }
@@ -110,11 +149,13 @@ final class CloudClipboardSyncManager: ObservableObject {
         isFetching = false
         pendingUploadFingerprints.removeAll()
         lastFetchedCreatedAt = nil
+        fetchSessionMaxCreatedAt = nil
         status = .disabled
     }
 
     func uploadLocalItemIfNeeded(_ item: ClipboardItem) {
         guard settings.iCloudSyncEnabled else { return }
+        guard settings.iCloudSyncUploadEnabled else { return }
         guard CloudClipboardSyncPolicy.shouldUpload(item) else { return }
         guard ensureCloudKitAvailability(), let database else { return }
         guard pendingUploadFingerprints.insert(item.fingerprint).inserted else { return }
@@ -162,6 +203,11 @@ final class CloudClipboardSyncManager: ObservableObject {
             return
         }
 
+        guard settings.iCloudSyncReceiveEnabled else {
+            markSynced()
+            return
+        }
+
         guard !isFetching else { return }
 
         guard ensureCloudKitAvailability() else {
@@ -173,9 +219,10 @@ final class CloudClipboardSyncManager: ObservableObject {
     }
 
     func fetchNow() {
-        guard settings.iCloudSyncEnabled, !isFetching, let database else { return }
+        guard settings.iCloudSyncEnabled, settings.iCloudSyncReceiveEnabled, !isFetching, let database else { return }
         isFetching = true
         status = .syncing
+        fetchSessionMaxCreatedAt = nil
 
         let query = Self.makeFetchQuery(since: lastFetchedCreatedAt)
         let operation = CKQueryOperation(query: query)
@@ -210,9 +257,11 @@ final class CloudClipboardSyncManager: ObservableObject {
                 case .success(let cursor?):
                     self.fetch(cursor: cursor, sessionID: sessionID)
                 case .success(nil):
+                    self.completeFetchSession()
                     self.markSynced()
                 case .failure(let error):
                     guard !Self.isCancellationError(error) else { return }
+                    self.fetchSessionMaxCreatedAt = nil
                     self.status = .error(error.localizedDescription)
                 }
             }
@@ -240,7 +289,7 @@ final class CloudClipboardSyncManager: ObservableObject {
     }
 
     private func fetch(cursor: CKQueryOperation.Cursor, sessionID: UUID) {
-        guard settings.iCloudSyncEnabled, !isFetching, let database else { return }
+        guard settings.iCloudSyncEnabled, settings.iCloudSyncReceiveEnabled, !isFetching, let database else { return }
         isFetching = true
         status = .syncing
 
@@ -275,9 +324,11 @@ final class CloudClipboardSyncManager: ObservableObject {
                 case .success(let nextCursor?):
                     self.fetch(cursor: nextCursor, sessionID: sessionID)
                 case .success(nil):
+                    self.completeFetchSession()
                     self.markSynced()
                 case .failure(let error):
                     guard !Self.isCancellationError(error) else { return }
+                    self.fetchSessionMaxCreatedAt = nil
                     self.status = .error(error.localizedDescription)
                 }
             }
@@ -328,7 +379,10 @@ final class CloudClipboardSyncManager: ObservableObject {
 
         let fingerprint = record[SkyCloudClipboardSchema.Field.fingerprint] as? String ?? "txt:\(trimmed)"
         let createdAt = record[SkyCloudClipboardSchema.Field.createdAt] as? Date ?? record.creationDate ?? Date()
-        lastFetchedCreatedAt = max(lastFetchedCreatedAt ?? createdAt, createdAt)
+        fetchSessionMaxCreatedAt = CloudClipboardSyncPolicy.updatedFetchSessionCursor(
+            current: fetchSessionMaxCreatedAt,
+            ingesting: createdAt
+        )
         let item = ClipboardItem(
             id: UUID(),
             createdAt: createdAt,
@@ -337,6 +391,15 @@ final class CloudClipboardSyncManager: ObservableObject {
             source: .cloudKit
         )
         store.addCloudSyncedItem(item)
+    }
+
+    private func completeFetchSession() {
+        lastFetchedCreatedAt = CloudClipboardSyncPolicy.finalizedFetchCursor(
+            previous: lastFetchedCreatedAt,
+            fetchedMax: fetchSessionMaxCreatedAt
+        )
+        persistedFetchCursor = lastFetchedCreatedAt
+        fetchSessionMaxCreatedAt = nil
     }
 
     private func makeRecord(for item: ClipboardItem) -> CKRecord? {
@@ -352,9 +415,44 @@ final class CloudClipboardSyncManager: ObservableObject {
         return record
     }
 
-    private func backfillExistingLocalItems() {
-        for item in store.itemsEligibleForCloudSync() {
+    private func backfillExistingLocalItems() async {
+        guard settings.iCloudSyncEnabled, settings.iCloudSyncUploadEnabled else { return }
+        guard ensureCloudKitAvailability(), let database else { return }
+
+        let candidates = store.itemsEligibleForCloudSync()
+        guard !candidates.isEmpty else { return }
+
+        let recordIDs = candidates.map { item in
+            CKRecord.ID(recordName: SkyCloudClipboardSchema.recordName(for: item.fingerprint))
+        }
+
+        let candidatesToUpload: [ClipboardItem]
+        do {
+            let existingRecordNames = try await Self.fetchExistingRecordNames(for: recordIDs, in: database)
+            candidatesToUpload = CloudClipboardSyncPolicy.missingUploadCandidates(
+                from: candidates,
+                existingRecordNames: existingRecordNames
+            )
+        } catch {
+            guard !Self.isCancellationError(error) else { return }
+            print("[CloudClipboardSync] Failed to preflight backfill records, falling back to upload checks: \(error)")
+            candidatesToUpload = CloudClipboardSyncPolicy.backfillUploadCandidates(from: candidates)
+        }
+
+        guard settings.iCloudSyncEnabled, settings.iCloudSyncUploadEnabled else { return }
+
+        for item in candidatesToUpload {
+            guard !Task.isCancelled else { return }
             uploadLocalItemIfNeeded(item)
+        }
+    }
+
+    private var persistedFetchCursor: Date? {
+        get {
+            defaults.object(forKey: Keys.lastFetchedCreatedAt) as? Date
+        }
+        set {
+            defaults.set(newValue, forKey: Keys.lastFetchedCreatedAt)
         }
     }
 
@@ -372,6 +470,59 @@ final class CloudClipboardSyncManager: ObservableObject {
                     continuation.resume(throwing: error)
                 }
             }
+            database.add(operation)
+        }
+    }
+
+    private static func fetchExistingRecordNames(
+        for recordIDs: [CKRecord.ID],
+        in database: CKDatabase
+    ) async throws -> Set<String> {
+        guard !recordIDs.isEmpty else { return [] }
+
+        return try await withCheckedThrowingContinuation { continuation in
+            let lock = NSLock()
+            var existingRecordNames = Set<String>()
+            var firstError: Error?
+            let operation = CKFetchRecordsOperation(recordIDs: recordIDs)
+            operation.desiredKeys = []
+
+            operation.perRecordResultBlock = { recordID, result in
+                lock.lock()
+                defer { lock.unlock() }
+
+                switch result {
+                case .success:
+                    existingRecordNames.insert(recordID.recordName)
+                case .failure(let error):
+                    let ckError = error as? CKError
+                    if ckError?.code == .unknownItem {
+                        return
+                    }
+                    if firstError == nil {
+                        firstError = error
+                    }
+                }
+            }
+
+            operation.fetchRecordsResultBlock = { result in
+                lock.lock()
+                let capturedNames = existingRecordNames
+                let capturedError = firstError
+                lock.unlock()
+
+                switch result {
+                case .success:
+                    if let capturedError {
+                        continuation.resume(throwing: capturedError)
+                    } else {
+                        continuation.resume(returning: capturedNames)
+                    }
+                case .failure(let error):
+                    continuation.resume(throwing: error)
+                }
+            }
+
             database.add(operation)
         }
     }

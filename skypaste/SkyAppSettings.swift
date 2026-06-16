@@ -185,6 +185,12 @@ final class AppSettings: ObservableObject {
         }
     }
 
+    @Published var privacyContentFilteringEnabled: Bool {
+        didSet {
+            defaults.set(privacyContentFilteringEnabled, forKey: Keys.privacyContentFilteringEnabled)
+        }
+    }
+
     @Published var receiveUniversalClipboardEnabled: Bool {
         didSet {
             defaults.set(receiveUniversalClipboardEnabled, forKey: Keys.receiveUniversalClipboardEnabled)
@@ -195,6 +201,24 @@ final class AppSettings: ObservableObject {
         didSet {
             defaults.set(iCloudSyncEnabled, forKey: Keys.iCloudSyncEnabled)
             if oldValue != iCloudSyncEnabled {
+                NotificationCenter.default.post(name: .iCloudSyncSettingsChanged, object: nil)
+            }
+        }
+    }
+
+    @Published var iCloudSyncUploadEnabled: Bool {
+        didSet {
+            defaults.set(iCloudSyncUploadEnabled, forKey: Keys.iCloudSyncUploadEnabled)
+            if oldValue != iCloudSyncUploadEnabled {
+                NotificationCenter.default.post(name: .iCloudSyncSettingsChanged, object: nil)
+            }
+        }
+    }
+
+    @Published var iCloudSyncReceiveEnabled: Bool {
+        didSet {
+            defaults.set(iCloudSyncReceiveEnabled, forKey: Keys.iCloudSyncReceiveEnabled)
+            if oldValue != iCloudSyncReceiveEnabled {
                 NotificationCenter.default.post(name: .iCloudSyncSettingsChanged, object: nil)
             }
         }
@@ -280,8 +304,11 @@ final class AppSettings: ObservableObject {
         static let ignoredAppsInput = "settings.ignoredAppsInput"
         static let launchAtLogin = "settings.launchAtLogin"
         static let autoPasteEnabled = "settings.autoPasteEnabled"
+        static let privacyContentFilteringEnabled = "settings.privacyContentFilteringEnabled"
         static let receiveUniversalClipboardEnabled = "settings.receiveUniversalClipboardEnabled"
         static let iCloudSyncEnabled = "settings.iCloudSyncEnabled"
+        static let iCloudSyncUploadEnabled = "settings.iCloudSyncUploadEnabled"
+        static let iCloudSyncReceiveEnabled = "settings.iCloudSyncReceiveEnabled"
         static let languageCode = LanguageCatalog.defaultsKey
         static let appearanceMode = "settings.appearanceMode"
         static let filterOrder = "settings.filterOrder"
@@ -301,8 +328,11 @@ final class AppSettings: ObservableObject {
         self.ignoredAppsInput = defaults.string(forKey: Keys.ignoredAppsInput) ?? ""
         self.launchAtLogin = defaults.object(forKey: Keys.launchAtLogin) as? Bool ?? true
         self.autoPasteEnabled = defaults.object(forKey: Keys.autoPasteEnabled) as? Bool ?? !AppDistribution.isAppStoreBuild
+        self.privacyContentFilteringEnabled = defaults.object(forKey: Keys.privacyContentFilteringEnabled) as? Bool ?? false
         self.receiveUniversalClipboardEnabled = defaults.object(forKey: Keys.receiveUniversalClipboardEnabled) as? Bool ?? true
         self.iCloudSyncEnabled = defaults.object(forKey: Keys.iCloudSyncEnabled) as? Bool ?? false
+        self.iCloudSyncUploadEnabled = defaults.object(forKey: Keys.iCloudSyncUploadEnabled) as? Bool ?? true
+        self.iCloudSyncReceiveEnabled = defaults.object(forKey: Keys.iCloudSyncReceiveEnabled) as? Bool ?? true
         let savedLanguage = defaults.string(forKey: Keys.languageCode) ?? LanguageCatalog.system
         self.languageCode = LanguageCatalog.isSupported(savedLanguage) ? savedLanguage : LanguageCatalog.system
         let savedAppearance = defaults.string(forKey: Keys.appearanceMode) ?? AppAppearanceMode.system.rawValue
