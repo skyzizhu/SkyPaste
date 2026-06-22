@@ -20,13 +20,6 @@ struct MenuBarClipboardView: View {
         static let empty = Presentation(favoriteItems: [], orderedItems: [], daySections: [])
     }
 
-    private struct SourceAppFilterOption: Identifiable, Hashable {
-        let bundleID: String
-        let name: String
-
-        var id: String { bundleID }
-    }
-
     @ObservedObject var store: ClipboardStore
     @ObservedObject var settings: AppSettings
     let onPick: (ClipboardItem) -> Void
@@ -220,15 +213,8 @@ struct MenuBarClipboardView: View {
         store.items(for: selectedFilter)
     }
 
-    private var availableSourceAppOptions: [SourceAppFilterOption] {
-        var seen = Set<String>()
-        return baseItemsForSelectedFilter
-            .compactMap(\.sourceApp)
-            .compactMap { app in
-                guard seen.insert(app.bundleID).inserted else { return nil }
-                return SourceAppFilterOption(bundleID: app.bundleID, name: app.name)
-            }
-            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    private var availableSourceAppOptions: [ClipboardSourceAppOption] {
+        store.sourceAppOptions(for: selectedFilter)
     }
 
     private var filteredItemsForSelectedScope: [ClipboardItem] {
@@ -306,6 +292,10 @@ struct MenuBarClipboardView: View {
             refreshPresentation()
             selectedID = presentation.orderedItems.first?.id
             isSearchVisible = !store.appliedSearchText.isEmpty
+        }
+        .onReceive(store.$items) { _ in
+            validateSourceAppSelection()
+            refreshPresentation()
         }
         .onReceive(store.$filteredItemsByFilter) { _ in
             validateSourceAppSelection()
@@ -454,7 +444,7 @@ struct MenuBarClipboardView: View {
         return app.name
     }
 
-    private var selectedSourceAppOption: SourceAppFilterOption? {
+    private var selectedSourceAppOption: ClipboardSourceAppOption? {
         guard let selectedSourceAppBundleID else { return nil }
         return availableSourceAppOptions.first(where: { $0.bundleID == selectedSourceAppBundleID })
     }
@@ -895,9 +885,9 @@ struct MenuBarClipboardView: View {
             }
 
             VStack(spacing: 0) {
-                ForEach(items.indices, id: \.self) { index in
-                    let item = items[index]
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                     rowView(for: item)
+                        .id("\(item.id.uuidString)-\(item.isFavorite)")
 
                     if index < items.count - 1 {
                         rowSeparator(inset: separatorInset(after: item))
@@ -992,52 +982,77 @@ struct MenuBarClipboardView: View {
                 }
         )
         .contextMenu {
-            Button(L10n.tr("menu.copy")) {
+            Button {
                 selectedID = item.id
                 copy(item)
+            } label: {
+                Label(L10n.tr("menu.copy"), systemImage: "doc.on.doc")
             }
             if item.isFileCollection {
-                Button(item.openActionTitle) {
+                Button {
                     selectedID = item.id
                     onOpenFileItem(item)
+                } label: {
+                    Label(
+                        item.openActionTitle,
+                        systemImage: item.singleFileSystemItemKind == .folder ? "folder" : "doc"
+                    )
                 }
             }
             if item.isSingleFile {
-                Button(L10n.tr("menu.reveal_in_finder")) {
+                Button {
                     selectedID = item.id
                     onOpenContainingFolder(item)
+                } label: {
+                    Label(L10n.tr("menu.reveal_in_finder"), systemImage: "folder.badge.gearshape")
                 }
             }
             if item.isFileCollection {
-                Button(L10n.tr("menu.copy_path")) {
+                Button {
                     selectedID = item.id
                     onCopyFileSystemPath(item)
+                } label: {
+                    Label(L10n.tr("menu.copy_path"), systemImage: "text.alignleft")
                 }
             }
             if item.isURL {
-                Button(L10n.tr("menu.open_in_browser")) {
+                Button {
                     selectedID = item.id
                     onOpenURL(item)
+                } label: {
+                    Label(L10n.tr("menu.open_in_browser"), systemImage: "safari")
                 }
             }
             if item.isImage {
-                Button(L10n.tr("preview.open")) {
+                Button {
                     selectedID = item.id
                     onPreview(item)
+                } label: {
+                    Label(L10n.tr("preview.open"), systemImage: "photo")
                 }
             }
             if item.supportsTextPreview {
-                Button(L10n.tr("preview.text_open")) {
+                Button {
                     selectedID = item.id
                     onTextPreview(item)
+                } label: {
+                    Label(L10n.tr("preview.text_open"), systemImage: "text.viewfinder")
                 }
             }
-            Button(item.isFavorite ? L10n.tr("menu.unfavorite") : L10n.tr("menu.favorite")) {
+            Button {
                 selectedID = item.id
                 store.toggleFavorite(for: item.id)
+                refreshPresentation()
+            } label: {
+                Label(
+                    item.isFavorite ? L10n.tr("menu.unfavorite") : L10n.tr("menu.favorite"),
+                    systemImage: item.isFavorite ? "star.slash" : "star"
+                )
             }
-            Button(L10n.tr("menu.delete"), role: .destructive) {
+            Button(role: .destructive) {
                 delete(item)
+            } label: {
+                Label(L10n.tr("menu.delete"), systemImage: "trash")
             }
         }
     }

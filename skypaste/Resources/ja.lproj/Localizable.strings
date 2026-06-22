@@ -22,6 +22,8 @@
 "section.yesterday" = "昨日";
 "settings.appearance" = "テーマ";
 "settings.general" = "一般設定";
+"settings.library" = "ライブラリ";
+"settings.support" = "サポートとおすすめ";
 "settings.appearance_hint" = "既定ではシステムに従い、必要に応じてライトまたはダークに固定できます。";
 "settings.hotkey" = "ホットキー";
 "settings.language" = "言語";
@@ -61,6 +63,9 @@
 "settings.ignore_apps_hint" = "アプリ名または bundle ID をカンマか改行で区切って入力します。";
 "settings.ignore_apps_example" = "例: Finder, Terminal, com.1password.1password。";
 "settings.ignore_apps_suggestions" = "最近";
+"settings.rate_app" = "SkyPasteを評価";
+"settings.rate_app_subtitle" = "SkyPaste を気に入っていただけたら、App Store で評価とレビューをお願いします。";
+"settings.rate_app_action" = "App Storeで評価";
 "app.title" = "SkyPaste";
 "app.debug_title" = "SkyPaste デバッグ";
 "app.menu_title" = "SkyPaste";
@@ -110,6 +115,9 @@
 "panel.batch_favorite_selected" = "選択項目をお気に入り";
 "panel.batch_unfavorite_selected" = "お気に入りを解除";
 "panel.batch_delete_selected" = "選択項目を削除";
+"panel.batch_favorite_success" = "%d 項目をお気に入りに追加しました";
+"panel.batch_unfavorite_success" = "%d 項目のお気に入りを解除しました";
+"panel.batch_delete_success" = "%d 項目を削除しました";
 "filter.all" = "すべて";
 "filter.text" = "テキスト";
 "filter.image" = "画像";

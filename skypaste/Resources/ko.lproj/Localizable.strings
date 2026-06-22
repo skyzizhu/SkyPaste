@@ -22,6 +22,8 @@
 "section.yesterday" = "어제";
 "settings.appearance" = "테마";
 "settings.general" = "일반 설정";
+"settings.library" = "라이브러리";
+"settings.support" = "지원 및 추천";
 "settings.appearance_hint" = "기본값은 시스템 설정을 따르며, 필요하면 라이트 또는 다크 모드로 고정할 수 있습니다.";
 "settings.hotkey" = "단축키";
 "settings.language" = "언어";
@@ -61,6 +63,9 @@
 "settings.ignore_apps_hint" = "앱 이름이나 bundle ID를 쉼표 또는 줄바꿈으로 구분해 입력하세요.";
 "settings.ignore_apps_example" = "예: Finder, Terminal, com.1password.1password.";
 "settings.ignore_apps_suggestions" = "최근";
+"settings.rate_app" = "SkyPaste 평가";
+"settings.rate_app_subtitle" = "SkyPaste가 마음에 드셨다면 App Store에서 평점과 리뷰를 남겨 주세요.";
+"settings.rate_app_action" = "App Store에서 평가";
 "app.title" = "SkyPaste";
 "app.debug_title" = "SkyPaste 디버그";
 "app.menu_title" = "SkyPaste";
@@ -110,6 +115,9 @@
 "panel.batch_favorite_selected" = "선택 항목 즐겨찾기";
 "panel.batch_unfavorite_selected" = "즐겨찾기 해제";
 "panel.batch_delete_selected" = "선택 항목 삭제";
+"panel.batch_favorite_success" = "%d개 항목을 즐겨찾기에 추가했습니다";
+"panel.batch_unfavorite_success" = "%d개 항목의 즐겨찾기를 해제했습니다";
+"panel.batch_delete_success" = "%d개 항목을 삭제했습니다";
 "filter.all" = "전체";
 "filter.text" = "텍스트";
 "filter.image" = "이미지";
@@ -186,7 +194,7 @@
 "open.missing_folder_title" = "폴더를 찾을 수 없음";
 "open.missing_item_message" = "SkyPaste가 이 경로를 열 수 없습니다: %@";
 "notice.database_recovered" = "로컬 기록 데이터베이스를 자동으로 복구했고 손상된 파일은 백업했습니다.";
-"settings.recommended_app" = "Recommended App";
+"settings.recommended_app" = "추천 앱";
 "yourtools.title" = "Your Tools";
 "yourtools.subtitle" = "올인원 AI 및 미디어 툴킷 앱.";
-"yourtools.open" = "Open in App Store";
+"yourtools.open" = "App Store에서 열기";

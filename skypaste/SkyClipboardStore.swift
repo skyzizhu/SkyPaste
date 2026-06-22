@@ -2,6 +2,13 @@ import AppKit
 import Combine
 import Foundation
 
+struct ClipboardSourceAppOption: Identifiable, Hashable {
+    let bundleID: String
+    let name: String
+
+    var id: String { bundleID }
+}
+
 struct ClipboardSearchQuery {
     enum ItemType: Hashable {
         case text
@@ -165,6 +172,7 @@ final class ClipboardStore: ObservableObject {
     @Published private(set) var items: [ClipboardItem] = []
     @Published private(set) var filteredItems: [ClipboardItem] = []
     @Published private(set) var filteredItemsByFilter: [ClipboardFilter: [ClipboardItem]] = [:]
+    @Published private(set) var sourceAppOptionsByFilter: [ClipboardFilter: [ClipboardSourceAppOption]] = [:]
     @Published private(set) var appliedSearchText: String = ""
     @Published var startupNotice: String?
     var onLocalItemAdded: ((ClipboardItem) -> Void)?
@@ -198,6 +206,7 @@ final class ClipboardStore: ObservableObject {
         }
 
         filteredItemsByFilter = Self.makeFilteredItemsByFilter(items: items, query: "")
+        sourceAppOptionsByFilter = Self.makeSourceAppOptionsByFilter(itemsByFilter: filteredItemsByFilter)
         filteredItems = filteredItemsByFilter[.all] ?? items
 
         settings.$historyLimit
@@ -322,7 +331,9 @@ final class ClipboardStore: ObservableObject {
             }
         }
 
-        items[index].isFavorite = newValue
+        var updatedItems = items
+        updatedItems[index].isFavorite = newValue
+        replaceItemsForImmediateDisplay(updatedItems)
     }
 
     func deleteItem(_ itemID: ClipboardItem.ID) {
@@ -385,9 +396,12 @@ final class ClipboardStore: ObservableObject {
     func setFavorite(_ isFavorite: Bool, for itemIDs: Set<ClipboardItem.ID>) {
         guard !itemIDs.isEmpty else { return }
 
-        for index in items.indices where itemIDs.contains(items[index].id) {
-            items[index].isFavorite = isFavorite
+        var updatedItems = items
+        for index in updatedItems.indices where itemIDs.contains(updatedItems[index].id) {
+            updatedItems[index].isFavorite = isFavorite
         }
+
+        replaceItemsForImmediateDisplay(updatedItems)
 
         guard let fileURL = database?.fileURL else { return }
         let idsToUpdate = Array(itemIDs)
@@ -410,6 +424,10 @@ final class ClipboardStore: ObservableObject {
 
     func items(for filter: ClipboardFilter) -> [ClipboardItem] {
         filteredItemsByFilter[filter] ?? []
+    }
+
+    func sourceAppOptions(for filter: ClipboardFilter) -> [ClipboardSourceAppOption] {
+        sourceAppOptionsByFilter[filter] ?? []
     }
 
     private func replaceItemsForImmediateDisplay(_ newItems: [ClipboardItem]) {
@@ -621,6 +639,7 @@ final class ClipboardStore: ObservableObject {
 
         guard !trimmedQuery.isEmpty else {
             filteredItemsByFilter = Self.makeFilteredItemsByFilter(items: items, query: "")
+            sourceAppOptionsByFilter = Self.makeSourceAppOptionsByFilter(itemsByFilter: filteredItemsByFilter)
             filteredItems = filteredItemsByFilter[.all] ?? items
             return
         }
@@ -628,10 +647,12 @@ final class ClipboardStore: ObservableObject {
         let snapshot = items
         let workItem = DispatchWorkItem { [trimmedQuery] in
             let result = Self.makeFilteredItemsByFilter(items: snapshot, query: trimmedQuery)
+            let sourceAppOptions = Self.makeSourceAppOptionsByFilter(itemsByFilter: result)
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
                 guard self.filterGeneration == generation else { return }
                 self.filteredItemsByFilter = result
+                self.sourceAppOptionsByFilter = sourceAppOptions
                 self.filteredItems = result[.all] ?? []
             }
         }
@@ -670,6 +691,25 @@ final class ClipboardStore: ObservableObject {
             if ClipboardFilter.url.matches(item) {
                 result[.url, default: []].append(item)
             }
+        }
+
+        return result
+    }
+
+    private static func makeSourceAppOptionsByFilter(itemsByFilter: [ClipboardFilter: [ClipboardItem]]) -> [ClipboardFilter: [ClipboardSourceAppOption]] {
+        var result = [ClipboardFilter: [ClipboardSourceAppOption]]()
+
+        for filter in ClipboardFilter.allCases {
+            var seen = Set<String>()
+            let options = (itemsByFilter[filter] ?? [])
+                .compactMap(\.sourceApp)
+                .compactMap { app -> ClipboardSourceAppOption? in
+                    guard seen.insert(app.bundleID).inserted else { return nil }
+                    return ClipboardSourceAppOption(bundleID: app.bundleID, name: app.name)
+                }
+                .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+
+            result[filter] = options
         }
 
         return result

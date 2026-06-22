@@ -22,6 +22,8 @@
 "section.yesterday" = "Yesterday";
 "settings.appearance" = "Theme";
 "settings.general" = "General";
+"settings.library" = "Library";
+"settings.support" = "Support";
 "settings.appearance_hint" = "Follow the system by default, or force Light or Dark mode.";
 "settings.hotkey" = "Hotkey";
 "settings.language" = "Language";
@@ -61,6 +63,9 @@
 "settings.ignore_apps_hint" = "Enter app names or bundle IDs, separated by commas or new lines.";
 "settings.ignore_apps_example" = "Example: Finder, Terminal, com.1password.1password.";
 "settings.ignore_apps_suggestions" = "Recent";
+"settings.rate_app" = "Rate SkyPaste";
+"settings.rate_app_subtitle" = "If you enjoy SkyPaste, please rate and review it on the App Store.";
+"settings.rate_app_action" = "Rate on App Store";
 "settings.recommended_app" = "Recommended App";
 "app.title" = "SkyPaste";
 "app.debug_title" = "Pasteboard Debug";
@@ -111,6 +116,9 @@
 "panel.batch_favorite_selected" = "Favorite Selected";
 "panel.batch_unfavorite_selected" = "Unfavorite Selected";
 "panel.batch_delete_selected" = "Delete Selected";
+"panel.batch_favorite_success" = "Favorited %d items";
+"panel.batch_unfavorite_success" = "Removed %d items from Favorites";
+"panel.batch_delete_success" = "Deleted %d items";
 "filter.all" = "All";
 "filter.text" = "Text";
 "filter.image" = "Image";

@@ -34,9 +34,8 @@ struct SettingsView: View {
                 generalSettingsSection
                 hotKeySection
                 syncSection
-                historySection
-                ignoreAppsSection
-                yourToolsSection
+                librarySection
+                supportSection
             }
             .padding(16)
             .frame(maxWidth: 740, alignment: .leading)
@@ -113,7 +112,7 @@ struct SettingsView: View {
 
     private var hero: some View {
         HStack(alignment: .center, spacing: 12) {
-            Image(nsImage: NSApp.applicationIconImage)
+            Image(nsImage: Self.settingsAppIcon)
                 .resizable()
                 .interpolation(.high)
                 .frame(width: 60, height: 60)
@@ -238,8 +237,21 @@ struct SettingsView: View {
         }
     }
 
-    private var ignoreAppsSection: some View {
-        SettingsSection(title: L10n.tr("settings.ignore_apps"), contentSpacing: 8) {
+    private var librarySection: some View {
+        SettingsSection(title: L10n.tr("settings.library"), contentSpacing: 10) {
+            SettingsRow(title: L10n.format("settings.max_records", settings.historyLimit)) {
+                Stepper("", value: historyLimitBinding, in: 20...1000, step: 20)
+                    .labelsHidden()
+                    .frame(width: 120, alignment: .trailing)
+            }
+
+            Divider()
+                .padding(.vertical, 0.5)
+
+            Text(L10n.tr("settings.ignore_apps"))
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(.primary)
+
             TextEditor(text: $settings.ignoredAppsInput)
                 .font(.system(size: 12, weight: .regular, design: .rounded))
                 .scrollContentBackground(.hidden)
@@ -293,46 +305,26 @@ struct SettingsView: View {
         }
     }
 
-    private var historySection: some View {
-        SettingsSection(title: L10n.tr("settings.history")) {
-            SettingsRow(title: L10n.format("settings.max_records", settings.historyLimit)) {
-                Stepper("", value: historyLimitBinding, in: 20...1000, step: 20)
-                    .labelsHidden()
-                    .frame(width: 120, alignment: .trailing)
-            }
-        }
-    }
+    private var supportSection: some View {
+        SettingsSection(title: L10n.tr("settings.support"), contentSpacing: 10) {
+            promotionalCard(
+                icon: AnyView(appIcon),
+                title: L10n.tr("app.title"),
+                subtitle: L10n.tr("settings.rate_app_subtitle"),
+                actionTitle: L10n.tr("settings.rate_app_action"),
+                action: openAppReview
+            )
 
-    private var yourToolsSection: some View {
-        SettingsSection(title: L10n.tr("settings.recommended_app")) {
-            HStack(alignment: .center, spacing: 14) {
-                yourToolsLogo
+            Divider()
+                .padding(.vertical, 0.5)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.tr("yourtools.title"))
-                        .font(.system(size: 15, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.primary)
-
-                    Text(L10n.tr("yourtools.subtitle"))
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer(minLength: 12)
-
-                Button(action: openYourTools) {
-                    Text(L10n.tr("yourtools.open"))
-                        .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 8)
-                        .background(
-                            Capsule(style: .continuous)
-                                .fill(Color.accentColor.opacity(colorScheme == .dark ? 0.22 : 0.12))
-                        )
-                }
-                .buttonStyle(.plain)
-                .help(L10n.tr("yourtools.open"))
-            }
+            promotionalCard(
+                icon: AnyView(yourToolsLogo),
+                title: L10n.tr("yourtools.title"),
+                subtitle: L10n.tr("yourtools.subtitle"),
+                actionTitle: L10n.tr("yourtools.open"),
+                action: openYourTools
+            )
         }
     }
 
@@ -362,11 +354,9 @@ struct SettingsView: View {
     }
 
     private var yourToolsLogo: some View {
-        Group {
+        promoIconContainer {
             if let image = Self.cachedYourToolsLogo {
-                Image(nsImage: image)
-                    .resizable()
-                    .interpolation(.high)
+                promoIconImage(image, scale: 0.84)
             } else {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(Color.accentColor.opacity(0.12))
@@ -377,11 +367,11 @@ struct SettingsView: View {
                     }
             }
         }
-        .frame(width: 64, height: 64)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
+    }
+
+    private var appIcon: some View {
+        promoIconContainer {
+            promoIconImage(Self.settingsAppIcon)
         }
     }
 
@@ -390,6 +380,10 @@ struct SettingsView: View {
             return nil
         }
         return NSImage(contentsOf: imageURL)
+    }()
+
+    private static let settingsAppIcon: NSImage = {
+        NSImage(named: NSImage.Name("AppIcon")) ?? NSApp.applicationIconImage
     }()
 
     private func appendIgnoredApp(_ appName: String) {
@@ -409,6 +403,11 @@ struct SettingsView: View {
 
     private func openYourTools() {
         guard let url = URL(string: "https://apps.apple.com/us/app/your-tools-ai-toolbox/id6670400942") else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    private func openAppReview() {
+        guard let url = URL(string: "https://apps.apple.com/app/id6760884520?action=write-review") else { return }
         NSWorkspace.shared.open(url)
     }
 
@@ -486,6 +485,24 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    private func promoIconContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        ZStack {
+            content()
+        }
+        .frame(width: 64, height: 64)
+        .shadow(color: .black.opacity(colorScheme == .dark ? 0.14 : 0.08), radius: 8, y: 4)
+    }
+
+    private func promoIconImage(_ image: NSImage, scale: CGFloat = 1) -> some View {
+        Image(nsImage: image)
+            .resizable()
+            .interpolation(.high)
+            .aspectRatio(1, contentMode: .fill)
+            .frame(width: 58, height: 58)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .scaleEffect(scale)
+    }
+
     private func animatedToggleBinding(_ binding: Binding<Bool>) -> Binding<Bool> {
         Binding(
             get: { binding.wrappedValue },
@@ -495,6 +512,43 @@ struct SettingsView: View {
                 }
             }
         )
+    }
+
+    private func promotionalCard(
+        icon: AnyView,
+        title: String,
+        subtitle: String,
+        actionTitle: String,
+        action: @escaping () -> Void
+    ) -> some View {
+        HStack(alignment: .center, spacing: 14) {
+            icon
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.primary)
+
+                Text(subtitle)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer(minLength: 12)
+
+            Button(action: action) {
+                Text(actionTitle)
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(Color.accentColor.opacity(colorScheme == .dark ? 0.22 : 0.12))
+                    )
+            }
+            .buttonStyle(.plain)
+            .help(actionTitle)
+        }
     }
 
     private func pickerOnlyRow<Content: View>(@ViewBuilder content: () -> Content) -> some View {
