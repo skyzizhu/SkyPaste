@@ -170,17 +170,55 @@ struct SkyPasteCoreModelTests {
         #expect(!ClipboardFilter.folder.matches(textItem))
     }
 
-    @Test func imageFilesAreExcludedFromFileFilterAndIncludedInImageFilter() {
+    @Test func imageFilesAreIncludedInBothImageAndFileFilters() {
         let imageFileItem = ClipboardItem(
             content: .fileURLs(urls: [URL(fileURLWithPath: "/tmp/Screenshot.png")], pasteboardPayload: nil),
             fingerprint: "file:/tmp/Screenshot.png"
         )
 
-        #expect(!ClipboardFilter.file.matches(imageFileItem))
+        #expect(ClipboardFilter.file.matches(imageFileItem))
         #expect(ClipboardFilter.image.matches(imageFileItem))
         #expect(ClipboardSearchQuery(rawValue: "type:image").matches(imageFileItem))
-        #expect(!ClipboardSearchQuery(rawValue: "type:file").matches(imageFileItem))
+        #expect(ClipboardSearchQuery(rawValue: "type:file").matches(imageFileItem))
         #expect(imageFileItem.subtitle == L10n.format("clipboard.subtitle.image_file_format", "PNG"))
+    }
+
+    @Test func mixedImageAndRegularFilesStayInImageAndFileFilters() {
+        let mixedFilesItem = ClipboardItem(
+            content: .fileURLs(
+                urls: [
+                    URL(fileURLWithPath: "/tmp/Screenshot.png"),
+                    URL(fileURLWithPath: "/tmp/Report.pdf")
+                ],
+                pasteboardPayload: nil
+            ),
+            fingerprint: "files:mixed-image-and-file"
+        )
+
+        #expect(ClipboardFilter.image.matches(mixedFilesItem))
+        #expect(ClipboardFilter.file.matches(mixedFilesItem))
+        #expect(!ClipboardFilter.folder.matches(mixedFilesItem))
+        #expect(ClipboardSearchQuery(rawValue: "type:image").matches(mixedFilesItem))
+        #expect(ClipboardSearchQuery(rawValue: "type:file").matches(mixedFilesItem))
+    }
+
+    @Test func mixedImageFilesAndFoldersStayInImageFileAndFolderFilters() {
+        let mixedImageAndFolderItem = ClipboardItem(
+            content: .fileURLs(
+                urls: [
+                    URL(fileURLWithPath: "/tmp/Screenshot.png"),
+                    URL(fileURLWithPath: "/tmp/SkyPaste Folder", isDirectory: true)
+                ],
+                pasteboardPayload: nil
+            ),
+            fingerprint: "files:mixed-image-and-folder"
+        )
+
+        #expect(ClipboardFilter.image.matches(mixedImageAndFolderItem))
+        #expect(ClipboardFilter.file.matches(mixedImageAndFolderItem))
+        #expect(ClipboardFilter.folder.matches(mixedImageAndFolderItem))
+        #expect(ClipboardSearchQuery(rawValue: "type:image").matches(mixedImageAndFolderItem))
+        #expect(ClipboardSearchQuery(rawValue: "type:file").matches(mixedImageAndFolderItem))
     }
 
     @Test func sensitiveClipboardFilterDetectsCodesCardsAndTokens() {

@@ -292,7 +292,7 @@ struct ClipboardItem: Identifiable, Equatable {
     var containsFiles: Bool {
         guard let fileURLs else { return false }
         return fileURLs.contains { url in
-            Self.fileSystemItemKind(for: url) == .file && !Self.isImageFileURL(url)
+            Self.fileSystemItemKind(for: url) == .file
         }
     }
 
