@@ -1,4 +1,5 @@
 import AppKit
+import ImageIO
 import SwiftUI
 
 struct ClipboardRowView: View {
@@ -368,7 +369,7 @@ struct ClipboardRowView: View {
         if item.isSingleImageFile, let url = item.singleFileURL {
             let requestKey = url.path
             previewRequestKey = requestKey
-            ClipboardPreviewImageProvider.shared.loadImage(at: url) { image in
+            ClipboardPreviewImageProvider.shared.loadThumbnail(at: url, maxPixelSize: 160) { image in
                 guard previewRequestKey == requestKey else { return }
                 loadedPreview = image
             }
@@ -396,15 +397,15 @@ private final class ClipboardPreviewImageProvider {
     private let cache = NSCache<NSString, NSImage>()
     private let queue = DispatchQueue(label: "com.huaibor.skypaste.preview-image-provider", qos: .userInitiated)
 
-    func loadImage(at url: URL, completion: @escaping (NSImage?) -> Void) {
-        let cacheKey = url.path as NSString
+    func loadThumbnail(at url: URL, maxPixelSize: Int, completion: @escaping (NSImage?) -> Void) {
+        let cacheKey = "\(url.path)#\(maxPixelSize)" as NSString
         if let cached = cache.object(forKey: cacheKey) {
             completion(cached)
             return
         }
 
         queue.async {
-            let image = NSImage(contentsOf: url)
+            let image = self.makeThumbnail(for: url, maxPixelSize: maxPixelSize)
             if let image {
                 self.cache.setObject(image, forKey: cacheKey)
             }
@@ -412,6 +413,26 @@ private final class ClipboardPreviewImageProvider {
                 completion(image)
             }
         }
+    }
+
+    private func makeThumbnail(for url: URL, maxPixelSize: Int) -> NSImage? {
+        let options = [kCGImageSourceShouldCache: false] as CFDictionary
+        guard let source = CGImageSourceCreateWithURL(url as CFURL, options) else {
+            return NSImage(contentsOf: url)
+        }
+
+        let thumbnailOptions = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceShouldCacheImmediately: false,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize
+        ] as CFDictionary
+
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, thumbnailOptions) else {
+            return NSImage(contentsOf: url)
+        }
+
+        return NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
     }
 }
 

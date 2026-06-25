@@ -20,13 +20,6 @@ struct PanelView: View {
         static let empty = Presentation(favoriteItems: [], orderedItems: [], daySections: [])
     }
 
-    private struct SourceAppFilterOption: Identifiable, Hashable {
-        let bundleID: String
-        let name: String
-
-        var id: String { bundleID }
-    }
-
     @ObservedObject var store: ClipboardStore
     @ObservedObject var settings: AppSettings
     let onPick: (ClipboardItem) -> Void
@@ -52,6 +45,8 @@ struct PanelView: View {
     @State private var presentation = Presentation.empty
     @State private var isBatchSelectionMode = false
     @State private var batchSelection = Set<ClipboardItem.ID>()
+    @State private var batchFeedbackMessage: String?
+    @State private var pendingBatchFeedbackDismiss: DispatchWorkItem?
 
     private func copyTimeText(_ date: Date) -> String {
         L10n.timeText(date)
@@ -172,6 +167,7 @@ struct PanelView: View {
         }
 
         pendingPrimaryAction?.cancel()
+        pendingBatchFeedbackDismiss?.cancel()
 
         if isBatchSelectionMode {
             if let selectedID {
@@ -181,6 +177,7 @@ struct PanelView: View {
             }
         } else {
             batchSelection.removeAll()
+            batchFeedbackMessage = nil
         }
     }
 
@@ -204,16 +201,46 @@ struct PanelView: View {
 
     private func applyBatchFavorite() {
         guard batchActionHasSelection else { return }
+        let affectedCount = batchSelection.count
+        let willFavorite = batchFavoriteActionValue
         store.setFavorite(batchFavoriteActionValue, for: batchSelection)
         refreshPresentation()
+        showBatchFeedback(
+            willFavorite
+                ? L10n.format("panel.batch_favorite_success", affectedCount)
+                : L10n.format("panel.batch_unfavorite_success", affectedCount)
+        )
     }
 
     private func deleteSelectedItems() {
         guard batchActionHasSelection else { return }
+        let deletedCount = batchSelection.count
         store.deleteItems(batchSelection)
         batchSelection.removeAll()
         refreshPresentation()
         selectedID = presentation.orderedItems.first?.id
+        if presentation.orderedItems.isEmpty {
+            withAnimation(.easeOut(duration: 0.12)) {
+                isBatchSelectionMode = false
+            }
+        }
+        showBatchFeedback(L10n.format("panel.batch_delete_success", deletedCount))
+    }
+
+    private func showBatchFeedback(_ message: String) {
+        pendingBatchFeedbackDismiss?.cancel()
+
+        withAnimation(.easeOut(duration: 0.14)) {
+            batchFeedbackMessage = message
+        }
+
+        let dismissWorkItem = DispatchWorkItem {
+            withAnimation(.easeInOut(duration: 0.16)) {
+                batchFeedbackMessage = nil
+            }
+        }
+        pendingBatchFeedbackDismiss = dismissWorkItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.7, execute: dismissWorkItem)
     }
 
     private static func makePresentation(filteredItems: [ClipboardItem], selectedFilter: ClipboardFilter) -> Presentation {
@@ -280,15 +307,8 @@ struct PanelView: View {
         store.items(for: selectedFilter)
     }
 
-    private var availableSourceAppOptions: [SourceAppFilterOption] {
-        var seen = Set<String>()
-        return baseItemsForSelectedFilter
-            .compactMap(\.sourceApp)
-            .compactMap { app in
-                guard seen.insert(app.bundleID).inserted else { return nil }
-                return SourceAppFilterOption(bundleID: app.bundleID, name: app.name)
-            }
-            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    private var availableSourceAppOptions: [ClipboardSourceAppOption] {
+        store.sourceAppOptions(for: selectedFilter)
     }
 
     private var filteredItemsForSelectedScope: [ClipboardItem] {
@@ -332,18 +352,25 @@ struct PanelView: View {
     }
 
     var body: some View {
-        VStack(spacing: 14) {
-            header
-            if let startupNotice = store.startupNotice {
-                startupNoticeBanner(startupNotice)
+        ZStack {
+            VStack(spacing: 14) {
+                header
+                if let startupNotice = store.startupNotice {
+                    startupNoticeBanner(startupNotice)
+                }
+                if isSearchVisible {
+                    searchBar
+                        .transition(.move(edge: .top).combined(with: .opacity))
+                }
+                filterBar
+                contentArea
+                    .frame(maxHeight: .infinity, alignment: .top)
+                if let batchFeedbackMessage, isBatchSelectionMode {
+                    batchFeedbackBanner(batchFeedbackMessage)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                footer
             }
-            if isSearchVisible {
-                searchBar
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            }
-            filterBar
-            contentArea
-            footer
 
             QuickPasteShortcuts(onCopyAtIndex: copyItemAtIndex)
                 .frame(width: 0, height: 0)
@@ -357,8 +384,10 @@ struct PanelView: View {
             .opacity(0.01)
             .allowsHitTesting(false)
         }
-        .padding(16)
-        .frame(minWidth: 700, minHeight: 620)
+        .padding(.top, 16)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 16)
+        .frame(minWidth: 700, minHeight: 620, alignment: .top)
         .background(
             ZStack {
                 Color(nsColor: .windowBackgroundColor)
@@ -385,6 +414,10 @@ struct PanelView: View {
             selectedID = presentation.orderedItems.first?.id
             isSearchVisible = !store.appliedSearchText.isEmpty
         }
+        .onReceive(store.$items) { _ in
+            validateSourceAppSelection()
+            refreshPresentation()
+        }
         .onReceive(store.$filteredItemsByFilter) { _ in
             validateSourceAppSelection()
             refreshPresentation()
@@ -405,6 +438,7 @@ struct PanelView: View {
             }
         }
         .onChange(of: selectedFilter) { _, _ in
+            batchFeedbackMessage = nil
             validateSourceAppSelection()
             refreshPresentation()
             selectedID = presentation.orderedItems.first?.id
@@ -427,6 +461,32 @@ struct PanelView: View {
         .onMoveCommand(perform: moveSelection)
         .onExitCommand {
             onClose()
+        }
+    }
+
+    private func batchFeedbackBanner(_ text: String) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.accentColor)
+
+            Text(text)
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 9)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(startupNoticeFill)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
         }
     }
 
@@ -617,7 +677,7 @@ struct PanelView: View {
         return app.name
     }
 
-    private var selectedSourceAppOption: SourceAppFilterOption? {
+    private var selectedSourceAppOption: ClipboardSourceAppOption? {
         guard let selectedSourceAppBundleID else { return nil }
         return availableSourceAppOptions.first(where: { $0.bundleID == selectedSourceAppBundleID })
     }
@@ -1041,9 +1101,9 @@ struct PanelView: View {
             }
 
             VStack(spacing: 0) {
-                ForEach(items.indices, id: \.self) { index in
-                    let item = items[index]
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                     rowView(for: item)
+                        .id("\(item.id.uuidString)-\(item.isFavorite)")
 
                     if index < items.count - 1 {
                         rowSeparator(inset: separatorInset(after: item))
@@ -1152,52 +1212,77 @@ struct PanelView: View {
                 }
         )
         .contextMenu {
-                Button(L10n.tr("menu.copy")) {
-                    selectedID = item.id
-                    copySelected(item)
-                }
+            Button {
+                selectedID = item.id
+                copySelected(item)
+            } label: {
+                Label(L10n.tr("menu.copy"), systemImage: "doc.on.doc")
+            }
             if item.isFileCollection {
-                Button(item.openActionTitle) {
+                Button {
                     selectedID = item.id
                     onOpenFileItem(item)
+                } label: {
+                    Label(
+                        item.openActionTitle,
+                        systemImage: item.singleFileSystemItemKind == .folder ? "folder" : "doc"
+                    )
                 }
             }
             if item.isSingleFile {
-                Button(L10n.tr("menu.reveal_in_finder")) {
+                Button {
                     selectedID = item.id
                     onOpenContainingFolder(item)
+                } label: {
+                    Label(L10n.tr("menu.reveal_in_finder"), systemImage: "folder.badge.gearshape")
                 }
             }
             if item.isFileCollection {
-                Button(L10n.tr("menu.copy_path")) {
+                Button {
                     selectedID = item.id
                     onCopyFileSystemPath(item)
+                } label: {
+                    Label(L10n.tr("menu.copy_path"), systemImage: "text.alignleft")
                 }
             }
             if item.isURL {
-                Button(L10n.tr("menu.open_in_browser")) {
+                Button {
                     selectedID = item.id
                     onOpenURL(item)
+                } label: {
+                    Label(L10n.tr("menu.open_in_browser"), systemImage: "safari")
                 }
             }
             if item.isImage {
-                Button(L10n.tr("preview.open")) {
+                Button {
                     selectedID = item.id
                     onPreview(item)
+                } label: {
+                    Label(L10n.tr("preview.open"), systemImage: "photo")
                 }
             }
             if item.supportsTextPreview {
-                Button(L10n.tr("preview.text_open")) {
+                Button {
                     selectedID = item.id
                     onTextPreview(item)
+                } label: {
+                    Label(L10n.tr("preview.text_open"), systemImage: "text.viewfinder")
                 }
             }
-            Button(item.isFavorite ? L10n.tr("menu.unfavorite") : L10n.tr("menu.favorite")) {
+            Button {
                 selectedID = item.id
                 store.toggleFavorite(for: item.id)
+                refreshPresentation()
+            } label: {
+                Label(
+                    item.isFavorite ? L10n.tr("menu.unfavorite") : L10n.tr("menu.favorite"),
+                    systemImage: item.isFavorite ? "star.slash" : "star"
+                )
             }
-            Button(L10n.tr("menu.delete"), role: .destructive) {
+            Button(role: .destructive) {
                 delete(item)
+            } label: {
+                Label(L10n.tr("menu.delete"), systemImage: "trash")
             }
         }
     }

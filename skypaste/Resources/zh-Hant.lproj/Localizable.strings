@@ -22,6 +22,8 @@
 "section.yesterday" = "昨天";
 "settings.appearance" = "主題";
 "settings.general" = "通用設定";
+"settings.library" = "資料庫";
+"settings.support" = "支援與推薦";
 "settings.appearance_hint" = "預設會跟隨系統，也可以固定使用淺色或深色模式。";
 "settings.hotkey" = "快捷鍵";
 "settings.language" = "語言";
@@ -61,6 +63,9 @@
 "settings.ignore_apps_hint" = "輸入應用程式名稱或 bundle ID，使用逗號或換行分隔。";
 "settings.ignore_apps_example" = "例如：Finder、Terminal、com.1password.1password。";
 "settings.ignore_apps_suggestions" = "最近";
+"settings.rate_app" = "評價應用程式";
+"settings.rate_app_subtitle" = "如果你喜歡 SkyPaste，歡迎在 App Store 中為它評分與評論。";
+"settings.rate_app_action" = "前往評分";
 "app.title" = "SkyPaste";
 "app.debug_title" = "SkyPaste 偵錯";
 "app.menu_title" = "SkyPaste";
@@ -110,6 +115,9 @@
 "panel.batch_favorite_selected" = "收藏選取";
 "panel.batch_unfavorite_selected" = "取消收藏";
 "panel.batch_delete_selected" = "刪除選取";
+"panel.batch_favorite_success" = "已收藏 %d 項";
+"panel.batch_unfavorite_success" = "已取消收藏 %d 項";
+"panel.batch_delete_success" = "已刪除 %d 項";
 "filter.all" = "全部";
 "filter.text" = "文字";
 "filter.image" = "圖片";
