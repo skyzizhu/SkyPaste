@@ -1,5 +1,4 @@
 import AppKit
-import ImageIO
 import SwiftUI
 
 struct ClipboardRowView: View {
@@ -18,6 +17,7 @@ struct ClipboardRowView: View {
     var iconSize: CGFloat = 40
     var onPrimaryMouseDown: (() -> Void)? = nil
     var onSecondaryMouseDown: (() -> Void)? = nil
+    var onAnchorViewChange: ((NSView?) -> Void)? = nil
     var onPreview: (() -> Void)? = nil
     var onPreviewDoubleTap: (() -> Void)? = nil
     @State private var loadedPreview: NSImage?
@@ -67,7 +67,8 @@ struct ClipboardRowView: View {
         .background(
             RowMouseDownObserver(
                 onPrimaryMouseDown: onPrimaryMouseDown,
-                onSecondaryMouseDown: onSecondaryMouseDown
+                onSecondaryMouseDown: onSecondaryMouseDown,
+                onAnchorViewChange: onAnchorViewChange
             )
         )
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
@@ -279,6 +280,9 @@ struct ClipboardRowView: View {
     }
 
     private var iconSystemName: String {
+        if item.isEmail {
+            return "envelope.fill"
+        }
         if item.isURL {
             return "link"
         }
@@ -298,6 +302,8 @@ struct ClipboardRowView: View {
         switch iconPalette {
         case .text:
             return Color.secondary.opacity(colorScheme == .dark ? 0.18 : 0.10)
+        case .email:
+            return Color.blue.opacity(colorScheme == .dark ? 0.23 : 0.13)
         case .url:
             return Color.cyan.opacity(colorScheme == .dark ? 0.24 : 0.16)
         case .code:
@@ -313,6 +319,8 @@ struct ClipboardRowView: View {
         switch iconPalette {
         case .text:
             return Color.primary.opacity(colorScheme == .dark ? 0.82 : 0.72)
+        case .email:
+            return Color.blue.opacity(colorScheme == .dark ? 0.94 : 0.86)
         case .url:
             return Color.cyan.opacity(colorScheme == .dark ? 0.96 : 0.9)
         case .code:
@@ -326,6 +334,7 @@ struct ClipboardRowView: View {
 
     private enum TypeIconPalette {
         case text
+        case email
         case url
         case code
         case file
@@ -333,6 +342,9 @@ struct ClipboardRowView: View {
     }
 
     private var iconPalette: TypeIconPalette {
+        if item.isEmail {
+            return .email
+        }
         if item.isURL {
             return .url
         }
@@ -363,7 +375,12 @@ struct ClipboardRowView: View {
     private func loadPreviewIfNeeded() {
         guard loadedPreview == nil else { return }
         if let data = item.previewImageData {
-            loadedPreview = NSImage(data: data)
+            let requestKey = "\(item.id.uuidString)#image-data"
+            previewRequestKey = requestKey
+            ClipboardPreviewImageProvider.shared.loadThumbnail(from: data, cacheKey: requestKey) { image in
+                guard previewRequestKey == requestKey else { return }
+                loadedPreview = image
+            }
             return
         }
         if item.isSingleImageFile, let url = item.singleFileURL {
@@ -391,105 +408,38 @@ struct ClipboardRowView: View {
     }
 }
 
-private final class ClipboardPreviewImageProvider {
-    static let shared = ClipboardPreviewImageProvider()
+final class ClipboardRowAnchor {
+    weak var view: NSView?
 
-    private let cache = NSCache<NSString, NSImage>()
-    private let queue = DispatchQueue(label: "com.huaibor.skypaste.preview-image-provider", qos: .userInitiated)
-
-    func loadThumbnail(at url: URL, maxPixelSize: Int, completion: @escaping (NSImage?) -> Void) {
-        let cacheKey = "\(url.path)#\(maxPixelSize)" as NSString
-        if let cached = cache.object(forKey: cacheKey) {
-            completion(cached)
-            return
-        }
-
-        queue.async {
-            let image = self.makeThumbnail(for: url, maxPixelSize: maxPixelSize)
-            if let image {
-                self.cache.setObject(image, forKey: cacheKey)
-            }
-            DispatchQueue.main.async {
-                completion(image)
-            }
-        }
-    }
-
-    private func makeThumbnail(for url: URL, maxPixelSize: Int) -> NSImage? {
-        let options = [kCGImageSourceShouldCache: false] as CFDictionary
-        guard let source = CGImageSourceCreateWithURL(url as CFURL, options) else {
-            return NSImage(contentsOf: url)
-        }
-
-        let thumbnailOptions = [
-            kCGImageSourceCreateThumbnailFromImageAlways: true,
-            kCGImageSourceCreateThumbnailWithTransform: true,
-            kCGImageSourceShouldCacheImmediately: false,
-            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize
-        ] as CFDictionary
-
-        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, thumbnailOptions) else {
-            return NSImage(contentsOf: url)
-        }
-
-        return NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
-    }
-}
-
-final class ClipboardSourceAppIconProvider {
-    static let shared = ClipboardSourceAppIconProvider()
-
-    private let cache = NSCache<NSString, NSImage>()
-    private let queue = DispatchQueue(label: "com.huaibor.skypaste.source-app-icon-provider", qos: .utility)
-
-    func loadIcon(for sourceApp: ClipboardSourceApp, completion: @escaping (NSImage?) -> Void) {
-        let cacheKey = sourceApp.bundleID as NSString
-        if let cached = cache.object(forKey: cacheKey) {
-            completion(cached)
-            return
-        }
-
-        queue.async {
-            let image: NSImage?
-            if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: sourceApp.bundleID) {
-                let icon = NSWorkspace.shared.icon(forFile: appURL.path)
-                icon.size = NSSize(width: 16, height: 16)
-                image = icon
-            } else {
-                image = nil
-            }
-
-            if let image {
-                self.cache.setObject(image, forKey: cacheKey)
-            }
-
-            DispatchQueue.main.async {
-                completion(image)
-            }
-        }
+    init(_ view: NSView?) {
+        self.view = view
     }
 }
 
 private struct RowMouseDownObserver: NSViewRepresentable {
     let onPrimaryMouseDown: (() -> Void)?
     let onSecondaryMouseDown: (() -> Void)?
+    let onAnchorViewChange: ((NSView?) -> Void)?
 
     func makeNSView(context: Context) -> RowMouseDownObserverView {
         let view = RowMouseDownObserverView()
         view.onPrimaryMouseDown = onPrimaryMouseDown
         view.onSecondaryMouseDown = onSecondaryMouseDown
+        view.onAnchorViewChange = onAnchorViewChange
         return view
     }
 
     func updateNSView(_ nsView: RowMouseDownObserverView, context: Context) {
         nsView.onPrimaryMouseDown = onPrimaryMouseDown
         nsView.onSecondaryMouseDown = onSecondaryMouseDown
+        nsView.onAnchorViewChange = onAnchorViewChange
     }
 }
 
 private final class RowMouseDownObserverView: NSView {
     var onPrimaryMouseDown: (() -> Void)?
     var onSecondaryMouseDown: (() -> Void)?
+    var onAnchorViewChange: ((NSView?) -> Void)?
     private var isRegisteredForEvents = false
 
     override var isFlipped: Bool {
@@ -500,12 +450,15 @@ private final class RowMouseDownObserverView: NSView {
         super.viewDidMoveToWindow()
         if window == nil {
             unregisterForEvents()
+            onAnchorViewChange?(nil)
         } else {
+            onAnchorViewChange?(self)
             registerForEventsIfNeeded()
         }
     }
 
     deinit {
+        onAnchorViewChange?(nil)
         unregisterForEvents()
     }
 

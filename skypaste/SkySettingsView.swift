@@ -376,7 +376,7 @@ struct SettingsView: View {
     }
 
     private static let cachedYourToolsLogo: NSImage? = {
-        guard let imageURL = Bundle.main.url(forResource: "yourtools-logo", withExtension: "jpeg") else {
+        guard let imageURL = Bundle.main.url(forResource: "yourtools-logo", withExtension: "jpg") else {
             return nil
         }
         return NSImage(contentsOf: imageURL)

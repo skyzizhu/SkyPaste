@@ -2,105 +2,6 @@ import AppKit
 import Foundation
 import UniformTypeIdentifiers
 
-enum ClipboardFilter: String, CaseIterable, Identifiable {
-    case all
-    case text
-    case image
-    case file
-    case folder
-    case code
-    case url
-    case favorites
-
-    var id: String { rawValue }
-
-    static let fixedLeading: ClipboardFilter = .all
-    static let fixedTrailing: ClipboardFilter = .favorites
-    static let reorderableCases: [ClipboardFilter] = [.text, .image, .file, .folder, .code, .url]
-    static let defaultDisplayOrder: [ClipboardFilter] = [fixedLeading] + reorderableCases + [fixedTrailing]
-
-    var isUserReorderable: Bool {
-        Self.reorderableCases.contains(self)
-    }
-
-    static func normalizedReorderableOrder(_ filters: [ClipboardFilter]) -> [ClipboardFilter] {
-        var seen = Set<ClipboardFilter>()
-        let filtered = filters.filter { filter in
-            filter.isUserReorderable && seen.insert(filter).inserted
-        }
-
-        let missing = reorderableCases.filter { !seen.contains($0) }
-        return filtered + missing
-    }
-
-    static func displayOrder(from reorderableOrder: [ClipboardFilter]) -> [ClipboardFilter] {
-        [fixedLeading] + normalizedReorderableOrder(reorderableOrder) + [fixedTrailing]
-    }
-
-    var title: String {
-        switch self {
-        case .all:
-            return L10n.tr("filter.all")
-        case .text:
-            return L10n.tr("filter.text")
-        case .image:
-            return L10n.tr("filter.image")
-        case .file:
-            return L10n.tr("filter.file")
-        case .folder:
-            return L10n.tr("filter.folder")
-        case .code:
-            return L10n.tr("filter.code")
-        case .url:
-            return L10n.tr("filter.url")
-        case .favorites:
-            return L10n.tr("filter.favorites")
-        }
-    }
-
-    var symbolSystemName: String? {
-        switch self {
-        case .all:
-            return "square.grid.2x2"
-        case .text:
-            return "text.alignleft"
-        case .image:
-            return "photo"
-        case .file:
-            return "doc.fill"
-        case .folder:
-            return "folder.fill"
-        case .code:
-            return "chevron.left.forwardslash.chevron.right"
-        case .url:
-            return "link"
-        case .favorites:
-            return "star.fill"
-        }
-    }
-
-    func matches(_ item: ClipboardItem) -> Bool {
-        switch self {
-        case .favorites:
-            return item.isFavorite
-        case .all:
-            return true
-        case .text:
-            return item.isPlainText
-        case .image:
-            return item.isImage || item.containsImageFiles
-        case .file:
-            return item.containsFiles
-        case .folder:
-            return item.containsFolders
-        case .code:
-            return item.isCode
-        case .url:
-            return item.isURL
-        }
-    }
-}
-
 enum ClipboardContent: Equatable {
     case text(String)
     case image(data: Data, name: String?, originalByteCount: Int, previewOnly: Bool)
@@ -192,6 +93,7 @@ struct ClipboardItem: Identifiable, Equatable {
         let isPlainText: Bool
         let isImage: Bool
         let isURL: Bool
+        let isEmail: Bool
         let isCode: Bool
     }
 
@@ -268,6 +170,8 @@ struct ClipboardItem: Identifiable, Equatable {
     var isImage: Bool { classification.isImage }
 
     var isURL: Bool { classification.isURL }
+
+    var isEmail: Bool { classification.isEmail }
 
     var isCode: Bool { classification.isCode }
 
@@ -346,12 +250,26 @@ struct ClipboardItem: Identifiable, Equatable {
         guard isURL, case .text(let value) = content else { return nil }
 
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let url = URL(string: trimmed), let scheme = url.scheme?.lowercased() else {
+        guard let url = Self.normalizedWebURL(from: trimmed), let scheme = url.scheme?.lowercased() else {
             return nil
         }
 
         guard scheme == "http" || scheme == "https" else { return nil }
         return url
+    }
+
+    var emailAddress: String? {
+        guard isEmail, case .text(let value) = content else { return nil }
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        return Self.normalizedEmailAddress(from: trimmed)
+    }
+
+    var mailtoURL: URL? {
+        guard let emailAddress else { return nil }
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = emailAddress
+        return components.url
     }
 
     var previewImage: NSImage? {
@@ -373,6 +291,17 @@ struct ClipboardItem: Identifiable, Equatable {
         previewText != nil
     }
 
+    var supportsSharing: Bool {
+        switch content {
+        case .text(let value):
+            return !value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        case .image(let data, _, _, _):
+            return !data.isEmpty
+        case .fileURLs(let urls, _):
+            return !urls.isEmpty
+        }
+    }
+
     var searchableText: String {
         if isFavorite {
             return searchIndex + "\nfavorite\nfavorites\nfav\n收藏"
@@ -385,6 +314,9 @@ struct ClipboardItem: Identifiable, Equatable {
         case .text(let value):
             let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
             if trimmed.isEmpty { return L10n.tr("clipboard.empty_text") }
+            if let emailAddress = normalizedEmailAddress(from: trimmed) {
+                return emailAddress
+            }
             if looksLikeURL(trimmed) {
                 return prettyURLTitle(trimmed)
             }
@@ -420,6 +352,9 @@ struct ClipboardItem: Identifiable, Equatable {
         switch content {
         case .text(let value):
             let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+            if looksLikeEmail(trimmed) {
+                return L10n.tr("filter.email")
+            }
             if looksLikeURL(trimmed) {
                 return L10n.tr("filter.url")
             }
@@ -462,16 +397,18 @@ struct ClipboardItem: Identifiable, Equatable {
     private static func makeClassification(for content: ClipboardContent) -> Classification {
         switch content {
         case .image:
-            return Classification(isPlainText: false, isImage: true, isURL: false, isCode: false)
+            return Classification(isPlainText: false, isImage: true, isURL: false, isEmail: false, isCode: false)
         case .fileURLs:
-            return Classification(isPlainText: false, isImage: false, isURL: false, isCode: false)
+            return Classification(isPlainText: false, isImage: false, isURL: false, isEmail: false, isCode: false)
         case .text(let value):
-            let isURL = looksLikeURL(value)
-            let isCode = looksLikeCode(value, isKnownURL: isURL)
+            let isEmail = looksLikeEmail(value)
+            let isURL = !isEmail && looksLikeURL(value)
+            let isCode = !isEmail && looksLikeCode(value, isKnownURL: isURL)
             return Classification(
-                isPlainText: !isURL,
+                isPlainText: !isURL && !isEmail,
                 isImage: false,
                 isURL: isURL,
+                isEmail: isEmail,
                 isCode: isCode
             )
         }
@@ -517,6 +454,9 @@ struct ClipboardItem: Identifiable, Equatable {
         if classification.isURL {
             parts.append(contentsOf: ["url", "link", "链接"])
         }
+        if classification.isEmail {
+            parts.append(contentsOf: ["email", "mail", "e-mail", "邮箱", "邮件"])
+        }
         if classification.isCode {
             parts.append(contentsOf: ["code", "snippet", "代码"])
         }
@@ -533,6 +473,10 @@ struct ClipboardItem: Identifiable, Equatable {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
 
+        if normalizedWebURL(from: trimmed) != nil {
+            return true
+        }
+
         guard
             let detector = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue),
             let match = detector.firstMatch(in: trimmed, options: [], range: NSRange(location: 0, length: trimmed.utf16.count))
@@ -540,12 +484,30 @@ struct ClipboardItem: Identifiable, Equatable {
             return false
         }
 
-        return match.range.location == 0 && match.range.length == trimmed.utf16.count
+        guard match.range.location == 0 && match.range.length == trimmed.utf16.count else {
+            return false
+        }
+
+        let scheme = match.url?.scheme?.lowercased()
+        return scheme == "http" || scheme == "https"
+    }
+
+    private static func looksLikeEmail(_ value: String) -> Bool {
+        normalizedEmailAddress(from: value) != nil
+    }
+
+    private static func normalizedEmailAddress(from value: String) -> String? {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed.rangeOfCharacter(from: .whitespacesAndNewlines) == nil else { return nil }
+        guard trimmed.range(of: #"^[A-Z0-9._%+-]+@(?:[A-Z0-9-]+\.)+[A-Z]{2,63}$"#, options: [.regularExpression, .caseInsensitive]) != nil else {
+            return nil
+        }
+        return trimmed
     }
 
     private static func prettyURLTitle(_ value: String) -> String {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let url = URL(string: trimmed), let host = url.host, !host.isEmpty else {
+        guard let url = normalizedWebURL(from: trimmed), let host = url.host, !host.isEmpty else {
             return trimmed
         }
 
@@ -562,6 +524,31 @@ struct ClipboardItem: Identifiable, Equatable {
         return "\(host)/\(condensedPath)"
     }
 
+    private static func normalizedWebURL(from value: String) -> URL? {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, trimmed.rangeOfCharacter(from: .whitespacesAndNewlines) == nil else { return nil }
+
+        let candidate: String
+        if let scheme = URLComponents(string: trimmed)?.scheme, !scheme.isEmpty {
+            candidate = trimmed
+        } else {
+            candidate = "https://\(trimmed)"
+        }
+
+        guard let url = URL(string: candidate), let host = url.host, isLikelyWebHost(host) else { return nil }
+        let scheme = url.scheme?.lowercased()
+        guard scheme == "http" || scheme == "https" else { return nil }
+        return url
+    }
+
+    private static func isLikelyWebHost(_ host: String) -> Bool {
+        let normalized = host.trimmingCharacters(in: CharacterSet(charactersIn: "[]")).lowercased()
+        guard !normalized.isEmpty else { return false }
+        if normalized == "localhost" { return true }
+        if normalized.contains(".") || normalized.contains(":") { return true }
+        return false
+    }
+
     private static func looksLikeCode(_ value: String, isKnownURL: Bool) -> Bool {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
@@ -576,10 +563,19 @@ struct ClipboardItem: Identifiable, Equatable {
             return true
         }
 
-        let strongKeywordPatterns = [
-            #"(^|\W)(func|class|struct|enum|protocol|extension|namespace|interface|typedef|import|export|return|const|let|var|def|async|await|public|private|protected|final|static)\s"#,
-            #"(^|\W)(if|else|for|while|switch|case|guard|catch|try)\s*(\(|\{|\w)"#,
+        let declarationPatterns = [
+            #"(^|\W)(func|class|struct|enum|protocol|extension|namespace|interface|typedef|def)\s+\w+"#,
+            #"(^|\W)(const|let|var)\s+\w+\s*(=|:)"#,
+            #"(^|\W)(import|export)\s+[\w\.\{\*]"#,
+            #"(^|\W)(public|private|protected|final|static)\s+(func|class|struct|var|let|const|def)\b"#
+        ]
+        let controlFlowPatterns = [
+            #"(^|\W)(if|else if|for|while|switch|guard|catch)\s*(\(|\{)"#,
+            #"(^|\W)(case|try|await|return)\b.*(;|\{|\})"#
+        ]
+        let syntaxPatterns = [
             #"</?[a-z][^>]*>"#,
+            #"^\s*[\{\[]\s*["\w]"#,
             #"(^|\W)(select|insert|update|delete|create|alter|drop|where|from|join|group by|order by)\s"#
         ]
 
@@ -593,9 +589,16 @@ struct ClipboardItem: Identifiable, Equatable {
             #"\{[^}]+\}"#
         ]
 
-        let strongMatches = strongKeywordPatterns.reduce(0) { count, pattern in
+        let declarationMatches = declarationPatterns.reduce(0) { count, pattern in
             count + (lowercased.range(of: pattern, options: .regularExpression) != nil ? 1 : 0)
         }
+        let controlFlowMatches = controlFlowPatterns.reduce(0) { count, pattern in
+            count + (lowercased.range(of: pattern, options: .regularExpression) != nil ? 1 : 0)
+        }
+        let syntaxMatches = syntaxPatterns.reduce(0) { count, pattern in
+            count + (lowercased.range(of: pattern, options: .regularExpression) != nil ? 1 : 0)
+        }
+        let strongMatches = declarationMatches + controlFlowMatches + syntaxMatches
 
         let weakMatches = weakSignalPatterns.reduce(0) { count, pattern in
             count + (trimmed.range(of: pattern, options: .regularExpression) != nil ? 1 : 0)
@@ -624,16 +627,17 @@ struct ClipboardItem: Identifiable, Equatable {
         score -= min(naturalLanguagePenalty, 2)
 
         if newlineCount == 0 {
-            if strongMatches >= 1 && weakMatches >= 1 {
-                return true
-            }
-            if strongMatches >= 2 || (weakMatches >= 2 && symbolCount >= 4) {
-                return true
-            }
-            return false
+            return syntaxMatches >= 1 ||
+                declarationMatches >= 1 ||
+                (controlFlowMatches >= 1 && weakMatches >= 1) ||
+                (weakMatches >= 2 && symbolCount >= 4)
         }
 
-        if strongMatches >= 1 && (weakMatches >= 1 || indentedLineCount >= 1) {
+        if syntaxMatches >= 1 || declarationMatches >= 1 {
+            return true
+        }
+
+        if controlFlowMatches >= 1 && (weakMatches >= 1 || indentedLineCount >= 1) {
             return true
         }
 

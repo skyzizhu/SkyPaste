@@ -82,7 +82,9 @@
 "menu.reveal_in_finder" = "Finder에서 보기";
 "menu.copy_path" = "경로 복사";
 "menu.copy_link" = "링크 복사";
+"menu.share" = "공유";
 "menu.open_in_browser" = "브라우저에서 열기";
+"menu.open_email" = "이메일 보내기";
 "menu.favorite" = "즐겨찾기";
 "menu.unfavorite" = "즐겨찾기 해제";
 "menu.copy_selected" = "선택 항목 복사";
@@ -128,6 +130,7 @@
 "filter.source_label" = "앱";
 "filter.favorites" = "즐겨찾기";
 "filter.url" = "URL";
+"filter.email" = "이메일";
 "filter.move_first" = "맨 앞으로 이동";
 "filter.move_last" = "맨 뒤로 이동";
 "filter.reset_order" = "기본 순서로 복원";

@@ -43,6 +43,45 @@ struct SkyPasteCoreModelTests {
         #expect(ClipboardFilter.code.matches(item))
     }
 
+    @Test func naturalLanguageTextIsNotDetectedAsCode() {
+        let item = ClipboardItem(
+            content: .text("Let me know if this target looks good with the current product direction."),
+            fingerprint: "english-not-code"
+        )
+
+        #expect(!item.isCode)
+        #expect(!ClipboardFilter.code.matches(item))
+        #expect(ClipboardFilter.text.matches(item))
+    }
+
+    @Test func emailTextIsDetectedAsEmailOnly() {
+        let item = ClipboardItem(
+            content: .text("hello@example.com"),
+            fingerprint: "email"
+        )
+
+        #expect(item.isEmail)
+        #expect(!item.isURL)
+        #expect(!item.isPlainText)
+        #expect(ClipboardFilter.email.matches(item))
+        #expect(!ClipboardFilter.url.matches(item))
+        #expect(!ClipboardFilter.text.matches(item))
+        #expect(item.title == "hello@example.com")
+        #expect(item.mailtoURL?.absoluteString == "mailto:hello@example.com")
+        #expect(ClipboardSearchQuery(rawValue: "type:email").matches(item))
+    }
+
+    @Test func textContainingEmailStaysPlainText() {
+        let item = ClipboardItem(
+            content: .text("Please contact hello@example.com for details."),
+            fingerprint: "text-with-email"
+        )
+
+        #expect(!item.isEmail)
+        #expect(!ClipboardFilter.email.matches(item))
+        #expect(ClipboardFilter.text.matches(item))
+    }
+
     @Test func favoritesFilterMatchesOnlyFavoriteItems() {
         let item = ClipboardItem(
             id: UUID(),
@@ -54,6 +93,64 @@ struct SkyPasteCoreModelTests {
 
         #expect(item.isFavorite)
         #expect(ClipboardFilter.favorites.matches(item))
+    }
+
+    @Test func sharingItemsUseURLForURLText() {
+        let item = ClipboardItem(
+            content: .text("https://example.com/path?q=1"),
+            fingerprint: "url-share"
+        )
+
+        let sharingItems = ClipboardSharingService.sharingItems(for: item)
+
+        #expect(sharingItems.count == 1)
+        #expect((sharingItems.first as? URL)?.absoluteString == "https://example.com/path?q=1")
+    }
+
+    @Test func sharingItemsNormalizeURLTextWithoutScheme() {
+        let item = ClipboardItem(
+            content: .text("www.example.com/path"),
+            fingerprint: "url-share-without-scheme"
+        )
+
+        let sharingItems = ClipboardSharingService.sharingItems(for: item)
+
+        #expect(sharingItems.count == 1)
+        #expect((sharingItems.first as? URL)?.absoluteString == "https://www.example.com/path")
+    }
+
+    @Test func sharingItemsUseFileURLsForFileClipboardItems() {
+        let fileURL = URL(fileURLWithPath: "/tmp/SkyPaste/Report.pdf")
+        let item = ClipboardItem(
+            content: .fileURLs(urls: [fileURL], pasteboardPayload: nil),
+            fingerprint: "file-share"
+        )
+
+        let sharingItems = ClipboardSharingService.sharingItems(for: item)
+
+        #expect(sharingItems.count == 1)
+        #expect((sharingItems.first as? URL) == fileURL)
+    }
+
+    @Test func sharingItemsIgnoreBlankText() {
+        let item = ClipboardItem(
+            content: .text("   \n\t  "),
+            fingerprint: "blank-share"
+        )
+
+        #expect(ClipboardSharingService.sharingItems(for: item).isEmpty)
+    }
+
+    @Test func sharingItemsKeepSingleWordTextAsText() {
+        let item = ClipboardItem(
+            content: .text("target"),
+            fingerprint: "plain-share"
+        )
+
+        let sharingItems = ClipboardSharingService.sharingItems(for: item)
+
+        #expect(sharingItems.count == 1)
+        #expect((sharingItems.first as? String) == "target")
     }
 
     @Test func imageTitlePrefersExplicitName() {
@@ -255,13 +352,13 @@ struct SkyPasteCoreModelTests {
             .favorites
         ])
 
-        #expect(normalized == [.url, .file, .text, .image, .folder, .code])
+        #expect(normalized == [.url, .file, .text, .image, .folder, .code, .email])
     }
 
     @Test func clipboardFilterDisplayOrderKeepsAllFirstAndFavoritesLast() {
         let displayOrder = ClipboardFilter.displayOrder(from: [.folder, .url])
 
-        #expect(displayOrder == [.all, .folder, .url, .text, .image, .file, .code, .favorites])
+        #expect(displayOrder == [.all, .folder, .url, .text, .image, .file, .code, .email, .favorites])
     }
 
     @Test func filePasteboardPayloadRoundTripsThroughClipboardDecoder() {
@@ -629,6 +726,142 @@ struct SkyPasteCoreModelTests {
 
         #expect(restored.count == 1)
         #expect(restored.first?.sourceApp == ClipboardSourceApp(bundleID: "com.apple.finder", name: "Finder"))
+    }
+
+    @Test func clipboardDatabasePreservesFavoritesWhenTrimmingHistory() throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+        defer {
+            try? FileManager.default.removeItem(at: databaseURL)
+        }
+
+        let database = try ClipboardDatabase(fileURL: databaseURL)
+        let now = Date()
+        let favoriteItem = ClipboardItem(
+            id: UUID(),
+            createdAt: now.addingTimeInterval(-300),
+            content: .text("Pinned note"),
+            fingerprint: "txt:pinned-trim",
+            source: .local,
+            isFavorite: true
+        )
+        let recentOne = ClipboardItem(
+            id: UUID(),
+            createdAt: now.addingTimeInterval(-120),
+            content: .text("Recent 1"),
+            fingerprint: "txt:recent-1",
+            source: .local
+        )
+        let recentTwo = ClipboardItem(
+            id: UUID(),
+            createdAt: now.addingTimeInterval(-60),
+            content: .text("Recent 2"),
+            fingerprint: "txt:recent-2",
+            source: .local
+        )
+
+        try database.save(favoriteItem, maxItems: 2)
+        try database.save(recentOne, maxItems: 2)
+        try database.save(recentTwo, maxItems: 2)
+
+        let visibleItems = try database.loadVisibleItems(historyLimit: 2)
+        let restoredFingerprints = visibleItems.map(\.fingerprint)
+
+        #expect(restoredFingerprints.contains(favoriteItem.fingerprint))
+        #expect(restoredFingerprints.contains(recentOne.fingerprint))
+        #expect(restoredFingerprints.contains(recentTwo.fingerprint))
+    }
+
+    @Test func clipboardDatabaseStillLimitsNonFavoriteHistory() throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+        defer {
+            try? FileManager.default.removeItem(at: databaseURL)
+        }
+
+        let database = try ClipboardDatabase(fileURL: databaseURL)
+        let now = Date()
+        let oldest = ClipboardItem(
+            id: UUID(),
+            createdAt: now.addingTimeInterval(-180),
+            content: .text("Oldest"),
+            fingerprint: "txt:oldest",
+            source: .local
+        )
+        let middle = ClipboardItem(
+            id: UUID(),
+            createdAt: now.addingTimeInterval(-120),
+            content: .text("Middle"),
+            fingerprint: "txt:middle",
+            source: .local
+        )
+        let newest = ClipboardItem(
+            id: UUID(),
+            createdAt: now.addingTimeInterval(-60),
+            content: .text("Newest"),
+            fingerprint: "txt:newest",
+            source: .local
+        )
+
+        try database.save(oldest, maxItems: 2)
+        try database.save(middle, maxItems: 2)
+        try database.save(newest, maxItems: 2)
+
+        let recentItems = try database.loadRecent(limit: 10)
+        let recentFingerprints = recentItems.map(\.fingerprint)
+
+        #expect(recentItems.count == 2)
+        #expect(!recentFingerprints.contains(oldest.fingerprint))
+        #expect(recentFingerprints.contains(middle.fingerprint))
+        #expect(recentFingerprints.contains(newest.fingerprint))
+    }
+
+    @Test func clipboardDatabasePrunesUnfavoritedItemsOutsideHistoryLimit() throws {
+        let databaseURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString)
+            .appendingPathExtension("sqlite")
+        defer {
+            try? FileManager.default.removeItem(at: databaseURL)
+        }
+
+        let database = try ClipboardDatabase(fileURL: databaseURL)
+        let now = Date()
+        let oldFavorite = ClipboardItem(
+            id: UUID(),
+            createdAt: now.addingTimeInterval(-300),
+            content: .text("Old pinned note"),
+            fingerprint: "txt:old-pinned",
+            source: .local,
+            isFavorite: true
+        )
+        let recentOne = ClipboardItem(
+            id: UUID(),
+            createdAt: now.addingTimeInterval(-120),
+            content: .text("Recent 1"),
+            fingerprint: "txt:recent-visible-1",
+            source: .local
+        )
+        let recentTwo = ClipboardItem(
+            id: UUID(),
+            createdAt: now.addingTimeInterval(-60),
+            content: .text("Recent 2"),
+            fingerprint: "txt:recent-visible-2",
+            source: .local
+        )
+
+        try database.save(oldFavorite, maxItems: 2)
+        try database.save(recentOne, maxItems: 2)
+        try database.save(recentTwo, maxItems: 2)
+        try database.setFavorite(false, forID: oldFavorite.id)
+        try database.trimToLimit(2)
+
+        let restoredFingerprints = try database.loadRecent(limit: 10).map(\.fingerprint)
+
+        #expect(!restoredFingerprints.contains(oldFavorite.fingerprint))
+        #expect(restoredFingerprints.contains(recentOne.fingerprint))
+        #expect(restoredFingerprints.contains(recentTwo.fingerprint))
     }
 
     @Test func searchQueryMatchesStructuredFileTokens() {

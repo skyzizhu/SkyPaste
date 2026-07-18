@@ -82,7 +82,9 @@
 "menu.reveal_in_finder" = "Révéler dans le Finder";
 "menu.copy_path" = "Copier le chemin";
 "menu.copy_link" = "Copier le lien";
+"menu.share" = "Partager";
 "menu.open_in_browser" = "Ouvrir dans le navigateur";
+"menu.open_email" = "Envoyer un e-mail";
 "menu.favorite" = "Ajouter aux favoris";
 "menu.unfavorite" = "Retirer des favoris";
 "menu.copy_selected" = "Copier la sélection";
@@ -128,6 +130,7 @@
 "filter.source_label" = "Apps";
 "filter.favorites" = "Favoris";
 "filter.url" = "URL";
+"filter.email" = "E-mail";
 "filter.move_first" = "Déplacer au début";
 "filter.move_last" = "Déplacer à la fin";
 "filter.reset_order" = "Rétablir l'ordre par défaut";

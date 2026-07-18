@@ -31,6 +31,7 @@ struct PanelView: View {
     let onOpenContainingFolder: (ClipboardItem) -> Void
     let onCopyFileSystemPath: (ClipboardItem) -> Void
     let onOpenURL: (ClipboardItem) -> Void
+    let onOpenEmail: (ClipboardItem) -> Void
     let onClose: () -> Void
 
     @State private var selectedID: ClipboardItem.ID?
@@ -47,6 +48,8 @@ struct PanelView: View {
     @State private var batchSelection = Set<ClipboardItem.ID>()
     @State private var batchFeedbackMessage: String?
     @State private var pendingBatchFeedbackDismiss: DispatchWorkItem?
+    @State private var rowAnchors: [ClipboardItem.ID: ClipboardRowAnchor] = [:]
+    @State private var pendingSourceAppIconLoad: DispatchWorkItem?
 
     private func copyTimeText(_ date: Date) -> String {
         L10n.timeText(date)
@@ -89,9 +92,8 @@ struct PanelView: View {
     }
 
     private func selectFilter(_ filter: ClipboardFilter) {
-        withAnimation(.easeOut(duration: 0.1)) {
-            selectedFilter = filter
-        }
+        guard selectedFilter != filter else { return }
+        selectedFilter = filter
     }
 
     private func persistDisplayedFilterOrder() {
@@ -133,6 +135,16 @@ struct PanelView: View {
         store.deleteItem(item.id)
         refreshPresentation()
         selectedID = presentation.orderedItems.first?.id
+    }
+
+    private func share(_ item: ClipboardItem) {
+        selectedID = item.id
+        DispatchQueue.main.async {
+            ClipboardSharingService.presentPicker(
+                for: store.itemForPreview(item),
+                relativeTo: rowAnchors[item.id]?.view
+            )
+        }
     }
 
     private var selectedBatchItems: [ClipboardItem] {
@@ -259,22 +271,29 @@ struct PanelView: View {
             daySource = filteredItems
         }
 
-        let orderedItems = favoriteItems + daySource
         let calendar = Calendar.current
-        let grouped = Dictionary(grouping: daySource) { item in
-            calendar.startOfDay(for: item.createdAt)
+        var daySections: [DaySection] = []
+        var currentDay: Date?
+        var currentItems: [ClipboardItem] = []
+
+        for item in daySource {
+            let day = calendar.startOfDay(for: item.createdAt)
+            if let currentDay, currentDay != day {
+                daySections.append(DaySection(day: currentDay, items: currentItems))
+                currentItems.removeAll(keepingCapacity: true)
+            }
+
+            currentDay = day
+            currentItems.append(item)
         }
 
-        let daySections = grouped.keys.sorted(by: >).map { day in
-            DaySection(
-                day: day,
-                items: (grouped[day] ?? []).sorted { $0.createdAt > $1.createdAt }
-            )
+        if let currentDay {
+            daySections.append(DaySection(day: currentDay, items: currentItems))
         }
 
         return Presentation(
             favoriteItems: favoriteItems,
-            orderedItems: orderedItems,
+            orderedItems: filteredItems,
             daySections: daySections
         )
     }
@@ -409,10 +428,10 @@ struct PanelView: View {
         }
         .onAppear {
             displayedFilters = settings.orderedFilters
-            loadSourceAppIconsIfNeeded()
             refreshPresentation()
             selectedID = presentation.orderedItems.first?.id
             isSearchVisible = !store.appliedSearchText.isEmpty
+            loadSourceAppIconsSoon()
         }
         .onReceive(store.$items) { _ in
             validateSourceAppSelection()
@@ -456,7 +475,7 @@ struct PanelView: View {
             selectedID = presentation.orderedItems.first?.id
         }
         .onChange(of: availableSourceAppOptions.map(\.bundleID)) { _, _ in
-            loadSourceAppIconsIfNeeded()
+            loadSourceAppIconsSoon()
         }
         .onMoveCommand(perform: moveSelection)
         .onExitCommand {
@@ -863,6 +882,15 @@ struct PanelView: View {
         }
     }
 
+    private func loadSourceAppIconsSoon() {
+        pendingSourceAppIconLoad?.cancel()
+        let task = DispatchWorkItem {
+            loadSourceAppIconsIfNeeded()
+        }
+        pendingSourceAppIconLoad = task
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35, execute: task)
+    }
+
     @ViewBuilder
     private func filterChip(for filter: ClipboardFilter) -> some View {
         let chip = Button {
@@ -932,38 +960,44 @@ struct PanelView: View {
     }
 
     private var contentArea: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: 16) {
-                if presentation.orderedItems.isEmpty {
-                    emptyStateCard(
-                        title: isSearchActive ? L10n.tr("panel.search_empty_title") : L10n.tr("panel.empty_title"),
-                        message: emptyStateMessage,
-                        showsClearSearch: isSearchActive
-                    )
-                } else {
-                    if !presentation.favoriteItems.isEmpty {
-                        sectionCard(
-                            title: L10n.tr("section.favorites"),
-                            items: presentation.favoriteItems,
-                            allowDeleteDay: false
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 16) {
+                    if presentation.orderedItems.isEmpty {
+                        emptyStateCard(
+                            title: isSearchActive ? L10n.tr("panel.search_empty_title") : L10n.tr("panel.empty_title"),
+                            message: emptyStateMessage,
+                            showsClearSearch: isSearchActive
                         )
-                    }
+                    } else {
+                        if !presentation.favoriteItems.isEmpty {
+                            sectionCard(
+                                title: L10n.tr("section.favorites"),
+                                items: presentation.favoriteItems,
+                                allowDeleteDay: false
+                            )
+                        }
 
-                    ForEach(presentation.daySections) { section in
-                        sectionCard(
-                            title: L10n.sectionTitle(for: section.day),
-                            items: section.items,
-                            allowDeleteDay: true,
-                            onDeleteDay: {
-                                pendingDeleteDay = section.day
-                            }
-                        )
+                        ForEach(presentation.daySections) { section in
+                            sectionCard(
+                                title: L10n.sectionTitle(for: section.day),
+                                items: section.items,
+                                allowDeleteDay: true,
+                                onDeleteDay: {
+                                    pendingDeleteDay = section.day
+                                }
+                            )
+                        }
                     }
                 }
+                .id("content-top")
+                .padding(12)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
-            .padding(12)
+            .onChange(of: contentScrollResetID) { _, _ in
+                proxy.scrollTo("content-top", anchor: .top)
+            }
         }
-        .id(contentScrollResetID)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .fill(contentAreaFill)
@@ -971,6 +1005,10 @@ struct PanelView: View {
         .overlay {
             RoundedRectangle(cornerRadius: 20, style: .continuous)
                 .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+        .transaction { transaction in
+            transaction.animation = nil
         }
     }
 
@@ -1100,8 +1138,9 @@ struct PanelView: View {
                 }
             }
 
-            VStack(spacing: 0) {
-                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+            LazyVStack(spacing: 0) {
+                ForEach(items.indices, id: \.self) { index in
+                    let item = items[index]
                     rowView(for: item)
                         .id("\(item.id.uuidString)-\(item.isFavorite)")
 
@@ -1192,6 +1231,15 @@ struct PanelView: View {
                 pendingPrimaryAction?.cancel()
                 selectedID = item.id
             },
+            onAnchorViewChange: { view in
+                DispatchQueue.main.async {
+                    if let view {
+                        rowAnchors[item.id] = ClipboardRowAnchor(view)
+                    } else {
+                        rowAnchors[item.id] = nil
+                    }
+                }
+            },
             onPreview: item.isImage && !isBatchSelectionMode ? {
                 pendingPrimaryAction?.cancel()
                 selectedID = item.id
@@ -1217,6 +1265,13 @@ struct PanelView: View {
                 copySelected(item)
             } label: {
                 Label(L10n.tr("menu.copy"), systemImage: "doc.on.doc")
+            }
+            if item.supportsSharing {
+                Button {
+                    share(item)
+                } label: {
+                    Label(L10n.tr("menu.share"), systemImage: "square.and.arrow.up")
+                }
             }
             if item.isFileCollection {
                 Button {
@@ -1251,6 +1306,14 @@ struct PanelView: View {
                     onOpenURL(item)
                 } label: {
                     Label(L10n.tr("menu.open_in_browser"), systemImage: "safari")
+                }
+            }
+            if item.isEmail {
+                Button {
+                    selectedID = item.id
+                    onOpenEmail(item)
+                } label: {
+                    Label(L10n.tr("menu.open_email"), systemImage: "envelope")
                 }
             }
             if item.isImage {

@@ -82,7 +82,9 @@
 "menu.reveal_in_finder" = "在 Finder 中显示";
 "menu.copy_path" = "复制路径";
 "menu.copy_link" = "复制链接";
+"menu.share" = "分享";
 "menu.open_in_browser" = "浏览器打开";
+"menu.open_email" = "发送邮件";
 "menu.favorite" = "收藏";
 "menu.unfavorite" = "取消收藏";
 "menu.copy_selected" = "复制选中项";
@@ -128,6 +130,7 @@
 "filter.source_label" = "应用";
 "filter.favorites" = "收藏";
 "filter.url" = "URL";
+"filter.email" = "邮箱";
 "filter.move_first" = "移到最前";
 "filter.move_last" = "移到最后";
 "filter.reset_order" = "恢复默认顺序";

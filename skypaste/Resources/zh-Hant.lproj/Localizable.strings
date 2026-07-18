@@ -82,7 +82,9 @@
 "menu.reveal_in_finder" = "在 Finder 中顯示";
 "menu.copy_path" = "複製路徑";
 "menu.copy_link" = "複製連結";
+"menu.share" = "分享";
 "menu.open_in_browser" = "以瀏覽器開啟";
+"menu.open_email" = "傳送郵件";
 "menu.favorite" = "收藏";
 "menu.unfavorite" = "取消收藏";
 "menu.copy_selected" = "複製所選項目";
@@ -128,6 +130,7 @@
 "filter.source_label" = "應用程式";
 "filter.favorites" = "收藏";
 "filter.url" = "URL";
+"filter.email" = "電子郵件";
 "filter.move_first" = "移到最前";
 "filter.move_last" = "移到最後";
 "filter.reset_order" = "恢復預設順序";
