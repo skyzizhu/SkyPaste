@@ -1,261 +1,118 @@
-# SkyPaste
+# SkyPaste - macOS Clipboard Manager with History, Search, Sync, Files and Images
 
 <p align="center">
-  <img src="skypaste/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png" alt="SkyPaste app icon" width="120">
+  <img src="skypaste/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png" alt="SkyPaste macOS clipboard manager app icon" width="120">
 </p>
 
 <p align="center">
-  <a href="https://apps.apple.com/us/app/skypaste-clipboard-manager/id6760884520?mt=12">Download on the App Store / App Store 下载</a>
+  <strong>A lightweight clipboard history manager for macOS.</strong><br>
+  Save, search, preview, organize, and sync copied text, links, images, files, folders, code, and email addresses.
 </p>
 
 <p align="center">
-  <strong>简洁的剪切板内容管理工具</strong>
+  <a href="README.zh-CN.md">中文</a> | English
 </p>
+
 <p align="center">
-  <strong>A simple clipboard content manager</strong>
+  <a href="https://apps.apple.com/us/app/skypaste-clipboard-manager/id6760884520?mt=12">Download on the Mac App Store</a>
 </p>
 
-<p align="center">[中文](#中文) | English</p>
+SkyPaste is a simple and fast macOS clipboard manager built for people who copy and paste all day. It records clipboard history, keeps content searchable, groups items by type, supports menu bar quick access, and can sync SkyPaste clipboard content across devices with iCloud.
 
-SkyPaste is a simple macOS clipboard manager for text, images, and file URLs, designed for fast menu bar access, searchable history, filters, favorites, and keyboard-driven workflows.
+## Keywords
 
-## What's New in 0.2.2
+macOS clipboard manager, clipboard history, clipboard search, clipboard sync, iCloud clipboard, menu bar clipboard app, copy paste tool, paste manager, image clipboard, file clipboard, folder clipboard, URL history, email clipboard, productivity app for Mac.
 
-- Faster list updates with smoother deletion and clipboard browsing
-- Source app filtering with app icons, so you can narrow history by where content was copied from
-- Improved centered copy-success toast with better light and dark theme support
-- Improved day-delete confirmation with localized text, light/dark theme support, and faster deletion feedback
-- Refined image preview with animated zoom, drag navigation, and better fit behavior
-- Restored ignore-app settings with recent source app suggestions
+## What's New
+
+- Added an Email category for copied email addresses.
+- Improved menu bar and main panel list performance.
+- Improved share sheet positioning so shared content is visually connected to the selected item.
+- Improved URL, Email, and Code classification accuracy.
+- Improved scrolling behavior at the top and bottom of clipboard lists.
+- Refactored clipboard filters, image providers, and sharing into smaller focused components.
 
 ## Screenshots
+
+### Menu Bar Clipboard History
+
+![SkyPaste menu bar clipboard history](docs/screen/screen_2.png)
+
+### Main Clipboard Panel
+
+![SkyPaste main clipboard panel](docs/screen/screen_3.png)
+
+### Preferences
+
+![SkyPaste preferences](docs/screen/screen_4.png)
 
 ### Overview
 
 ![SkyPaste overview](docs/screen/screen_1.png)
 
-### Menu Bar Popover
-
-![SkyPaste menu bar popover](docs/screen/screen_2.png)
-
-### Main Panel
-
-![SkyPaste main panel screenshot](docs/screen/screen_3.png)
-
-### Preferences
-
-![SkyPaste preferences window](docs/screen/screen_4.png)
-
 ## Features
 
-- Clipboard history for text, images, and file URLs
-- Menu bar popover for quick access
-- Searchable main panel with source app filtering
-- Filters: All, Text, Image, Files, Folders, URL, Code, Favorites
-- Day-based grouped history sections
-- Favorites with pinned display at the top
-- Delete a single item or delete all items from a specific day
-- Single-click to select, right-click to copy / favorite / delete
-- Source app badges for locally copied items
-- File and folder previews with copy, path copy, Finder reveal, and open actions
-- Image file items are visually distinguished from copied image content
-- `Cmd+C` to copy the currently selected item
-- `Enter` to paste the currently selected item
-- `Cmd+1...9` to quick-copy the first 9 items
-- Customizable global hotkey to open the panel
-- Built-in multi-language support: English, Simplified Chinese, Traditional Chinese, Japanese, Korean, French
-- Appearance options: follow system, light mode, or dark mode
-- iCloud sync support for SkyPaste content across your devices
-- iPhone-to-Mac clipboard sync support through iCloud when signed into the same Apple account
-- Local SQLite persistence
-- Memory optimizations for image history:
-  - thumbnails are kept in memory instead of full-size images
-  - image previews are lazily loaded only when rows are visible
-  - full-resolution images stay in the local database and are restored on demand when copying
-
-## Current Status
-
-SkyPaste is already usable as a practical daily menu bar clipboard utility, with the core workflow in place:
-
-- quick menu bar access
-- clipboard history browsing and search
-- favorites and category filters
-- multilingual UI and appearance controls
-- iCloud-based cross-device sync
-- local persistence
-- paste-back into the previous app
+- Clipboard history for text, links, images, files, folders, code, and email addresses.
+- Fast menu bar popover for quick clipboard access.
+- Full clipboard panel with search, filters, source app filtering, and day-based history groups.
+- Filters for All, Text, Image, Files, Folders, Code, URL, Email, and Favorites.
+- Email recognition with a dedicated Email category and Send Email action.
+- URL recognition with Open in Browser action.
+- File and folder recognition with preview, copy path, Finder reveal, and open actions.
+- Image preview with zoom and pan support.
+- Favorites that remain available even when regular history is trimmed.
+- Batch selection, batch delete, and batch favorite actions.
+- Source app badges for locally copied content.
+- iCloud sync for SkyPaste clipboard content across devices.
+- iPhone-to-Mac copied content sync when using the same Apple account.
+- Privacy content filtering option for sensitive clipboard text.
+- Ignore apps by app name or bundle ID.
+- Customizable global hotkey.
+- Keyboard shortcuts: `Cmd+C`, `Enter`, and `Cmd+1...9`.
+- Appearance modes: Follow System, Light Mode, and Dark Mode.
+- Multi-language UI: English, Simplified Chinese, Traditional Chinese, Japanese, Korean, and French.
+- Local SQLite persistence.
+- Image memory optimization with lazy thumbnails and on-demand full image restore.
 
 ## Local Storage
 
-Clipboard history is stored locally in SQLite:
+SkyPaste stores clipboard history locally in SQLite:
 
 ```text
 ~/Library/Application Support/SkyPaste/history.sqlite
 ```
+
+Data stays local by default. iCloud sync is optional and can be configured in Preferences.
 
 ## Open in Xcode
 
-The repo now uses the Xcode project in `skypaste.xcodeproj`.
+SkyPaste uses the Xcode project at `skypaste.xcodeproj`.
 
 ```text
 open skypaste.xcodeproj
 ```
 
-From there you can run the app with `Product -> Run`, or archive it with `Product -> Archive`.
+Run with `Product -> Run`, or create a release build with `Product -> Archive`.
 
-For App Store submission, use Xcode's archive/distribution flow and App Store Connect.
+For App Store submission, use Xcode Archive and App Store Connect.
 
-## Release Process
+## Release and App Store Notes
 
-See [docs/RELEASING.md](docs/RELEASING.md) for the Xcode release checklist and versioning flow.
-
-## App Store Preparation
-
-See [docs/APP_STORE.md](docs/APP_STORE.md) for the sandbox, signing, and App Store submission checklist.
-See [docs/APP_STORE_CHECKLIST.md](docs/APP_STORE_CHECKLIST.md) for metadata, screenshot, and review-note prep.
-See [docs/PRIVACY_POLICY.md](docs/PRIVACY_POLICY.md) for a privacy policy template you can publish at a public URL.
-
-## Preferences
-
-Open `Preferences` from the menu bar app to configure:
-
-- general settings: app appearance and app language
-- global hotkey
-- history limit
-- iCloud sync
-- ignore apps by name or bundle ID, with recent source app suggestions
-- launch at login
-- recommended companion app entry
+- Release checklist: [docs/RELEASING.md](docs/RELEASING.md)
+- App Store checklist: [docs/APP_STORE.md](docs/APP_STORE.md)
+- Metadata checklist: [docs/APP_STORE_CHECKLIST.md](docs/APP_STORE_CHECKLIST.md)
+- Privacy policy template: [docs/PRIVACY_POLICY.md](docs/PRIVACY_POLICY.md)
 
 ## Permissions
 
-To support automatic paste back into the previous app, macOS may request Accessibility permission:
-
-- `System Settings` -> `Privacy & Security` -> `Accessibility`
-- enable the terminal or the packaged app running SkyPaste
-
-## Notes
-
-- No tag system or end-to-end encryption yet
-- Data is stored locally by default, with optional iCloud sync
-- The old SwiftPM packaging scripts were removed in favor of the Xcode project
-- License: [MIT](LICENSE)
-
----
-
-## 中文
-
-<p align="center">
-  <strong>简洁的剪切板内容管理工具</strong>
-</p>
-
-<p align="center">
-  <strong>A simple clipboard content manager</strong>
-</p>
-
-SkyPaste 是一个 macOS 剪贴板管理工具，支持文本、图片、文件地址的历史记录、快速检索、菜单栏操作和快捷键调用。
-
-### 0.2.2 更新内容
-
-- 优化列表刷新与删除反馈，浏览历史记录更顺畅
-- 新增来源应用筛选和应用图标展示，可按复制来源快速过滤内容
-- 优化屏幕中间的复制成功提示，并兼容浅色和深色主题
-- 优化按天删除确认弹框，支持多语言、浅色/深色主题，并提升删除反馈速度
-- 改进图片详情预览，支持更顺滑的缩放动画、拖动浏览与适应显示
-- 恢复忽略应用设置，并增加最近来源应用建议
-
-### 截图
-
-- 概览  
-  ![SkyPaste 概览](docs/screen/screen_1.png)
-- 菜单栏弹窗  
-  ![SkyPaste 菜单栏弹窗](docs/screen/screen_2.png)
-- 主面板（敏感内容已移除）  
-  ![SkyPaste 主面板截图](docs/screen/screen_3.png)
-- 偏好设置  
-  ![SkyPaste 偏好设置窗口](docs/screen/screen_4.png)
-
-### 功能特性
-
-- 监听并保存剪贴板历史：文本、图片、文件 URL
-- 菜单栏弹窗查看历史记录
-- 主面板搜索与筛选，支持来源应用过滤
-- 分类筛选：全部、文本、图片、文件、目录、URL、代码、收藏
-- 按天分组显示历史记录
-- 收藏功能，支持置顶显示
-- 支持删除单条记录和删除某一天的全部记录
-- 单击选中，右键菜单复制/收藏/删除
-- 本地复制内容支持显示来源应用标识
-- 文件与目录支持详情预览、复制路径、在 Finder 中显示和直接打开
-- 图片列表中可区分复制的图片内容与图片文件
-- `Cmd+C` 复制当前选中项
-- `Enter` 粘贴当前选中项
-- `Cmd+1...9` 快捷复制前 9 条
-- 全局快捷键呼出面板，可在设置中自定义
-- 内置多语言支持：English、简体中文、繁体中文、日本語、한국어、Français
-- 支持主题切换：跟随系统、浅色模式、深色模式
-- 支持 iCloud 同步 SkyPaste 内容
-- 支持同一 Apple 账户下的 iPhone 到 Mac 内容同步
-- 本地 SQLite 持久化存储
-- 图片历史做了内存优化：
-  - 内存中优先保留缩略图
-  - 列表滚动时图片预览按可视区域懒加载
-  - 原图仍保存在本地数据库中，复制时按需恢复
-
-### 项目状态
-
-当前版本已经可以作为日常可用的菜单栏剪贴板工具使用，重点能力已经完整：
-
-- 菜单栏快速查看与复制
-- 剪贴板历史检索
-- 收藏与分类管理
-- 多语言与外观模式切换
-- 基于 iCloud 的跨设备同步
-- 本地持久化
-- 自动粘贴回原应用
-
-### 本地数据位置
-
-SkyPaste 使用本地 SQLite 数据库存储历史记录：
+To support paste back into the previous app, macOS may request Accessibility permission:
 
 ```text
-~/Library/Application Support/SkyPaste/history.sqlite
+System Settings -> Privacy & Security -> Accessibility
 ```
 
-### 在 Xcode 中打开
+Enable the packaged SkyPaste app, or the terminal/Xcode app used to run it during development.
 
-仓库现在以 `skypaste.xcodeproj` 为主工程。
+## License
 
-```text
-open skypaste.xcodeproj
-```
-
-然后可以直接在 Xcode 中使用 `Product -> Run` 运行，或使用 `Product -> Archive` 打包。
-
-如果要上架 App Store，请使用 Xcode 的归档和发布流程，再到 App Store Connect 提交。
-
-### 偏好设置
-
-可在菜单栏中打开 `偏好设置`，支持配置：
-
-- 通用设置：外观模式、应用语言
-- 全局快捷键
-- 历史记录上限
-- iCloud 同步
-- 忽略应用支持按应用名称或 bundle ID 过滤，并提供最近来源应用建议
-- 登录时启动
-- 推荐应用入口
-
-### 系统权限
-
-如果你需要“复制后自动粘贴回原应用”，macOS 可能会要求辅助功能权限：
-
-- `系统设置` -> `隐私与安全性` -> `辅助功能`
-- 勾选运行 SkyPaste 的终端或打包后的 App
-
-### 说明
-
-- 当前版本不包含标签系统和端到端加密
-- 数据默认保存在本地设备，也可按需启用 iCloud 同步
-- 旧的 SwiftPM 打包脚本已移除，仓库以 Xcode 工程为主
-- 协议： [MIT](LICENSE)
+[MIT](LICENSE)

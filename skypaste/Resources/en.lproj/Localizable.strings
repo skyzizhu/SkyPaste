@@ -83,7 +83,9 @@
 "menu.reveal_in_finder" = "Reveal in Finder";
 "menu.copy_path" = "Copy Path";
 "menu.copy_link" = "Copy Link";
+"menu.share" = "Share";
 "menu.open_in_browser" = "Open in Browser";
+"menu.open_email" = "Send Email";
 "menu.favorite" = "Favorite";
 "menu.unfavorite" = "Remove Favorite";
 "menu.copy_selected" = "Copy Selected";
@@ -129,6 +131,7 @@
 "filter.source_label" = "Apps";
 "filter.favorites" = "Favorites";
 "filter.url" = "URL";
+"filter.email" = "Email";
 "filter.move_first" = "Move to Front";
 "filter.move_last" = "Move to End";
 "filter.reset_order" = "Restore Default Order";

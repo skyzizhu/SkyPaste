@@ -55,6 +55,35 @@ final class ClipboardDatabase {
         sqlite3_close(db)
     }
 
+    func loadVisibleItems(historyLimit: Int) throws -> [ClipboardItem] {
+        guard historyLimit > 0 else { return [] }
+
+        var statement: OpaquePointer?
+        let sql =
+            """
+            SELECT id, created_at, kind, text_value, blob_value, image_name, file_urls_json, fingerprint, is_favorite, is_snippet, source_kind, pasteboard_payload, source_app_bundle_id, source_app_name
+            FROM clipboard_items
+            WHERE is_favorite = 1
+               OR id IN (
+                 SELECT id
+                 FROM clipboard_items
+                 WHERE is_favorite = 0
+                 ORDER BY created_at DESC
+                 LIMIT ?
+               )
+            ORDER BY created_at DESC;
+            """
+
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+            throw ClipboardDatabaseError.prepareFailed(String(cString: sqlite3_errmsg(db)))
+        }
+        defer { sqlite3_finalize(statement) }
+
+        sqlite3_bind_int(statement, 1, Int32(historyLimit))
+
+        return try loadItems(using: statement, reservedCapacity: historyLimit)
+    }
+
     func loadRecent(limit: Int) throws -> [ClipboardItem] {
         guard limit > 0 else { return [] }
 
@@ -69,8 +98,12 @@ final class ClipboardDatabase {
 
         sqlite3_bind_int(statement, 1, Int32(limit))
 
+        return try loadItems(using: statement, reservedCapacity: limit)
+    }
+
+    private func loadItems(using statement: OpaquePointer?, reservedCapacity: Int) throws -> [ClipboardItem] {
         var result: [ClipboardItem] = []
-        result.reserveCapacity(limit)
+        result.reserveCapacity(reservedCapacity)
 
         while sqlite3_step(statement) == SQLITE_ROW {
             guard
@@ -350,7 +383,7 @@ final class ClipboardDatabase {
         }
     }
 
-    static func setFavorites(_ isFavorite: Bool, forIDs ids: [UUID], in fileURL: URL) throws {
+    static func setFavorites(_ isFavorite: Bool, forIDs ids: [UUID], in fileURL: URL, maxItems: Int? = nil) throws {
         guard !ids.isEmpty else { return }
 
         var db: OpaquePointer?
@@ -385,6 +418,10 @@ final class ClipboardDatabase {
                 guard sqlite3_step(statement) == SQLITE_DONE else {
                     throw ClipboardDatabaseError.stepFailed(String(cString: sqlite3_errmsg(db)))
                 }
+            }
+
+            if let maxItems {
+                try trim(maxItems: maxItems, in: db)
             }
 
             guard sqlite3_exec(db, "COMMIT;", nil, nil, nil) == SQLITE_OK else {
@@ -486,8 +523,36 @@ final class ClipboardDatabase {
         let sql =
             """
             DELETE FROM clipboard_items
-            WHERE id NOT IN (
+            WHERE is_favorite = 0
+              AND id NOT IN (
               SELECT id FROM clipboard_items
+              WHERE is_favorite = 0
+              ORDER BY created_at DESC
+              LIMIT ?
+            );
+            """
+
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK else {
+            throw ClipboardDatabaseError.prepareFailed(String(cString: sqlite3_errmsg(db)))
+        }
+        defer { sqlite3_finalize(statement) }
+
+        sqlite3_bind_int(statement, 1, Int32(maxItems))
+
+        guard sqlite3_step(statement) == SQLITE_DONE else {
+            throw ClipboardDatabaseError.stepFailed(String(cString: sqlite3_errmsg(db)))
+        }
+    }
+
+    private static func trim(maxItems: Int, in db: OpaquePointer?) throws {
+        var statement: OpaquePointer?
+        let sql =
+            """
+            DELETE FROM clipboard_items
+            WHERE is_favorite = 0
+              AND id NOT IN (
+              SELECT id FROM clipboard_items
+              WHERE is_favorite = 0
               ORDER BY created_at DESC
               LIMIT ?
             );

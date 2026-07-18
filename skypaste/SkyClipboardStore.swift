@@ -17,6 +17,7 @@ struct ClipboardSearchQuery {
         case folder
         case code
         case url
+        case email
     }
 
     enum SourceScope: Hashable {
@@ -110,6 +111,8 @@ struct ClipboardSearchQuery {
             return .code
         case "type:url", "type:link", "is:url":
             return .url
+        case "type:email", "type:mail", "is:email", "is:mail":
+            return .email
         default:
             return nil
         }
@@ -142,6 +145,8 @@ struct ClipboardSearchQuery {
             return item.isCode
         case .url:
             return item.isURL
+        case .email:
+            return item.isEmail
         }
     }
 
@@ -195,7 +200,7 @@ final class ClipboardStore: ObservableObject {
         if let database {
             do {
                 try database.clearAllSnippets()
-                items = try database.loadRecent(limit: settings.historyLimit).map { item in
+                items = try database.loadVisibleItems(historyLimit: settings.historyLimit).map { item in
                     var item = item
                     item.isSnippet = false
                     return ClipboardImageOptimizer.memoryOptimizedItem(item)
@@ -325,6 +330,9 @@ final class ClipboardStore: ObservableObject {
         if let database {
             do {
                 try database.setFavorite(newValue, forID: itemID)
+                if !newValue {
+                    try database.trimToLimit(settings.historyLimit)
+                }
             } catch {
                 print("[ClipboardStore] Failed to update favorite: \(error)")
                 return
@@ -333,7 +341,7 @@ final class ClipboardStore: ObservableObject {
 
         var updatedItems = items
         updatedItems[index].isFavorite = newValue
-        replaceItemsForImmediateDisplay(updatedItems)
+        replaceItemsForImmediateDisplay(applyingHistoryLimit(to: updatedItems))
     }
 
     func deleteItem(_ itemID: ClipboardItem.ID) {
@@ -401,13 +409,14 @@ final class ClipboardStore: ObservableObject {
             updatedItems[index].isFavorite = isFavorite
         }
 
-        replaceItemsForImmediateDisplay(updatedItems)
+        replaceItemsForImmediateDisplay(applyingHistoryLimit(to: updatedItems))
 
         guard let fileURL = database?.fileURL else { return }
         let idsToUpdate = Array(itemIDs)
+        let historyLimit = isFavorite ? nil : settings.historyLimit
         databaseWriteQueue.async {
             do {
-                try ClipboardDatabase.setFavorites(isFavorite, forIDs: idsToUpdate, in: fileURL)
+                try ClipboardDatabase.setFavorites(isFavorite, forIDs: idsToUpdate, in: fileURL, maxItems: historyLimit)
             } catch {
                 print("[ClipboardStore] Failed to update selected favorites: \(error)")
             }
@@ -691,6 +700,9 @@ final class ClipboardStore: ObservableObject {
             if ClipboardFilter.url.matches(item) {
                 result[.url, default: []].append(item)
             }
+            if ClipboardFilter.email.matches(item) {
+                result[.email, default: []].append(item)
+            }
         }
 
         return result
@@ -716,8 +728,31 @@ final class ClipboardStore: ObservableObject {
     }
 
     private func enforceHistoryLimit(limit: Int? = nil) {
-        let resolvedLimit = limit ?? settings.historyLimit
-        items = Array(items.prefix(resolvedLimit))
+        items = applyingHistoryLimit(to: items, limit: limit)
+    }
+
+    private func applyingHistoryLimit(to sourceItems: [ClipboardItem], limit: Int? = nil) -> [ClipboardItem] {
+        let resolvedLimit = max(0, limit ?? settings.historyLimit)
+        guard resolvedLimit > 0 else {
+            return sourceItems.filter(\.isFavorite)
+        }
+
+        var result: [ClipboardItem] = []
+        result.reserveCapacity(min(sourceItems.count, resolvedLimit))
+
+        var nonFavoriteCount = 0
+        for item in sourceItems {
+            if item.isFavorite {
+                result.append(item)
+                continue
+            }
+
+            guard nonFavoriteCount < resolvedLimit else { continue }
+            result.append(item)
+            nonFavoriteCount += 1
+        }
+
+        return result
     }
 }
 

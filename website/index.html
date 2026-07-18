@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="SkyPaste - 剪贴板管理器是一款专为 macOS 打造的轻量剪贴板历史管理工具，支持文本、图片、链接、代码、文件 URL 记录，搜索筛选、快捷键、收藏、iCloud 与手机复制同步。">
+  <meta name="keywords" content="SkyPaste, 剪贴板管理器, 剪贴板历史, macOS 剪贴板, Mac 剪贴板工具, 复制粘贴, 粘贴管理, 菜单栏工具, 效率工具, clipboard manager, clipboard history, Mac clipboard, productivity app, iCloud sync">
+  <meta name="author" content="HuaiBor Technology Co.,Ltd">
+  <meta name="robots" content="index, follow">
+  <meta name="theme-color" content="#f6f7f4">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="SkyPaste">
+  <meta property="og:title" content="SkyPaste - 剪贴板管理器">
+  <meta property="og:description" content="专为 macOS 打造的轻量剪贴板历史管理工具。记录文本、图片、链接、代码和文件 URL，支持搜索筛选、快捷键、收藏和手机复制同步。">
+  <meta property="og:image" content="./assets/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="675">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SkyPaste - 剪贴板管理器">
+  <meta name="twitter:description" content="轻量 macOS 剪贴板历史管理工具，支持搜索、预览、分类、快捷键、收藏和手机复制同步。">
+  <meta name="twitter:image" content="./assets/og-image.jpg">
+  <title>SkyPaste - 剪贴板管理器 | macOS Clipboard Manager</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/favicon-32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
+  <link rel="preload" as="image" href="./assets/hero-ai.jpg" fetchpriority="high">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "SkyPaste",
+      "applicationCategory": "ProductivityApplication",
+      "operatingSystem": "macOS 14 or later",
+      "description": "SkyPaste - 剪贴板管理器是一款专为 macOS 打造的轻量剪贴板历史管理工具，支持搜索筛选、快捷键、收藏、iCloud 与手机复制同步。",
+      "image": "./assets/og-image.jpg",
+      "downloadUrl": "https://apps.apple.com/cn/app/skypaste-%E5%89%AA%E8%B4%B4%E6%9D%BF%E7%AE%A1%E7%90%86%E5%99%A8/id6760884520?mt=12",
+      "inLanguage": ["zh-Hans", "zh-Hant", "en", "ja", "ko", "fr"],
+      "author": {
+        "@type": "Organization",
+        "name": "HuaiBor Technology Co.,Ltd"
+      },
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      }
+    }
+  </script>
+</head>
+<body>
+  <header class="site-header" aria-label="SkyPaste">
+    <a class="brand" href="#top" aria-label="SkyPaste Home">
+      <img src="./assets/skypaste-logo.png" alt="SkyPaste logo" width="40" height="40">
+      <span class="brand-text">
+        <span>SkyPaste</span>
+        <span class="brand-subtitle" data-i18n="brandSubtitle">剪贴板管理器</span>
+      </span>
+    </a>
+
+    <nav class="nav-actions" aria-label="Primary">
+      <a href="#features" data-i18n="navFeatures">功能</a>
+      <a href="#download" data-i18n="navDownload">下载</a>
+      <select class="language-select" aria-label="Language">
+        <option value="zh-Hans">简体中文</option>
+        <option value="zh-Hant">繁體中文</option>
+        <option value="en">English</option>
+        <option value="ja">日本語</option>
+        <option value="ko">한국어</option>
+        <option value="fr">Français</option>
+      </select>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy reveal">
+        <p class="eyebrow" data-i18n="eyebrow">macOS 剪贴板管理器</p>
+        <h1 id="hero-title" data-i18n="heroTitle">复制过的内容，需要时马上找到。</h1>
+        <p class="hero-text" data-i18n="heroText">
+          SkyPaste 在 Mac 上记录剪贴板历史，支持搜索、预览、分类与手机同步，让日常粘贴更顺手。
+        </p>
+        <div class="hero-actions">
+          <a class="button primary" href="https://apps.apple.com/us/app/skypaste/id6760884520?mt=12" data-i18n="appStore">在 App Store 下载</a>
+          <a class="button secondary" href="https://github.com/skyzizhu/SkyPaste/releases/latest" target="_blank" rel="noopener noreferrer" data-i18n="githubDownload">去 GitHub 下载</a>
+        </div>
+      </div>
+
+      <div class="hero-stage reveal" aria-label="SkyPaste app preview">
+        <div class="orb orb-blue"></div>
+        <div class="orb orb-mint"></div>
+        <img class="hero-shot" src="./assets/hero-ai.jpg" alt="SkyPaste clipboard workflow visual" width="1400" height="788" fetchpriority="high" decoding="async">
+      </div>
+    </section>
+
+    <section class="statement reveal">
+      <p data-i18n="statement">
+        它安静地待在菜单栏，帮你整理复制过的文本、链接、图片、文件和目录。
+      </p>
+    </section>
+
+    <section id="features" class="feature-canvas" aria-label="Features">
+      <div class="feature-intro reveal">
+        <p class="eyebrow" data-i18n="featuresEyebrow">核心能力</p>
+        <h2 data-i18n="featuresTitle">围绕复制、查找和再次粘贴，做好每一步。</h2>
+      </div>
+      <div class="feature-stack">
+        <article class="feature reveal">
+          <span class="feature-index">01</span>
+          <div class="feature-copy">
+            <h3 data-i18n="featureHistoryTitle">记录与管理</h3>
+            <p data-i18n="featureHistoryText">自动保存复制历史，统一管理文本、链接、图片、文件和目录等粘贴内容。</p>
+          </div>
+          <div class="feature-visual history-visual" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+        </article>
+        <article class="feature reveal">
+          <span class="feature-index">02</span>
+          <div class="feature-copy">
+            <h3 data-i18n="featurePreviewSearchTitle">预览与搜索</h3>
+            <p data-i18n="featurePreviewSearchText">预览页面简洁清楚，搜索入口便捷，长历史也能快速找到目标内容。</p>
+          </div>
+          <div class="feature-visual search-visual" aria-hidden="true">
+            <span></span><span></span>
+          </div>
+        </article>
+        <article class="feature reveal">
+          <span class="feature-index">03</span>
+          <div class="feature-copy">
+            <h3 data-i18n="featurePhoneTitle">手机复制同步</h3>
+            <p data-i18n="featurePhoneText">手机上复制的内容可以同步到 Mac 端 SkyPaste，跨设备整理更顺手。</p>
+          </div>
+          <div class="feature-visual sync-visual" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+        </article>
+        <article class="feature reveal">
+          <span class="feature-index">04</span>
+          <div class="feature-copy">
+            <h3 data-i18n="featureFilterTitle">分类清晰</h3>
+            <p data-i18n="featureFilterText">文本、URL、图片、文件、目录、代码与收藏分开管理，常用内容一眼可见。</p>
+          </div>
+          <div class="feature-visual filter-visual" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+        </article>
+        <article class="feature reveal">
+          <span class="feature-index">05</span>
+          <div class="feature-copy">
+            <h3 data-i18n="featureExperienceTitle">简洁好用</h3>
+            <p data-i18n="featureExperienceText">界面克制，交互轻盈，菜单栏、快捷键和主题设置都贴合 macOS 使用习惯。</p>
+          </div>
+          <div class="feature-visual experience-visual" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="showcase">
+      <div class="showcase-copy reveal">
+        <p class="eyebrow" data-i18n="showcaseEyebrow">少一点打断</p>
+        <h2 data-i18n="showcaseTitle">从菜单栏到详情页，保持清楚、快速、容易操作。</h2>
+      </div>
+      <figure class="product-showcase reveal">
+        <img src="./assets/showcase-ai.jpg" alt="SkyPaste clipboard management visual" width="1400" height="788" loading="lazy" decoding="async">
+        <figcaption>
+          <span data-i18n="captionMenu">菜单栏快速访问</span>
+          <span data-i18n="captionSettings">简洁偏好设置</span>
+          <span data-i18n="captionDetails">内容详情与预览</span>
+        </figcaption>
+      </figure>
+    </section>
+
+    <section id="download" class="download reveal" aria-labelledby="download-title">
+      <img src="./assets/skypaste-logo.png" alt="" aria-hidden="true" width="84" height="84" loading="lazy" decoding="async">
+      <p class="eyebrow" data-i18n="downloadEyebrow">SkyPaste for macOS</p>
+      <h2 id="download-title" data-i18n="downloadTitle">让复制粘贴回到轻松状态。</h2>
+      <p data-i18n="downloadText">适用于 macOS 14 及以上版本。轻量、无广告，核心功能免费。</p>
+      <div class="download-actions">
+        <a class="button primary" href="https://apps.apple.com/us/app/skypaste/id6760884520?mt=12" data-i18n="appStore">在 App Store 下载</a>
+        <a class="button secondary" href="https://github.com/skyzizhu/SkyPaste/releases/latest" target="_blank" rel="noopener noreferrer" data-i18n="githubDownload">去 GitHub 下载</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-contact">
+      <strong>Contact Us</strong>
+      <a href="mailto:skyzizhu@gmail.com">Email: skyzizhu@gmail.com</a>
+      <span>Copyright © 2024-2026 Your Tools · All Rights Reserved</span>
+    </div>
+    <div class="footer-links" aria-label="Links">
+      <strong>Links</strong>
+      <div>
+        <a href="https://yourtools.xyz/" target="_blank" rel="noopener noreferrer" aria-label="Friend link 1">Your Tools</a>
+        <a href="https://www.iashes.com/" target="_blank" rel="noopener noreferrer" aria-label="Friend link 2">薄暮</a>
+      </div>
+    </div>
+    <div class="footer-social" aria-label="Social links">
+      <a href="https://x.com/la21542708" target="_blank" rel="noopener noreferrer" aria-label="X">X</a>
+      <button type="button" class="social-button" data-wechat-open aria-label="WeChat">WeChat</button>
+      <button type="button" class="social-button social-disabled" aria-label="TikTok">TikTok</button>
+    </div>
+  </footer>
+
+  <div class="wechat-popover" data-wechat-popover aria-hidden="true">
+    <div class="wechat-card" role="dialog" aria-modal="false" aria-labelledby="wechat-title">
+      <p class="wechat-title" id="wechat-title">WeChat</p>
+      <div class="wechat-qr-placeholder" aria-label="WeChat QR code placeholder">
+        <span>QR</span>
+      </div>
+      <p class="wechat-note">Wechat QR code</p>
+    </div>
+  </div>
+
+  <script src="./script.js"></script>
+</body>
+</html>

@@ -90,6 +90,8 @@ private extension AppCoordinator {
             self?.copyFileSystemPathString(for: item)
         }, onOpenURL: { [weak self] item in
             self?.openURLInBrowser(for: item)
+        }, onOpenEmail: { [weak self] item in
+            self?.openEmailComposer(for: item)
         }, onClose: { [weak self] in
             self?.closePanel()
         })
@@ -243,6 +245,9 @@ private extension AppCoordinator {
             },
             onOpenURL: item.browserURL != nil ? { [weak self] in
                 self?.openURLInBrowser(for: item)
+            } : nil,
+            onOpenEmail: item.mailtoURL != nil ? { [weak self] in
+                self?.openEmailComposer(for: item)
             } : nil
         )
 
@@ -389,6 +394,18 @@ private extension AppCoordinator {
     func openURLInBrowser(for item: ClipboardItem) {
         guard let url = item.browserURL else { return }
         NSWorkspace.shared.open(url)
+    }
+
+    func openEmailComposer(for item: ClipboardItem) {
+        guard let url = item.mailtoURL else { return }
+
+        let mailAppURL = URL(fileURLWithPath: "/System/Applications/Mail.app", isDirectory: true)
+        let configuration = NSWorkspace.OpenConfiguration()
+        NSWorkspace.shared.open([url], withApplicationAt: mailAppURL, configuration: configuration) { _, error in
+            if error != nil {
+                NSWorkspace.shared.open(url)
+            }
+        }
     }
 
     func copyFileSystemPathString(for item: ClipboardItem) {
@@ -814,6 +831,10 @@ private extension AppDelegate {
                 self?.closeStatusPopover()
                 self?.coordinator.openURLInBrowser(for: item)
             },
+            onOpenEmail: { [weak self] item in
+                self?.closeStatusPopover()
+                self?.coordinator.openEmailComposer(for: item)
+            },
             onOpenPanel: { [weak self] in
                 self?.closeStatusPopover()
                 self?.coordinator.togglePanel()
@@ -963,6 +984,10 @@ private struct ImagePreviewView: View {
                 HStack(spacing: 8) {
                     Button(action: onCopy) {
                         Label(L10n.tr("menu.copy"), systemImage: "doc.on.doc")
+                    }
+
+                    if item.supportsSharing {
+                        PreviewHeaderShareButton(item: item)
                     }
 
                     Button {
@@ -1429,6 +1454,7 @@ private struct TextPreviewView: View {
     let text: String
     let onCopy: () -> Void
     let onOpenURL: (() -> Void)?
+    let onOpenEmail: (() -> Void)?
 
     private var headerActions: [PreviewHeaderAction] {
         var actions = [
@@ -1449,6 +1475,16 @@ private struct TextPreviewView: View {
             )
         }
 
+        if let onOpenEmail {
+            actions.append(
+                PreviewHeaderAction(
+                    title: L10n.tr("menu.open_email"),
+                    systemImage: "envelope",
+                    action: onOpenEmail
+                )
+            )
+        }
+
         return actions
     }
 
@@ -1465,7 +1501,12 @@ private struct TextPreviewView: View {
 
                 Spacer()
 
-                PreviewHeaderActionBar(actions: headerActions)
+                HStack(spacing: 8) {
+                    if item.supportsSharing {
+                        PreviewHeaderShareButton(item: item)
+                    }
+                    PreviewHeaderActionBar(actions: headerActions)
+                }
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
@@ -1924,8 +1965,13 @@ private struct FileSystemPreviewView: View {
 
             Spacer()
 
-            PreviewHeaderActionBar(actions: headerActions)
-                .layoutPriority(1)
+            HStack(spacing: 8) {
+                if item.supportsSharing {
+                    PreviewHeaderShareButton(item: item)
+                }
+                PreviewHeaderActionBar(actions: headerActions)
+                    .layoutPriority(1)
+            }
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
@@ -2110,7 +2156,7 @@ private struct GlobalToastView: View {
         HStack(spacing: 10) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(iconColor)
 
             Text(model.message)
                 .font(.system(size: 14, weight: .semibold, design: .rounded))
@@ -2129,21 +2175,19 @@ private struct GlobalToastView: View {
     }
 
     private var backgroundColor: Color {
-        if colorScheme == .dark {
-            return Color(red: 0.12, green: 0.13, blue: 0.16).opacity(0.96)
-        }
-        return Color.white.opacity(0.96)
-    }
-
-    private var borderColor: Color {
-        if colorScheme == .dark {
-            return Color.white.opacity(0.08)
-        }
-        return Color.black.opacity(0.06)
+        colorScheme == .dark ? Color.white.opacity(0.94) : Color.black.opacity(0.86)
     }
 
     private var foregroundColor: Color {
-        colorScheme == .dark ? Color.white.opacity(0.96) : Color.black.opacity(0.82)
+        colorScheme == .dark ? Color.black.opacity(0.84) : Color.white.opacity(0.96)
+    }
+
+    private var iconColor: Color {
+        colorScheme == .dark ? Color.black.opacity(0.72) : Color.white.opacity(0.92)
+    }
+
+    private var borderColor: Color {
+        colorScheme == .dark ? Color.black.opacity(0.08) : Color.white.opacity(0.08)
     }
 }
 
@@ -2161,6 +2205,20 @@ private struct PreviewHeaderActionBar: View {
         }
         .buttonStyle(.bordered)
         .controlSize(.regular)
+    }
+}
+
+private struct PreviewHeaderShareButton: View {
+    let item: ClipboardItem
+
+    var body: some View {
+        Button {
+            ClipboardSharingService.presentPicker(for: item)
+        } label: {
+            Label(L10n.tr("menu.share"), systemImage: "square.and.arrow.up")
+        }
+        .menuStyle(.borderlessButton)
+        .fixedSize()
     }
 }
 

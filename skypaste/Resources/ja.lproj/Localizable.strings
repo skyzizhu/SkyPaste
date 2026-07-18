@@ -82,7 +82,9 @@
 "menu.reveal_in_finder" = "Finderで表示";
 "menu.copy_path" = "パスをコピー";
 "menu.copy_link" = "リンクをコピー";
+"menu.share" = "共有";
 "menu.open_in_browser" = "ブラウザで開く";
+"menu.open_email" = "メールを送信";
 "menu.favorite" = "お気に入りに追加";
 "menu.unfavorite" = "お気に入りから削除";
 "menu.copy_selected" = "選択項目をコピー";
@@ -128,6 +130,7 @@
 "filter.source_label" = "アプリ";
 "filter.favorites" = "お気に入り";
 "filter.url" = "URL";
+"filter.email" = "メール";
 "filter.move_first" = "先頭に移動";
 "filter.move_last" = "最後尾に移動";
 "filter.reset_order" = "既定の順序に戻す";
