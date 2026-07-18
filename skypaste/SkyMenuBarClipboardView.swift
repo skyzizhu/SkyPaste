@@ -926,10 +926,8 @@ struct MenuBarClipboardView: View {
             }
 
             LazyVStack(spacing: 0) {
-                ForEach(items.indices, id: \.self) { index in
-                    let item = items[index]
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                     rowView(for: item)
-                        .id("\(item.id.uuidString)-\(item.isFavorite)")
 
                     if index < items.count - 1 {
                         rowSeparator(inset: separatorInset(after: item))

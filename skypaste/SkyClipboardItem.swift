@@ -545,8 +545,30 @@ struct ClipboardItem: Identifiable, Equatable {
         let normalized = host.trimmingCharacters(in: CharacterSet(charactersIn: "[]")).lowercased()
         guard !normalized.isEmpty else { return false }
         if normalized == "localhost" { return true }
-        if normalized.contains(".") || normalized.contains(":") { return true }
-        return false
+        guard normalized.range(of: #"^[a-z0-9.-]+$"#, options: .regularExpression) != nil else {
+            return false
+        }
+
+        if normalized.range(of: #"^(?:\d{1,3}\.){3}\d{1,3}$"#, options: .regularExpression) != nil {
+            return normalized.split(separator: ".").allSatisfy { part in
+                guard let octet = Int(part) else { return false }
+                return (0...255).contains(octet)
+            }
+        }
+
+        let labels = normalized.split(separator: ".")
+        guard labels.count >= 2 else { return false }
+        guard let topLevelDomain = labels.last, topLevelDomain.count >= 2 else { return false }
+        guard topLevelDomain.allSatisfy({ $0.isLetter }) else { return false }
+
+        return labels.allSatisfy { label in
+            guard !label.isEmpty, label.count <= 63 else { return false }
+            guard label.first?.isLetter == true || label.first?.isNumber == true else { return false }
+            guard label.last?.isLetter == true || label.last?.isNumber == true else { return false }
+            return label.allSatisfy { character in
+                character.isLetter || character.isNumber || character == "-"
+            }
+        }
     }
 
     private static func looksLikeCode(_ value: String, isKnownURL: Bool) -> Bool {
@@ -575,8 +597,24 @@ struct ClipboardItem: Identifiable, Equatable {
         ]
         let syntaxPatterns = [
             #"</?[a-z][^>]*>"#,
-            #"^\s*[\{\[]\s*["\w]"#,
-            #"(^|\W)(select|insert|update|delete|create|alter|drop|where|from|join|group by|order by)\s"#
+            #"^\s*[\{\[]\s*["\w]"#
+        ]
+        let sqlKeywordPatterns = [
+            #"\bselect\b"#,
+            #"\binsert\b"#,
+            #"\bupdate\b"#,
+            #"\bdelete\b"#,
+            #"\bcreate\b"#,
+            #"\balter\b"#,
+            #"\bdrop\b"#,
+            #"\bfrom\b"#,
+            #"\bwhere\b"#,
+            #"\bjoin\b"#,
+            #"\bset\b"#,
+            #"\bvalues\b"#,
+            #"\binto\b"#,
+            #"\bgroup\s+by\b"#,
+            #"\border\s+by\b"#
         ]
 
         let weakSignalPatterns = [
@@ -598,7 +636,15 @@ struct ClipboardItem: Identifiable, Equatable {
         let syntaxMatches = syntaxPatterns.reduce(0) { count, pattern in
             count + (lowercased.range(of: pattern, options: .regularExpression) != nil ? 1 : 0)
         }
-        let strongMatches = declarationMatches + controlFlowMatches + syntaxMatches
+        let sqlKeywordMatches = sqlKeywordPatterns.reduce(0) { count, pattern in
+            count + (lowercased.range(of: pattern, options: .regularExpression) != nil ? 1 : 0)
+        }
+        let sqlStartsLikeStatement = lowercased.range(
+            of: #"^\s*(select|insert|update|delete|create|alter|drop)\b"#,
+            options: .regularExpression
+        ) != nil
+        let sqlLooksLikeCode = sqlStartsLikeStatement && (sqlKeywordMatches >= 2 || trimmed.hasSuffix(";"))
+        let strongMatches = declarationMatches + controlFlowMatches + syntaxMatches + (sqlLooksLikeCode ? 1 : 0)
 
         let weakMatches = weakSignalPatterns.reduce(0) { count, pattern in
             count + (trimmed.range(of: pattern, options: .regularExpression) != nil ? 1 : 0)
@@ -629,11 +675,12 @@ struct ClipboardItem: Identifiable, Equatable {
         if newlineCount == 0 {
             return syntaxMatches >= 1 ||
                 declarationMatches >= 1 ||
+                sqlLooksLikeCode ||
                 (controlFlowMatches >= 1 && weakMatches >= 1) ||
                 (weakMatches >= 2 && symbolCount >= 4)
         }
 
-        if syntaxMatches >= 1 || declarationMatches >= 1 {
+        if syntaxMatches >= 1 || declarationMatches >= 1 || sqlLooksLikeCode {
             return true
         }
 

@@ -17,6 +17,39 @@ struct SkyPasteCoreModelTests {
         #expect(!ClipboardFilter.text.matches(item))
     }
 
+    @Test func domainTextWithoutSchemeIsDetectedAsURL() {
+        let item = ClipboardItem(
+            content: .text("www.example.com/path"),
+            fingerprint: "url-without-scheme"
+        )
+
+        #expect(item.isURL)
+        #expect(ClipboardFilter.url.matches(item))
+        #expect(item.browserURL?.absoluteString == "https://www.example.com/path")
+    }
+
+    @Test func ipAddressTextIsDetectedAsURL() {
+        let item = ClipboardItem(
+            content: .text("58.250.106.113"),
+            fingerprint: "url-ip"
+        )
+
+        #expect(item.isURL)
+        #expect(ClipboardFilter.url.matches(item))
+        #expect(item.browserURL?.absoluteString == "https://58.250.106.113")
+    }
+
+    @Test func functionCallTextIsNotDetectedAsURL() {
+        let item = ClipboardItem(
+            content: .text("app.run()"),
+            fingerprint: "function-call"
+        )
+
+        #expect(!item.isURL)
+        #expect(!ClipboardFilter.url.matches(item))
+        #expect(ClipboardFilter.text.matches(item))
+    }
+
     @Test func regularTextStaysPlainText() {
         let item = ClipboardItem(
             content: .text("Hello SkyPaste"),
@@ -52,6 +85,27 @@ struct SkyPasteCoreModelTests {
         #expect(!item.isCode)
         #expect(!ClipboardFilter.code.matches(item))
         #expect(ClipboardFilter.text.matches(item))
+    }
+
+    @Test func warningMessageTextIsNotDetectedAsCode() {
+        let item = ClipboardItem(
+            content: .text("Publishing changes from within view updates is not allowed, this will cause undefined behavior."),
+            fingerprint: "swiftui-warning-text"
+        )
+
+        #expect(!item.isCode)
+        #expect(!ClipboardFilter.code.matches(item))
+        #expect(ClipboardFilter.text.matches(item))
+    }
+
+    @Test func sqlStatementTextIsDetectedAsCode() {
+        let item = ClipboardItem(
+            content: .text("SELECT name FROM users WHERE id = 1;"),
+            fingerprint: "sql-code"
+        )
+
+        #expect(item.isCode)
+        #expect(ClipboardFilter.code.matches(item))
     }
 
     @Test func emailTextIsDetectedAsEmailOnly() {

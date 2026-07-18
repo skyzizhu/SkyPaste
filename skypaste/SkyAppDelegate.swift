@@ -398,7 +398,14 @@ private extension AppCoordinator {
 
     func openEmailComposer(for item: ClipboardItem) {
         guard let url = item.mailtoURL else { return }
-        NSWorkspace.shared.open(url)
+
+        let mailAppURL = URL(fileURLWithPath: "/System/Applications/Mail.app", isDirectory: true)
+        let configuration = NSWorkspace.OpenConfiguration()
+        NSWorkspace.shared.open([url], withApplicationAt: mailAppURL, configuration: configuration) { _, error in
+            if error != nil {
+                NSWorkspace.shared.open(url)
+            }
+        }
     }
 
     func copyFileSystemPathString(for item: ClipboardItem) {
