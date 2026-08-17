@@ -25,12 +25,11 @@ macOS clipboard manager, clipboard history, clipboard search, clipboard sync, iC
 
 ## What's New
 
-- Added an Email category for copied email addresses.
-- Improved menu bar and main panel list performance.
-- Improved share sheet positioning so shared content is visually connected to the selected item.
-- Improved URL, Email, and Code classification accuracy.
-- Improved scrolling behavior at the top and bottom of clipboard lists.
-- Refactored clipboard filters, image providers, and sharing into smaller focused components.
+- Added drag-and-drop for images, files, and folders: drag items from the menu bar or main panel straight into Finder, Mail, and other apps.
+- Finder-style drag previews with stacked icons, an item-count badge, and a dimmed source row while dragging.
+- Dragged images always use the original full-resolution data instead of the list thumbnail.
+- Shows an alert when a dragged file or folder no longer exists on disk.
+- Refactored the app into a dedicated app coordinator and separate image, text, and file preview windows.
 
 ## Screenshots
 
@@ -59,6 +58,7 @@ macOS clipboard manager, clipboard history, clipboard search, clipboard sync, iC
 - Email recognition with a dedicated Email category and Send Email action.
 - URL recognition with Open in Browser action.
 - File and folder recognition with preview, copy path, Finder reveal, and open actions.
+- Drag images, files, and folders out of the list into Finder and other apps.
 - Image preview with zoom and pan support.
 - Favorites that remain available even when regular history is trimmed.
 - Batch selection, batch delete, and batch favorite actions.
