@@ -127,6 +127,7 @@
 "filter.folder" = "폴더";
 "filter.code" = "코드";
 "filter.source_all" = "모든 앱";
+"filter.source_phone" = "휴대폰 콘텐츠";
 "filter.source_label" = "앱";
 "filter.favorites" = "즐겨찾기";
 "filter.url" = "URL";
@@ -196,6 +197,9 @@
 "open.missing_file_title" = "파일을 찾을 수 없음";
 "open.missing_folder_title" = "폴더를 찾을 수 없음";
 "open.missing_item_message" = "SkyPaste가 이 경로를 열 수 없습니다: %@";
+"drag.missing_file_title" = "파일을 찾을 수 없음";
+"drag.missing_folder_title" = "폴더를 찾을 수 없음";
+"drag.missing_item_message" = "이 경로가 더 이상 존재하지 않아 드래그할 수 없습니다: %@";
 "notice.database_recovered" = "로컬 기록 데이터베이스를 자동으로 복구했고 손상된 파일은 백업했습니다.";
 "settings.recommended_app" = "추천 앱";
 "yourtools.title" = "Your Tools";

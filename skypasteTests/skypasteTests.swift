@@ -258,6 +258,44 @@ struct SkyPasteCoreModelTests {
         #expect(optimized.sourceApp == ClipboardSourceApp(bundleID: "com.apple.finder", name: "Finder"))
     }
 
+    @Test func universalClipboardSourceClearsLocalSourceAppMetadata() {
+        let item = ClipboardItem(
+            id: UUID(),
+            createdAt: Date(),
+            content: .text("Copied from iPhone"),
+            fingerprint: "txt:iphone",
+            source: .local,
+            sourceApp: ClipboardSourceApp(bundleID: "com.apple.finder", name: "Finder")
+        )
+
+        let universalItem = item.withSource(.universalClipboard)
+
+        #expect(universalItem.source == .universalClipboard)
+        #expect(universalItem.sourceApp == nil)
+        #expect(ClipboardSearchQuery(rawValue: "source:phone").matches(universalItem))
+    }
+
+    @Test func phoneSourceSelectionIncludesOnlyDeviceSyncedItems() {
+        let localItem = ClipboardItem(
+            content: .text("Mac"),
+            fingerprint: "txt:mac"
+        )
+        let universalItem = ClipboardItem(
+            content: .text("iPhone"),
+            fingerprint: "txt:iphone",
+            source: .universalClipboard
+        )
+        let cloudItem = ClipboardItem(
+            content: .text("Cloud"),
+            fingerprint: "txt:cloud",
+            source: .cloudKit
+        )
+
+        #expect(!ClipboardSourceSelection.phone.matches(localItem))
+        #expect(ClipboardSourceSelection.phone.matches(universalItem))
+        #expect(ClipboardSourceSelection.phone.matches(cloudItem))
+    }
+
     @Test func singleFileClipboardItemUsesFileMetadata() {
         let item = ClipboardItem(
             content: .fileURLs(urls: [URL(fileURLWithPath: "/tmp/Report.pdf")], pasteboardPayload: nil),

@@ -128,6 +128,7 @@
 "filter.folder" = "Folders";
 "filter.code" = "Code";
 "filter.source_all" = "All Apps";
+"filter.source_phone" = "Phone Content";
 "filter.source_label" = "Apps";
 "filter.favorites" = "Favorites";
 "filter.url" = "URL";
@@ -197,6 +198,9 @@
 "open.missing_file_title" = "File Not Found";
 "open.missing_folder_title" = "Folder Not Found";
 "open.missing_item_message" = "SkyPaste could not open this path: %@";
+"drag.missing_file_title" = "File Not Found";
+"drag.missing_folder_title" = "Folder Not Found";
+"drag.missing_item_message" = "SkyPaste could not drag this path because it no longer exists: %@";
 "notice.database_recovered" = "Local history database was automatically recovered and the damaged files were backed up.";
 "yourtools.title" = "Your Tools";
 "yourtools.subtitle" = "All-in-One AI & Media Toolkit App.";

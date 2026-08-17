@@ -127,6 +127,7 @@
 "filter.folder" = "フォルダ";
 "filter.code" = "コード";
 "filter.source_all" = "すべてのアプリ";
+"filter.source_phone" = "スマートフォンの内容";
 "filter.source_label" = "アプリ";
 "filter.favorites" = "お気に入り";
 "filter.url" = "URL";
@@ -196,6 +197,9 @@
 "open.missing_file_title" = "ファイルが見つかりません";
 "open.missing_folder_title" = "フォルダが見つかりません";
 "open.missing_item_message" = "SkyPaste はこのパスを開けませんでした: %@";
+"drag.missing_file_title" = "ファイルが見つかりません";
+"drag.missing_folder_title" = "フォルダが見つかりません";
+"drag.missing_item_message" = "このパスは存在しないためドラッグできません: %@";
 "notice.database_recovered" = "ローカル履歴データベースを自動復旧し、破損ファイルはバックアップされました。";
 "settings.recommended_app" = "おすすめアプリ";
 "yourtools.title" = "Your Tools";

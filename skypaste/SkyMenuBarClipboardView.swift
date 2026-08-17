@@ -43,7 +43,7 @@ struct MenuBarClipboardView: View {
     @State private var pendingPrimaryAction: DispatchWorkItem?
     @State private var draggedFilter: ClipboardFilter?
     @State private var displayedFilters = ClipboardFilter.defaultDisplayOrder
-    @State private var selectedSourceAppBundleID: String?
+    @State private var sourceSelection: ClipboardSourceSelection = .allApps
     @State private var sourceAppIcons: [String: NSImage] = [:]
     @State private var presentation = Presentation.empty
     @State private var rowAnchors: [ClipboardItem.ID: ClipboardRowAnchor] = [:]
@@ -227,7 +227,7 @@ struct MenuBarClipboardView: View {
     }
 
     private var contentScrollResetID: String {
-        "\(selectedFilter.id)|\(store.appliedSearchText)|\(selectedSourceAppBundleID ?? "all-apps")"
+        "\(selectedFilter.id)|\(store.appliedSearchText)|\(sourceSelection.cacheKey)"
     }
 
     private var baseItemsForSelectedFilter: [ClipboardItem] {
@@ -238,17 +238,26 @@ struct MenuBarClipboardView: View {
         store.sourceAppOptions(for: selectedFilter)
     }
 
+    private var hasPhoneSourceItems: Bool {
+        baseItemsForSelectedFilter.contains { $0.source.isDeviceSynced }
+    }
+
     private var filteredItemsForSelectedScope: [ClipboardItem] {
-        let items = baseItemsForSelectedFilter
-        guard let selectedSourceAppBundleID else { return items }
-        return items.filter { $0.sourceApp?.bundleID == selectedSourceAppBundleID }
+        baseItemsForSelectedFilter.filter(sourceSelection.matches)
     }
 
     private func validateSourceAppSelection() {
-        guard let selectedSourceAppBundleID else { return }
-        guard availableSourceAppOptions.contains(where: { $0.bundleID == selectedSourceAppBundleID }) else {
-            self.selectedSourceAppBundleID = nil
+        switch sourceSelection {
+        case .allApps:
             return
+        case .phone:
+            if !hasPhoneSourceItems {
+                sourceSelection = .allApps
+            }
+        case .app(let bundleID):
+            if !availableSourceAppOptions.contains(where: { $0.bundleID == bundleID }) {
+                sourceSelection = .allApps
+            }
         }
     }
 
@@ -349,7 +358,7 @@ struct MenuBarClipboardView: View {
             refreshPresentation()
             selectedID = presentation.orderedItems.first?.id
         }
-        .onChange(of: selectedSourceAppBundleID) { _, _ in
+        .onChange(of: sourceSelection) { _, _ in
             refreshPresentation()
             selectedID = presentation.orderedItems.first?.id
         }
@@ -458,16 +467,20 @@ struct MenuBarClipboardView: View {
     }
 
     private var sourceAppFilterTitle: String {
-        guard let selectedSourceAppBundleID,
-              let app = availableSourceAppOptions.first(where: { $0.bundleID == selectedSourceAppBundleID }) else {
+        switch sourceSelection {
+        case .allApps:
             return L10n.tr("filter.source_label")
+        case .phone:
+            return L10n.tr("filter.source_phone")
+        case .app(let bundleID):
+            return availableSourceAppOptions.first(where: { $0.bundleID == bundleID })?.name
+                ?? L10n.tr("filter.source_label")
         }
-        return app.name
     }
 
     private var selectedSourceAppOption: ClipboardSourceAppOption? {
-        guard let selectedSourceAppBundleID else { return nil }
-        return availableSourceAppOptions.first(where: { $0.bundleID == selectedSourceAppBundleID })
+        guard case .app(let bundleID) = sourceSelection else { return nil }
+        return availableSourceAppOptions.first(where: { $0.bundleID == bundleID })
     }
 
     private var header: some View {
@@ -555,25 +568,23 @@ struct MenuBarClipboardView: View {
                     }
                 }
             }
-            if !availableSourceAppOptions.isEmpty {
-                sourceAppMenu
-            }
+            sourceAppMenu
         }
     }
 
     private var sourceAppMenu: some View {
-        let isActive = selectedSourceAppBundleID != nil
+        let isActive = sourceSelection != .allApps
 
         return Menu {
             Button {
                 withAnimation(.easeOut(duration: 0.1)) {
-                    selectedSourceAppBundleID = nil
+                    sourceSelection = .allApps
                 }
             } label: {
                 HStack(spacing: 8) {
                     sourceAppMenuIcon(bundleID: nil, size: 13)
                     Text(L10n.tr("filter.source_all"))
-                    if selectedSourceAppBundleID == nil {
+                    if sourceSelection == .allApps {
                         Spacer()
                         Image(systemName: "checkmark")
                     }
@@ -582,18 +593,40 @@ struct MenuBarClipboardView: View {
 
             Divider()
 
-            ForEach(availableSourceAppOptions) { app in
-                Button {
-                    withAnimation(.easeOut(duration: 0.1)) {
-                        selectedSourceAppBundleID = app.bundleID
+            Button {
+                withAnimation(.easeOut(duration: 0.1)) {
+                    sourceSelection = .phone
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "iphone.gen3")
+                        .font(.system(size: 11, weight: .semibold))
+                        .frame(width: 13, height: 13)
+                    Text(L10n.tr("filter.source_phone"))
+                    if sourceSelection == .phone {
+                        Spacer()
+                        Image(systemName: "checkmark")
                     }
-                } label: {
-                    HStack(spacing: 8) {
-                        sourceAppMenuIcon(bundleID: app.bundleID, size: 13)
-                        Text(app.name)
-                        if selectedSourceAppBundleID == app.bundleID {
-                            Spacer()
-                            Image(systemName: "checkmark")
+                }
+            }
+            .disabled(!hasPhoneSourceItems)
+
+            if !availableSourceAppOptions.isEmpty {
+                Divider()
+
+                ForEach(availableSourceAppOptions) { app in
+                    Button {
+                        withAnimation(.easeOut(duration: 0.1)) {
+                            sourceSelection = .app(bundleID: app.bundleID)
+                        }
+                    } label: {
+                        HStack(spacing: 8) {
+                            sourceAppMenuIcon(bundleID: app.bundleID, size: 13)
+                            Text(app.name)
+                            if sourceSelection == .app(bundleID: app.bundleID) {
+                                Spacer()
+                                Image(systemName: "checkmark")
+                            }
                         }
                     }
                 }
@@ -625,7 +658,10 @@ struct MenuBarClipboardView: View {
 
     @ViewBuilder
     private func sourceAppButtonIcon(size: CGFloat) -> some View {
-        if let selectedSourceAppOption, let icon = sourceAppIcons[selectedSourceAppOption.bundleID] {
+        if sourceSelection == .phone {
+            Image(systemName: "iphone.gen3")
+                .font(.system(size: size - 2, weight: .semibold))
+        } else if let selectedSourceAppOption, let icon = sourceAppIcons[selectedSourceAppOption.bundleID] {
             Image(nsImage: icon)
                 .resizable()
                 .interpolation(.high)
@@ -1010,6 +1046,9 @@ struct MenuBarClipboardView: View {
                         rowAnchors[item.id] = nil
                     }
                 }
+            },
+            onResolveDragItem: { item in
+                store.itemForPreview(item)
             },
             onPreview: item.isImage ? {
                 pendingPrimaryAction?.cancel()

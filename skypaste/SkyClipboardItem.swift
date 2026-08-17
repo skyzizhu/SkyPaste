@@ -157,6 +157,19 @@ struct ClipboardItem: Identifiable, Equatable {
         )
     }
 
+    func withSource(_ source: ClipboardSource) -> ClipboardItem {
+        ClipboardItem(
+            id: id,
+            createdAt: createdAt,
+            content: content,
+            fingerprint: fingerprint,
+            source: source,
+            sourceApp: source == .local ? sourceApp : nil,
+            isFavorite: isFavorite,
+            isSnippet: isSnippet
+        )
+    }
+
     var title: String {
         Self.makeTitle(for: content)
     }

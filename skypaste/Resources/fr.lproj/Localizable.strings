@@ -127,6 +127,7 @@
 "filter.folder" = "Dossiers";
 "filter.code" = "Code";
 "filter.source_all" = "Toutes les apps";
+"filter.source_phone" = "Contenu du téléphone";
 "filter.source_label" = "Apps";
 "filter.favorites" = "Favoris";
 "filter.url" = "URL";
@@ -196,6 +197,9 @@
 "open.missing_file_title" = "Fichier introuvable";
 "open.missing_folder_title" = "Dossier introuvable";
 "open.missing_item_message" = "SkyPaste n’a pas pu ouvrir ce chemin : %@";
+"drag.missing_file_title" = "Fichier introuvable";
+"drag.missing_folder_title" = "Dossier introuvable";
+"drag.missing_item_message" = "SkyPaste ne peut pas faire glisser ce chemin car il n’existe plus : %@";
 "notice.database_recovered" = "La base d’historique locale a été réparée automatiquement et les fichiers endommagés ont été sauvegardés.";
 "settings.recommended_app" = "Application recommandée";
 "yourtools.title" = "Your Tools";

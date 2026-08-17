@@ -18,6 +18,7 @@ struct ClipboardRowView: View {
     var onPrimaryMouseDown: (() -> Void)? = nil
     var onSecondaryMouseDown: (() -> Void)? = nil
     var onAnchorViewChange: ((NSView?) -> Void)? = nil
+    var onResolveDragItem: ((ClipboardItem) -> ClipboardItem)? = nil
     var onPreview: (() -> Void)? = nil
     var onPreviewDoubleTap: (() -> Void)? = nil
     @State private var loadedPreview: NSImage?
@@ -25,6 +26,7 @@ struct ClipboardRowView: View {
     @State private var previewRequestKey: String?
     @State private var sourceBadgeRequestKey: String?
     @State private var isHovered = false
+    @State private var isDragActive = false
 
     var body: some View {
         HStack(spacing: 10) {
@@ -66,9 +68,14 @@ struct ClipboardRowView: View {
         .background(selectionBackground)
         .background(
             RowMouseDownObserver(
+                item: item,
                 onPrimaryMouseDown: onPrimaryMouseDown,
                 onSecondaryMouseDown: onSecondaryMouseDown,
-                onAnchorViewChange: onAnchorViewChange
+                onAnchorViewChange: onAnchorViewChange,
+                onDragStateChange: { active in
+                    isDragActive = active
+                },
+                onResolveDragItem: onResolveDragItem
             )
         )
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
@@ -84,6 +91,9 @@ struct ClipboardRowView: View {
                     .transition(.opacity.combined(with: .scale(scale: 0.98)))
             }
         }
+        .opacity(isDragActive ? 0.4 : 1)
+        .scaleEffect(isDragActive ? 0.98 : 1)
+        .animation(.easeOut(duration: 0.12), value: isDragActive)
         .onHover { hovering in
             isHovered = hovering
         }
@@ -413,128 +423,5 @@ final class ClipboardRowAnchor {
 
     init(_ view: NSView?) {
         self.view = view
-    }
-}
-
-private struct RowMouseDownObserver: NSViewRepresentable {
-    let onPrimaryMouseDown: (() -> Void)?
-    let onSecondaryMouseDown: (() -> Void)?
-    let onAnchorViewChange: ((NSView?) -> Void)?
-
-    func makeNSView(context: Context) -> RowMouseDownObserverView {
-        let view = RowMouseDownObserverView()
-        view.onPrimaryMouseDown = onPrimaryMouseDown
-        view.onSecondaryMouseDown = onSecondaryMouseDown
-        view.onAnchorViewChange = onAnchorViewChange
-        return view
-    }
-
-    func updateNSView(_ nsView: RowMouseDownObserverView, context: Context) {
-        nsView.onPrimaryMouseDown = onPrimaryMouseDown
-        nsView.onSecondaryMouseDown = onSecondaryMouseDown
-        nsView.onAnchorViewChange = onAnchorViewChange
-    }
-}
-
-private final class RowMouseDownObserverView: NSView {
-    var onPrimaryMouseDown: (() -> Void)?
-    var onSecondaryMouseDown: (() -> Void)?
-    var onAnchorViewChange: ((NSView?) -> Void)?
-    private var isRegisteredForEvents = false
-
-    override var isFlipped: Bool {
-        true
-    }
-
-    override func viewDidMoveToWindow() {
-        super.viewDidMoveToWindow()
-        if window == nil {
-            unregisterForEvents()
-            onAnchorViewChange?(nil)
-        } else {
-            onAnchorViewChange?(self)
-            registerForEventsIfNeeded()
-        }
-    }
-
-    deinit {
-        onAnchorViewChange?(nil)
-        unregisterForEvents()
-    }
-
-    fileprivate func handleMouseDownEvent(_ event: NSEvent) {
-        switch event.type {
-        case .leftMouseDown:
-            onPrimaryMouseDown?()
-        case .rightMouseDown:
-            onSecondaryMouseDown?()
-        default:
-            break
-        }
-    }
-
-    private func registerForEventsIfNeeded() {
-        guard !isRegisteredForEvents else { return }
-        isRegisteredForEvents = true
-        RowMouseDownEventCoordinator.shared.register(self)
-    }
-
-    private func unregisterForEvents() {
-        guard isRegisteredForEvents else { return }
-        isRegisteredForEvents = false
-        RowMouseDownEventCoordinator.shared.unregister(self)
-    }
-}
-
-private final class RowMouseDownEventCoordinator {
-    static let shared = RowMouseDownEventCoordinator()
-
-    private let registeredViews = NSHashTable<RowMouseDownObserverView>.weakObjects()
-    private var eventMonitor: Any?
-
-    private init() {}
-
-    func register(_ view: RowMouseDownObserverView) {
-        registeredViews.add(view)
-        installMonitorIfNeeded()
-    }
-
-    func unregister(_ view: RowMouseDownObserverView) {
-        registeredViews.remove(view)
-        removeMonitorIfPossible()
-    }
-
-    private func installMonitorIfNeeded() {
-        guard eventMonitor == nil else { return }
-
-        eventMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
-            self?.dispatch(event)
-            return event
-        }
-    }
-
-    private func removeMonitorIfPossible() {
-        guard registeredViews.allObjects.isEmpty, let eventMonitor else { return }
-        NSEvent.removeMonitor(eventMonitor)
-        self.eventMonitor = nil
-    }
-
-    private func dispatch(_ event: NSEvent) {
-        guard let eventWindow = event.window else { return }
-
-        for view in registeredViews.allObjects.reversed() {
-            guard
-                view.window === eventWindow,
-                !view.isHiddenOrHasHiddenAncestor,
-                view.alphaValue > 0.01
-            else {
-                continue
-            }
-
-            let point = view.convert(event.locationInWindow, from: nil)
-            guard view.bounds.contains(point) else { continue }
-            view.handleMouseDownEvent(event)
-            return
-        }
     }
 }

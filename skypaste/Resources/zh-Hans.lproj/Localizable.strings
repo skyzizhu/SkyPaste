@@ -127,6 +127,7 @@
 "filter.folder" = "目录";
 "filter.code" = "代码";
 "filter.source_all" = "全部应用";
+"filter.source_phone" = "手机端内容";
 "filter.source_label" = "应用";
 "filter.favorites" = "收藏";
 "filter.url" = "URL";
@@ -196,6 +197,9 @@
 "open.missing_file_title" = "找不到该文件";
 "open.missing_folder_title" = "找不到该目录";
 "open.missing_item_message" = "SkyPaste 无法打开此路径：%@";
+"drag.missing_file_title" = "找不到该文件";
+"drag.missing_folder_title" = "找不到该目录";
+"drag.missing_item_message" = "该路径不存在，无法拖拽：%@";
 "notice.database_recovered" = "本地历史数据库已自动恢复，损坏文件已备份。";
 "settings.recommended_app" = "推荐应用";
 "yourtools.title" = "你的工具";

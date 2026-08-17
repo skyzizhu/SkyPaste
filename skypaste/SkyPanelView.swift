@@ -41,7 +41,7 @@ struct PanelView: View {
     @State private var pendingPrimaryAction: DispatchWorkItem?
     @State private var draggedFilter: ClipboardFilter?
     @State private var displayedFilters = ClipboardFilter.defaultDisplayOrder
-    @State private var selectedSourceAppBundleID: String?
+    @State private var sourceSelection: ClipboardSourceSelection = .allApps
     @State private var sourceAppIcons: [String: NSImage] = [:]
     @State private var presentation = Presentation.empty
     @State private var isBatchSelectionMode = false
@@ -319,7 +319,7 @@ struct PanelView: View {
     }
 
     private var contentScrollResetID: String {
-        "\(selectedFilter.id)|\(store.appliedSearchText)|\(selectedSourceAppBundleID ?? "all-apps")"
+        "\(selectedFilter.id)|\(store.appliedSearchText)|\(sourceSelection.cacheKey)"
     }
 
     private var baseItemsForSelectedFilter: [ClipboardItem] {
@@ -330,17 +330,26 @@ struct PanelView: View {
         store.sourceAppOptions(for: selectedFilter)
     }
 
+    private var hasPhoneSourceItems: Bool {
+        baseItemsForSelectedFilter.contains { $0.source.isDeviceSynced }
+    }
+
     private var filteredItemsForSelectedScope: [ClipboardItem] {
-        let items = baseItemsForSelectedFilter
-        guard let selectedSourceAppBundleID else { return items }
-        return items.filter { $0.sourceApp?.bundleID == selectedSourceAppBundleID }
+        baseItemsForSelectedFilter.filter(sourceSelection.matches)
     }
 
     private func validateSourceAppSelection() {
-        guard let selectedSourceAppBundleID else { return }
-        guard availableSourceAppOptions.contains(where: { $0.bundleID == selectedSourceAppBundleID }) else {
-            self.selectedSourceAppBundleID = nil
+        switch sourceSelection {
+        case .allApps:
             return
+        case .phone:
+            if !hasPhoneSourceItems {
+                sourceSelection = .allApps
+            }
+        case .app(let bundleID):
+            if !availableSourceAppOptions.contains(where: { $0.bundleID == bundleID }) {
+                sourceSelection = .allApps
+            }
         }
     }
 
@@ -470,7 +479,7 @@ struct PanelView: View {
             refreshPresentation()
             selectedID = presentation.orderedItems.first?.id
         }
-        .onChange(of: selectedSourceAppBundleID) { _, _ in
+        .onChange(of: sourceSelection) { _, _ in
             refreshPresentation()
             selectedID = presentation.orderedItems.first?.id
         }
@@ -689,16 +698,20 @@ struct PanelView: View {
     }
 
     private var sourceAppFilterTitle: String {
-        guard let selectedSourceAppBundleID,
-              let app = availableSourceAppOptions.first(where: { $0.bundleID == selectedSourceAppBundleID }) else {
+        switch sourceSelection {
+        case .allApps:
             return L10n.tr("filter.source_label")
+        case .phone:
+            return L10n.tr("filter.source_phone")
+        case .app(let bundleID):
+            return availableSourceAppOptions.first(where: { $0.bundleID == bundleID })?.name
+                ?? L10n.tr("filter.source_label")
         }
-        return app.name
     }
 
     private var selectedSourceAppOption: ClipboardSourceAppOption? {
-        guard let selectedSourceAppBundleID else { return nil }
-        return availableSourceAppOptions.first(where: { $0.bundleID == selectedSourceAppBundleID })
+        guard case .app(let bundleID) = sourceSelection else { return nil }
+        return availableSourceAppOptions.first(where: { $0.bundleID == bundleID })
     }
 
     private func toggleSearch() {
@@ -773,25 +786,23 @@ struct PanelView: View {
                     }
                 }
             }
-            if !availableSourceAppOptions.isEmpty {
-                sourceAppMenu
-            }
+            sourceAppMenu
         }
     }
 
     private var sourceAppMenu: some View {
-        let isActive = selectedSourceAppBundleID != nil
+        let isActive = sourceSelection != .allApps
 
         return Menu {
             Button {
                 withAnimation(.easeOut(duration: 0.1)) {
-                    selectedSourceAppBundleID = nil
+                    sourceSelection = .allApps
                 }
             } label: {
                 HStack(spacing: 8) {
                     sourceAppMenuIcon(bundleID: nil, size: 14)
                     Text(L10n.tr("filter.source_all"))
-                    if selectedSourceAppBundleID == nil {
+                    if sourceSelection == .allApps {
                         Spacer()
                         Image(systemName: "checkmark")
                     }
@@ -800,18 +811,40 @@ struct PanelView: View {
 
             Divider()
 
-            ForEach(availableSourceAppOptions) { app in
-                Button {
-                    withAnimation(.easeOut(duration: 0.1)) {
-                        selectedSourceAppBundleID = app.bundleID
+            Button {
+                withAnimation(.easeOut(duration: 0.1)) {
+                    sourceSelection = .phone
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "iphone.gen3")
+                        .font(.system(size: 12, weight: .semibold))
+                        .frame(width: 14, height: 14)
+                    Text(L10n.tr("filter.source_phone"))
+                    if sourceSelection == .phone {
+                        Spacer()
+                        Image(systemName: "checkmark")
                     }
-                } label: {
-                    HStack(spacing: 8) {
-                        sourceAppMenuIcon(bundleID: app.bundleID, size: 14)
-                        Text(app.name)
-                        if selectedSourceAppBundleID == app.bundleID {
-                            Spacer()
-                            Image(systemName: "checkmark")
+                }
+            }
+            .disabled(!hasPhoneSourceItems)
+
+            if !availableSourceAppOptions.isEmpty {
+                Divider()
+
+                ForEach(availableSourceAppOptions) { app in
+                    Button {
+                        withAnimation(.easeOut(duration: 0.1)) {
+                            sourceSelection = .app(bundleID: app.bundleID)
+                        }
+                    } label: {
+                        HStack(spacing: 8) {
+                            sourceAppMenuIcon(bundleID: app.bundleID, size: 14)
+                            Text(app.name)
+                            if sourceSelection == .app(bundleID: app.bundleID) {
+                                Spacer()
+                                Image(systemName: "checkmark")
+                            }
                         }
                     }
                 }
@@ -844,7 +877,10 @@ struct PanelView: View {
 
     @ViewBuilder
     private func sourceAppButtonIcon(size: CGFloat) -> some View {
-        if let selectedSourceAppOption, let icon = sourceAppIcons[selectedSourceAppOption.bundleID] {
+        if sourceSelection == .phone {
+            Image(systemName: "iphone.gen3")
+                .font(.system(size: size - 2, weight: .semibold))
+        } else if let selectedSourceAppOption, let icon = sourceAppIcons[selectedSourceAppOption.bundleID] {
             Image(nsImage: icon)
                 .resizable()
                 .interpolation(.high)
@@ -1238,6 +1274,9 @@ struct PanelView: View {
                     }
                 }
             },
+            onResolveDragItem: { item in
+                store.itemForPreview(item)
+            },
             onPreview: item.isImage && !isBatchSelectionMode ? {
                 pendingPrimaryAction?.cancel()
                 selectedID = item.id
@@ -1408,138 +1447,5 @@ struct PanelView: View {
                 }
         }
         .buttonStyle(.plain)
-    }
-}
-
-struct DeferredSearchField: View {
-    let placeholder: String
-    let query: String
-    let font: Font
-    let iconFont: Font
-    let clearIconFont: Font
-    let horizontalPadding: CGFloat
-    let verticalPadding: CGFloat
-    let cornerRadius: CGFloat
-    let onQueryChange: (String) -> Void
-    let onClose: () -> Void
-
-    @FocusState private var isFocused: Bool
-    @State private var draft: String
-    @State private var pendingUpdate: DispatchWorkItem?
-
-    init(
-        placeholder: String,
-        query: String,
-        font: Font,
-        iconFont: Font,
-        clearIconFont: Font,
-        horizontalPadding: CGFloat,
-        verticalPadding: CGFloat,
-        cornerRadius: CGFloat,
-        onQueryChange: @escaping (String) -> Void,
-        onClose: @escaping () -> Void
-    ) {
-        self.placeholder = placeholder
-        self.query = query
-        self.font = font
-        self.iconFont = iconFont
-        self.clearIconFont = clearIconFont
-        self.horizontalPadding = horizontalPadding
-        self.verticalPadding = verticalPadding
-        self.cornerRadius = cornerRadius
-        self.onQueryChange = onQueryChange
-        self.onClose = onClose
-        _draft = State(initialValue: query)
-    }
-
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "magnifyingglass")
-                .font(iconFont)
-                .foregroundStyle(.secondary)
-
-            TextField(placeholder, text: $draft)
-                .textFieldStyle(.plain)
-                .font(font)
-                .focused($isFocused)
-
-            Button {
-                pendingUpdate?.cancel()
-                draft = ""
-                onQueryChange("")
-                onClose()
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(clearIconFont)
-                    .foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-        }
-        .padding(.horizontal, horizontalPadding)
-        .padding(.vertical, verticalPadding)
-        .background(
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .fill(.thinMaterial)
-        )
-        .overlay {
-            RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
-        }
-        .onAppear {
-            draft = query
-            DispatchQueue.main.async {
-                isFocused = true
-            }
-        }
-        .onChange(of: query) { _, newValue in
-            if newValue != draft {
-                draft = newValue
-            }
-        }
-        .onChange(of: draft) { _, newValue in
-            scheduleQueryUpdate(for: newValue)
-        }
-        .onDisappear {
-            pendingUpdate?.cancel()
-        }
-    }
-
-    private func scheduleQueryUpdate(for value: String) {
-        pendingUpdate?.cancel()
-
-        let task = DispatchWorkItem {
-            onQueryChange(value)
-        }
-        pendingUpdate = task
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.10, execute: task)
-    }
-}
-
-private struct QuickPasteShortcuts: View {
-    let onCopyAtIndex: (Int) -> Void
-
-    var body: some View {
-        VStack(spacing: 0) {
-            Button("") { onCopyAtIndex(0) }.keyboardShortcut("1", modifiers: .command)
-            Button("") { onCopyAtIndex(1) }.keyboardShortcut("2", modifiers: .command)
-            Button("") { onCopyAtIndex(2) }.keyboardShortcut("3", modifiers: .command)
-            Button("") { onCopyAtIndex(3) }.keyboardShortcut("4", modifiers: .command)
-            Button("") { onCopyAtIndex(4) }.keyboardShortcut("5", modifiers: .command)
-            Button("") { onCopyAtIndex(5) }.keyboardShortcut("6", modifiers: .command)
-            Button("") { onCopyAtIndex(6) }.keyboardShortcut("7", modifiers: .command)
-            Button("") { onCopyAtIndex(7) }.keyboardShortcut("8", modifiers: .command)
-            Button("") { onCopyAtIndex(8) }.keyboardShortcut("9", modifiers: .command)
-        }
-    }
-}
-
-private struct CopySelectionShortcut: View {
-    let onCopySelected: () -> Void
-
-    var body: some View {
-        Button("") {
-            onCopySelected()
-        }
-        .keyboardShortcut("c", modifiers: .command)
     }
 }
