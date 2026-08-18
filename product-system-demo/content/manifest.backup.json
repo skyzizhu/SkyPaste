@@ -60,15 +60,6 @@
           "summary": "列表、搜索、收藏、固定、拖出与删除"
         },
         {
-          "id": "drag-out",
-          "title": "拖出功能专题",
-          "type": "markdown",
-          "file": "requirements/drag-out.md",
-          "source": "origin",
-          "status": "confirmed",
-          "summary": "FR-205 深度拆解：交互流程、支持范围、临时文件机制与异常边界（源自 0.2.7 真实实现）"
-        },
-        {
           "id": "quickpaste",
           "title": "快速粘贴",
           "type": "markdown",
@@ -162,7 +153,7 @@
           "file": "prototype/overview.md",
           "source": "ai-inferred",
           "status": "pending",
-          "summary": "标注阅读说明（四色分级+读图方法）、页面清单与跳转关系"
+          "summary": "页面清单与跳转关系"
         },
         {
           "id": "main-panel",

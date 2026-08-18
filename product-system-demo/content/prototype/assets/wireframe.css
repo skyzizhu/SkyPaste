@@ -429,6 +429,8 @@ body {
 .wf-ann-line { stroke-width: 1.5; stroke-dasharray: 5 3; fill: none; }
 .wf-ann-box { fill-opacity: 0.95; stroke-width: 1; stroke-dasharray: 4 3; }
 .wf-ann-label { font-size: 12px; }
+/* 序号徽章：圆点（r=9）中心白色序号，颜色随级别 */
+.wf-ann-num { fill: #fff; font-size: 11px; font-weight: 700; text-anchor: middle; }
 
 /* 重要程度：红（核心/必须）> 黄（待确认/注意）> 蓝（一般说明）> 绿（参考信息） */
 .wf-ann.crit .wf-ann-line { stroke: #d13438; }

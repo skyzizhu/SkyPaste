@@ -64,6 +64,7 @@ PS.buildMenu = function (manifest) {
       group.classList.add("collapsed");
     }
 
+    var protoIndex = 0;
     mod.pages.forEach(function (page) {
       var item = document.createElement("a");
       item.className = "menu-item";
@@ -71,9 +72,15 @@ PS.buildMenu = function (manifest) {
       item.dataset.module = mod.id;
       item.dataset.page = page.id;
       item.title = page.status === "confirmed" ? "已确认" : "待确认";
+      // 原型线框页（type=prototype）菜单项自动带序号，与标注序号/页面顺序对应
+      var label = page.title;
+      if (page.type === "prototype") {
+        protoIndex += 1;
+        label = (protoIndex < 10 ? "0" + protoIndex : String(protoIndex)) + " · " + page.title;
+      }
       item.innerHTML =
         '<span class="dot ' + (page.status === "confirmed" ? "dot-ok" : "dot-pending") + '"></span>' +
-        '<span class="title">' + PS.escapeHtml(page.title) + "</span>" +
+        '<span class="title">' + PS.escapeHtml(label) + "</span>" +
         (page.source === "ai-inferred" ? '<i class="ai-chip">AI</i>' : "");
       group.appendChild(item);
     });
