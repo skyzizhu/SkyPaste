@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>主面板 · 低保真线框</title>
+  <link rel="stylesheet" href="assets/wireframe.css">
+</head>
+<body>
+  <div class="wf-page">
+    <div class="wf-window">
+      <div class="wf-titlebar">
+        <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+        <span class="wf-title">SkyPaste — 剪贴板历史</span>
+      </div>
+
+      <div class="wf-toolbar">
+        <div class="wf-input">
+          <span>搜索文本、链接、文件名…</span>
+          <span class="wf-kbd">⌘F</span>
+        </div>
+        <div class="wf-btn">仅收藏 ★</div>
+      </div>
+
+      <div class="wf-chips">
+        <span class="wf-chip on">全部</span>
+        <span class="wf-chip">文本</span>
+        <span class="wf-chip">链接</span>
+        <span class="wf-chip">图片</span>
+        <span class="wf-chip">文件</span>
+        <span class="wf-chip">颜色</span>
+      </div>
+
+      <div class="wf-row">
+        <div class="wf-list">
+          <div class="wf-group-label">今天</div>
+          <div class="wf-item on">
+            <span class="wf-num">1</span>
+            <div class="wf-thumb">IMG</div>
+            <div class="wf-lines">
+              <div class="wf-line w-60"></div>
+              <div class="wf-line w-30"></div>
+            </div>
+            <div class="wf-meta"><span class="wf-tag">图片</span><span class="wf-star on">★</span></div>
+          </div>
+          <div class="wf-item">
+            <span class="wf-num">2</span>
+            <div class="wf-lines">
+              <div class="wf-line w-90"></div>
+              <div class="wf-line w-40"></div>
+            </div>
+            <div class="wf-meta"><span class="wf-tag">文本</span><span class="wf-star">☆</span></div>
+          </div>
+          <div class="wf-item">
+            <span class="wf-num">3</span>
+            <div class="wf-lines">
+              <div class="wf-line w-80"></div>
+            </div>
+            <div class="wf-meta"><span class="wf-tag">链接</span><span class="wf-star">☆</span></div>
+          </div>
+          <div class="wf-group-label">昨天</div>
+          <div class="wf-item">
+            <span class="wf-num">4</span>
+            <div class="wf-thumb">FILE ×3</div>
+            <div class="wf-lines">
+              <div class="wf-line w-60"></div>
+              <div class="wf-line w-30"></div>
+            </div>
+            <div class="wf-meta"><span class="wf-tag">文件</span><span class="wf-star">☆</span></div>
+          </div>
+          <div class="wf-item">
+            <span class="wf-num">5</span>
+            <div class="wf-lines">
+              <div class="wf-line w-30"></div>
+            </div>
+            <div class="wf-meta"><span class="wf-tag">颜色 #FF5A5F</span><span class="wf-star">☆</span></div>
+          </div>
+        </div>
+
+        <div class="wf-pane">
+          <span class="wf-label">预览</span>
+          <div class="wf-preview">图片预览区</div>
+          <div class="wf-actions">
+            <div class="wf-btn">粘贴</div>
+            <div class="wf-btn">详情</div>
+            <div class="wf-btn">拖出 ↗</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wf-statusbar">
+        <span>已保留 500 条 · 存储约 120 MB</span>
+        <span>上次捕获 14:32</span>
+      </div>
+    </div>
+
+    <div class="wf-legend">
+      <span class="wf-legend-title">标注重要程度</span>
+      <span class="wf-legend-row"><span class="wf-legend-dot crit"></span>核心 / 必须</span>
+      <span class="wf-legend-row"><span class="wf-legend-dot warn"></span>待确认 / 注意</span>
+      <span class="wf-legend-row"><span class="wf-legend-dot info"></span>一般说明</span>
+      <span class="wf-legend-row"><span class="wf-legend-dot ok"></span>参考信息</span>
+    </div>
+
+    <svg class="wf-lines" aria-hidden="true">
+      <!-- ① 类型筛选（目标 y 最靠上 → 标注栏第一行） -->
+      <g class="wf-ann info">
+        <line class="wf-ann-line" x1="783" y1="144" x2="304" y2="99"/>
+        <circle class="wf-ann-dot" cx="300" cy="96" r="4"/>
+        <rect class="wf-ann-box" x="785" y="130" width="205" height="28" rx="6"/>
+        <text class="wf-ann-label" x="795" y="148">类型筛选 chips（FR-202）</text>
+      </g>
+      <!-- ② 序号回贴：核心交互 -->
+      <g class="wf-ann crit">
+        <line class="wf-ann-line" x1="783" y1="238" x2="37" y2="161"/>
+        <circle class="wf-ann-dot" cx="33" cy="164" r="4"/>
+        <rect class="wf-ann-box" x="785" y="215" width="205" height="46" rx="6"/>
+        <text class="wf-ann-label" x="795" y="233">序号 ⌘1–9，双击条目</text>
+        <text class="wf-ann-label" x="795" y="251">直接回贴前应用并隐藏面板</text>
+      </g>
+      <!-- ③ 拖出：边界场景待确认 -->
+      <g class="wf-ann warn">
+        <line class="wf-ann-line" x1="783" y1="323" x2="681" y2="474"/>
+        <circle class="wf-ann-dot" cx="685" cy="478" r="4"/>
+        <rect class="wf-ann-box" x="785" y="300" width="205" height="46" rx="6"/>
+        <text class="wf-ann-label" x="795" y="318">图片 / 文件可拖出到</text>
+        <text class="wf-ann-label" x="795" y="336">Finder；浏览器上传框待确认</text>
+      </g>
+      <!-- ④ 状态栏：参考信息 -->
+      <g class="wf-ann ok">
+        <line class="wf-ann-line" x1="783" y1="399" x2="704" y2="522"/>
+        <circle class="wf-ann-dot" cx="700" cy="525" r="4"/>
+        <rect class="wf-ann-box" x="785" y="385" width="205" height="28" rx="6"/>
+        <text class="wf-ann-label" x="795" y="403">容量与最近捕获时间</text>
+      </g>
+    </svg>
+  </div>
+</body>
+</html>

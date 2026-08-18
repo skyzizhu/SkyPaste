@@ -1,0 +1,245 @@
+{
+  "product": {
+    "name": "SkyPaste",
+    "form": "desktop",
+    "version": "0.3.0",
+    "tagline": "macOS 剪贴板历史与快速粘贴工具",
+    "updated": "2026-08-18"
+  },
+  "modules": [
+    {
+      "id": "pending",
+      "title": "待确认清单",
+      "special": "pending-report",
+      "pages": []
+    },
+    {
+      "id": "overview",
+      "title": "产品概览",
+      "pages": [
+        {
+          "id": "index",
+          "title": "产品定位",
+          "type": "markdown",
+          "file": "overview/index.md",
+          "source": "origin",
+          "status": "confirmed",
+          "summary": "定位、产品目标、用户、差异化与版本记录"
+        }
+      ]
+    },
+    {
+      "id": "requirements",
+      "title": "需求文档",
+      "pages": [
+        {
+          "id": "feature-list",
+          "title": "功能清单",
+          "type": "markdown",
+          "file": "requirements/feature-list.md",
+          "source": "origin",
+          "status": "confirmed",
+          "summary": "全量功能索引：模块 × 功能 × 优先级 × 状态"
+        },
+        {
+          "id": "capture",
+          "title": "剪贴板捕获",
+          "type": "markdown",
+          "file": "requirements/capture.md",
+          "source": "origin",
+          "status": "confirmed",
+          "summary": "监听、类型识别、去重与忽略规则"
+        },
+        {
+          "id": "history",
+          "title": "历史管理",
+          "type": "markdown",
+          "file": "requirements/history.md",
+          "source": "origin",
+          "status": "pending",
+          "summary": "列表、搜索、收藏、固定、拖出与删除"
+        },
+        {
+          "id": "quickpaste",
+          "title": "快速粘贴",
+          "type": "markdown",
+          "file": "requirements/quickpaste.md",
+          "source": "ai-inferred",
+          "status": "pending",
+          "summary": "快捷键面板与数字键回贴（AI 根据零散需求推断）"
+        },
+        {
+          "id": "scenarios",
+          "title": "用户故事与场景",
+          "type": "markdown",
+          "file": "requirements/scenarios.md",
+          "source": "origin",
+          "status": "pending",
+          "summary": "用户故事（US）、关键场景与优先级约定"
+        },
+        {
+          "id": "non-functional",
+          "title": "非功能需求",
+          "type": "markdown",
+          "file": "requirements/non-functional.md",
+          "source": "origin",
+          "status": "confirmed",
+          "summary": "性能、安全隐私、兼容性、可靠性与无障碍"
+        },
+        {
+          "id": "risks",
+          "title": "风险与依赖",
+          "type": "markdown",
+          "file": "requirements/risks.md",
+          "source": "ai-inferred",
+          "status": "pending",
+          "summary": "风险清单、系统依赖与开放问题（AI 推断）"
+        },
+        {
+          "id": "glossary",
+          "title": "名词解释",
+          "type": "markdown",
+          "file": "requirements/glossary.md",
+          "source": "ai-inferred",
+          "status": "pending",
+          "summary": "全站术语口径与文档编号约定（AI 推断）"
+        },
+        {
+          "id": "flow",
+          "title": "整体流程图",
+          "type": "mermaid",
+          "file": "requirements/flow.mmd",
+          "source": "origin",
+          "status": "confirmed",
+          "summary": "从复制到回贴的端到端流程"
+        },
+        {
+          "id": "info-structure",
+          "title": "整体信息图",
+          "type": "html-embed",
+          "file": "info-structure/info.html",
+          "source": "ai-inferred",
+          "status": "pending",
+          "summary": "产品信息架构总览（AI 推断）"
+        },
+        {
+          "id": "swimlane",
+          "title": "泳道图",
+          "type": "mermaid",
+          "file": "requirements/swimlane.mmd",
+          "source": "origin",
+          "status": "confirmed",
+          "summary": "用户 / SkyPaste / macOS 系统三泳道交互"
+        },
+        {
+          "id": "state",
+          "title": "条目状态图",
+          "type": "mermaid",
+          "file": "requirements/state.mmd",
+          "source": "ai-inferred",
+          "status": "pending",
+          "summary": "条目生命周期：新建 → 固定/收藏 → 归档 → 删除"
+        }
+      ]
+    },
+    {
+      "id": "prototype",
+      "title": "原型图",
+      "pages": [
+        {
+          "id": "overview",
+          "title": "页面总览",
+          "type": "markdown",
+          "file": "prototype/overview.md",
+          "source": "ai-inferred",
+          "status": "pending",
+          "summary": "页面清单与跳转关系"
+        },
+        {
+          "id": "main-panel",
+          "title": "主面板",
+          "type": "prototype",
+          "file": "prototype/main-panel.html",
+          "source": "origin",
+          "status": "confirmed",
+          "summary": "历史列表 + 搜索筛选 + 预览与快捷操作"
+        },
+        {
+          "id": "detail",
+          "title": "条目详情",
+          "type": "prototype",
+          "file": "prototype/detail.html",
+          "source": "ai-inferred",
+          "status": "pending",
+          "summary": "单条内容的完整信息与操作"
+        },
+        {
+          "id": "settings",
+          "title": "设置",
+          "type": "prototype",
+          "file": "prototype/settings.html",
+          "source": "ai-inferred",
+          "status": "pending",
+          "summary": "通用 / 快捷键 / 忽略规则 / 存储"
+        }
+      ]
+    },
+    {
+      "id": "testing",
+      "title": "测试",
+      "pages": [
+        {
+          "id": "acceptance",
+          "title": "验收标准",
+          "type": "markdown",
+          "file": "testing/acceptance.md",
+          "source": "origin",
+          "status": "confirmed",
+          "summary": "Given / When / Then 形式的验收口径"
+        },
+        {
+          "id": "cases",
+          "title": "测试用例",
+          "type": "markdown",
+          "file": "testing/cases.md",
+          "source": "ai-inferred",
+          "status": "pending",
+          "summary": "按模块展开的执行用例（AI 生成初稿）"
+        }
+      ]
+    },
+    {
+      "id": "launch",
+      "title": "上线目标",
+      "pages": [
+        {
+          "id": "goals",
+          "title": "目标与里程碑",
+          "type": "markdown",
+          "file": "launch/goals.md",
+          "source": "origin",
+          "status": "confirmed",
+          "summary": "上线目标与里程碑"
+        },
+        {
+          "id": "tracking",
+          "title": "数据埋点",
+          "type": "markdown",
+          "file": "launch/tracking.md",
+          "source": "origin",
+          "status": "confirmed",
+          "summary": "埋点原则、事件清单与看板口径"
+        },
+        {
+          "id": "checklist",
+          "title": "上线 Checklist",
+          "type": "markdown",
+          "file": "launch/checklist.md",
+          "source": "ai-inferred",
+          "status": "pending",
+          "summary": "上线前中后检查项（AI 生成初稿）"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>条目详情 · 低保真线框</title>
+  <link rel="stylesheet" href="assets/wireframe.css">
+</head>
+<body>
+  <div class="wf-page">
+    <div class="wf-window">
+      <div class="wf-titlebar">
+        <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+        <span class="wf-title">条目详情</span>
+      </div>
+
+      <div class="wf-row">
+        <div class="wf-pane">
+          <span class="wf-label">内容预览</span>
+          <div class="wf-preview">截图_20260818_1423.png</div>
+          <div class="wf-actions">
+            <div class="wf-btn">复制</div>
+            <div class="wf-btn">拖出 ↗</div>
+          </div>
+        </div>
+
+        <div class="wf-pane">
+          <span class="wf-label">元数据</span>
+          <div class="wf-ignore-list">
+            <div class="wf-ignore-item"><span>类型</span><span>图片 · PNG</span></div>
+            <div class="wf-ignore-item"><span>来源应用</span><span>微信</span></div>
+            <div class="wf-ignore-item"><span>复制时间</span><span>今天 14:23</span></div>
+            <div class="wf-ignore-item"><span>大小</span><span>1.2 MB</span></div>
+            <div class="wf-ignore-item"><span>使用次数</span><span>3 次</span></div>
+            <div class="wf-ignore-item"><span>收藏</span><span>★ 已收藏</span></div>
+          </div>
+          <div class="wf-actions">
+            <div class="wf-btn">★ 取消收藏</div>
+            <div class="wf-btn">删除</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wf-statusbar">
+        <span>条目 ID: 8f3a…c21</span>
+        <span>最近使用：昨天 18:05</span>
+      </div>
+    </div>
+
+    <div class="wf-legend">
+      <span class="wf-legend-title">标注重要程度</span>
+      <span class="wf-legend-row"><span class="wf-legend-dot crit"></span>核心 / 必须</span>
+      <span class="wf-legend-row"><span class="wf-legend-dot warn"></span>待确认 / 注意</span>
+      <span class="wf-legend-row"><span class="wf-legend-dot info"></span>一般说明</span>
+      <span class="wf-legend-row"><span class="wf-legend-dot ok"></span>参考信息</span>
+    </div>
+
+    <svg class="wf-lines" aria-hidden="true">
+      <!-- ① 元数据（目标最靠上 → 第一行，参考信息） -->
+      <g class="wf-ann ok">
+        <line class="wf-ann-line" x1="783" y1="144" x2="562" y2="98"/>
+        <circle class="wf-ann-dot" cx="566" cy="95" r="4"/>
+        <rect class="wf-ann-box" x="785" y="130" width="205" height="28" rx="6"/>
+        <text class="wf-ann-label" x="795" y="148">元数据：来源应用、使用次数</text>
+      </g>
+      <!-- ② 全文预览 -->
+      <g class="wf-ann info">
+        <line class="wf-ann-line" x1="783" y1="238" x2="197" y2="177"/>
+        <circle class="wf-ann-dot" cx="193" cy="180" r="4"/>
+        <rect class="wf-ann-box" x="785" y="215" width="205" height="46" rx="6"/>
+        <text class="wf-ann-label" x="795" y="233">内容预览区：大段文本</text>
+        <text class="wf-ann-label" x="795" y="251">在此显示全文，列表仅截断</text>
+      </g>
+      <!-- ③ 删除与回收站：策略待确认 -->
+      <g class="wf-ann warn">
+        <line class="wf-ann-line" x1="783" y1="323" x2="659" y2="466"/>
+        <circle class="wf-ann-dot" cx="655" cy="470" r="4"/>
+        <rect class="wf-ann-box" x="785" y="300" width="205" height="46" rx="6"/>
+        <text class="wf-ann-label" x="795" y="318">删除 → 进入回收站</text>
+        <text class="wf-ann-label" x="795" y="336">保留 7 天（策略待确认）</text>
+      </g>
+    </svg>
+  </div>
+</body>
+</html>

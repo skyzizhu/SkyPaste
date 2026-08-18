@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>产品系统</title>
+  <link rel="stylesheet" href="css/base.css?v=3">
+  <link rel="stylesheet" href="css/layout.css?v=3">
+  <link rel="stylesheet" href="css/content.css?v=3">
+  <script defer src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-name" id="brand-name">加载中…</div>
+      <div class="brand-meta" id="brand-meta"></div>
+    </div>
+    <nav class="menu" id="menu" aria-label="产品系统导航"></nav>
+    <div class="sidebar-foot">产品系统 Demo · 内容驱动 · 增量更新</div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <div class="breadcrumb" id="breadcrumb"></div>
+      <div class="badges" id="page-badges"></div>
+    </header>
+    <section class="content" id="content">
+      <p class="loading">加载中…</p>
+    </section>
+  </main>
+
+  <!-- 经典脚本按序加载（兼容 file:// 双击直开，无模块/fetch）：
+       data.js 为 build.py 生成的编译内容，其余为站点逻辑 -->
+  <script defer src="js/data.js?v=3"></script>
+  <script defer src="js/loader.js?v=3"></script>
+  <script defer src="js/router.js?v=3"></script>
+  <script defer src="js/render.js?v=3"></script>
+  <script defer src="js/menu.js?v=3"></script>
+  <script defer src="js/main.js?v=3"></script>
+</body>
+</html>

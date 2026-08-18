@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>整体信息结构图</title>
+  <link rel="stylesheet" href="info.css">
+</head>
+<body>
+  <div class="ia">
+    <div class="ia-root">
+      <span class="ia-name">SkyPaste</span>
+      <span class="ia-desc">剪贴板历史与快速粘贴</span>
+    </div>
+
+    <div class="ia-branch">
+      <div class="ia-node">
+        <span class="ia-name">菜单栏</span>
+        <span class="ia-tag">常驻入口</span>
+      </div>
+      <div class="ia-children">
+        <div class="ia-leaf">快捷面板入口</div>
+        <div class="ia-leaf">最近 5 条 · 点击即贴</div>
+        <div class="ia-leaf">偏好设置</div>
+        <div class="ia-leaf">退出</div>
+      </div>
+    </div>
+
+    <div class="ia-branch">
+      <div class="ia-node">
+        <span class="ia-name">主面板</span>
+        <span class="ia-tag">核心界面</span>
+      </div>
+      <div class="ia-children">
+        <div class="ia-leaf">搜索框 + 类型筛选（全部 / 文本 / 链接 / 图片 / 文件 / 颜色）</div>
+        <div class="ia-leaf">历史列表（分组：今天 / 昨天 / 更早）</div>
+        <div class="ia-leaf">条目预览 + 快捷操作（粘贴 / 详情 / 拖出）</div>
+        <div class="ia-leaf">条目详情（类型 / 来源 / 时间 / 使用统计）</div>
+      </div>
+    </div>
+
+    <div class="ia-branch">
+      <div class="ia-node">
+        <span class="ia-name">设置</span>
+        <span class="ia-tag">偏好配置</span>
+      </div>
+      <div class="ia-children">
+        <div class="ia-leaf">通用（开机启动、提示音、失焦隐藏）</div>
+        <div class="ia-leaf">快捷键（面板呼出键）</div>
+        <div class="ia-leaf">忽略规则（应用名单）</div>
+        <div class="ia-leaf">存储（容量上限、清理策略）</div>
+      </div>
+    </div>
+
+    <div class="ia-branch">
+      <div class="ia-node">
+        <span class="ia-name">数据层</span>
+        <span class="ia-tag">本地存储</span>
+      </div>
+      <div class="ia-children">
+        <div class="ia-leaf">条目库（内容 + 元数据 + 索引）</div>
+        <div class="ia-leaf">收藏 / 固定标记</div>
+        <div class="ia-leaf">回收站（7 天保留）</div>
+        <div class="ia-leaf">用户偏好</div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

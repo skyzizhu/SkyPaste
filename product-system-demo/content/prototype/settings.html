@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>设置 · 低保真线框</title>
+  <link rel="stylesheet" href="assets/wireframe.css">
+</head>
+<body>
+  <div class="wf-page">
+    <div class="wf-window">
+      <div class="wf-titlebar">
+        <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+        <span class="wf-title">SkyPaste — 设置</span>
+      </div>
+
+      <div class="wf-row">
+        <div class="wf-tabs">
+          <span class="wf-tab on">通用</span>
+          <span class="wf-tab">快捷键</span>
+          <span class="wf-tab">忽略规则</span>
+          <span class="wf-tab">存储</span>
+          <span class="wf-tab">关于</span>
+        </div>
+
+        <div class="wf-form">
+          <div class="wf-field">
+            <div class="wf-field-label">
+              <span>开机自动启动</span>
+              <span class="wf-field-hint">登录 macOS 后自动常驻菜单栏</span>
+            </div>
+            <span class="wf-switch on"></span>
+          </div>
+          <div class="wf-field">
+            <div class="wf-field-label">
+              <span>复制提示音</span>
+              <span class="wf-field-hint">捕获新内容时播放轻提示音</span>
+            </div>
+            <span class="wf-switch"></span>
+          </div>
+          <div class="wf-field">
+            <div class="wf-field-label">
+              <span>面板失焦自动隐藏</span>
+              <span class="wf-field-hint">点击面板外区域时自动收起</span>
+            </div>
+            <span class="wf-switch on"></span>
+          </div>
+          <div class="wf-field">
+            <div class="wf-field-label">
+              <span>呼出面板快捷键</span>
+              <span class="wf-field-hint">全局生效，点击右侧重新录制</span>
+            </div>
+            <span class="wf-hotkey">⇧ ⌘ V</span>
+          </div>
+          <div class="wf-field">
+            <div class="wf-field-label">
+              <span>历史容量上限</span>
+              <span class="wf-field-hint">收藏与固定条目不计入</span>
+            </div>
+            <span class="wf-select">500 条 ▾</span>
+          </div>
+
+          <span class="wf-label">忽略以下应用的复制行为</span>
+          <div class="wf-ignore-list">
+            <div class="wf-ignore-item"><span>1Password</span><span class="wf-x">✕ 移除</span></div>
+            <div class="wf-ignore-item"><span>Bitwarden</span><span class="wf-x">✕ 移除</span></div>
+            <div class="wf-ignore-item"><span>+ 添加应用…</span><span></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wf-statusbar">
+        <span>SkyPaste v0.3.0</span>
+        <span>所有数据仅存储在本机</span>
+      </div>
+    </div>
+
+    <div class="wf-legend">
+      <span class="wf-legend-title">标注重要程度</span>
+      <span class="wf-legend-row"><span class="wf-legend-dot crit"></span>核心 / 必须</span>
+      <span class="wf-legend-row"><span class="wf-legend-dot warn"></span>待确认 / 注意</span>
+      <span class="wf-legend-row"><span class="wf-legend-dot info"></span>一般说明</span>
+      <span class="wf-legend-row"><span class="wf-legend-dot ok"></span>参考信息</span>
+    </div>
+
+    <svg class="wf-lines" aria-hidden="true">
+      <!-- ① Tab 分组（目标最靠上 → 第一行，参考信息） -->
+      <g class="wf-ann ok">
+        <line class="wf-ann-line" x1="783" y1="144" x2="89" y2="78"/>
+        <circle class="wf-ann-dot" cx="85" cy="75" r="4"/>
+        <rect class="wf-ann-box" x="785" y="130" width="205" height="28" rx="6"/>
+        <text class="wf-ann-label" x="795" y="148">左侧 Tab 切换配置分组</text>
+      </g>
+      <!-- ② 快捷键录制 -->
+      <g class="wf-ann info">
+        <line class="wf-ann-line" x1="783" y1="229" x2="664" y2="228"/>
+        <circle class="wf-ann-dot" cx="660" cy="231" r="4"/>
+        <rect class="wf-ann-box" x="785" y="215" width="205" height="28" rx="6"/>
+        <text class="wf-ann-label" x="795" y="233">点击重新录制全局快捷键</text>
+      </g>
+      <!-- ③ 忽略名单：需评审确认 -->
+      <g class="wf-ann warn">
+        <line class="wf-ann-line" x1="783" y1="323" x2="384" y2="436"/>
+        <circle class="wf-ann-dot" cx="380" cy="440" r="4"/>
+        <rect class="wf-ann-box" x="785" y="300" width="205" height="46" rx="6"/>
+        <text class="wf-ann-label" x="795" y="318">默认忽略名单需产品评审</text>
+        <text class="wf-ann-label" x="795" y="336">确认（对应 FR-104）</text>
+      </g>
+    </svg>
+  </div>
+</body>
+</html>

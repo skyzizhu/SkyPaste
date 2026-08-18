@@ -1,0 +1,19 @@
+flowchart LR
+    subgraph L1[👤 用户]
+        direction LR
+        A1[复制内容] --> A2[呼出面板 / 搜索] --> A3[选中条目]
+    end
+    subgraph L2[🧩 SkyPaste]
+        direction LR
+        B1[剪贴板监听] --> B2[类型识别与去重] --> B3[本地入库] --> B4[列表渲染] --> B5[回填剪贴板]
+    end
+    subgraph L3[🖥 macOS 系统]
+        direction LR
+        C1[系统剪贴板] --> C2[前台应用窗口]
+    end
+    A1 -. 触发写入 .-> C1
+    C1 --> B1
+    B4 --> A2
+    A3 --> B5
+    B5 -. 写回 .-> C1
+    C1 -. 模拟 ⌘V .-> C2
