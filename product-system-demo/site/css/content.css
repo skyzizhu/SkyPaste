@@ -120,6 +120,34 @@ iframe.embed {
   background: #fff;
 }
 
+/* ---------- 连续长页模块（layout: continuous） ---------- */
+.content { scroll-behavior: smooth; }
+
+.doc-section { scroll-margin-top: 16px; }
+
+.doc-section + .doc-section {
+  margin-top: 48px;
+  padding-top: 40px;
+  border-top: 1px solid var(--line);
+}
+
+.doc-continuous .page-title { font-size: 22px; margin: 0; border-bottom: none; }
+
+.section-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+iframe.embed-inline {
+  width: 100%;
+  height: 640px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+}
+
 /* ---------- 待确认清单 ---------- */
 .pending-list { list-style: none; padding: 0; margin: 10px 0 18px; }
 

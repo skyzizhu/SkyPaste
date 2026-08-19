@@ -57,14 +57,125 @@ PS.boot = async function () {
     return '<h1 class="page-title">' + PS.escapeHtml(page.title) + "</h1>" + summary;
   }
 
+  // ---- 连续长页模块（layout: "continuous"）----
+  // 所有二级页拼为一个长页；菜单点击 = 锚点平滑滚动；滚动时菜单高亮跟随
+  var continuousModule = null;
+  var spyHandler = null;
+
+  function sectionHeader(page) {
+    var summary = page.summary
+      ? '<p class="page-summary">' + PS.escapeHtml(page.summary) + "</p>"
+      : "";
+    return (
+      '<div class="section-title-row"><h2 class="page-title">' + PS.escapeHtml(page.title) + "</h2>" +
+      PS.badgesHtml(page) + "</div>" + summary
+    );
+  }
+
+  function detachScrollspy() {
+    if (spyHandler) {
+      document.getElementById("content").removeEventListener("scroll", spyHandler);
+      spyHandler = null;
+    }
+  }
+
+  function attachScrollspy(mod) {
+    detachScrollspy();
+    var container = document.getElementById("content");
+    var ticking = false;
+    spyHandler = function () {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(function () {
+        ticking = false;
+        var sections = container.querySelectorAll(".doc-section");
+        var containerTop = container.getBoundingClientRect().top;
+        var currentId = null;
+        sections.forEach(function (s) {
+          if (s.getBoundingClientRect().top - containerTop <= 140) currentId = s.dataset.page;
+        });
+        if (!currentId && sections.length) currentId = sections[0].dataset.page;
+        var page = mod.pages.filter(function (p) { return p.id === currentId; })[0];
+        if (page) {
+          PS.setActive(mod.id, page.id);
+          document.getElementById("breadcrumb").innerHTML =
+            "<span>" + PS.escapeHtml(manifest.product.name) + " 产品系统</span><span>/</span>" +
+            "<span>" + PS.escapeHtml(mod.title) + "</span><span>/</span><b>" + PS.escapeHtml(page.title) + "</b>";
+          document.getElementById("page-badges").innerHTML = PS.badgesHtml(page);
+          document.title = page.title + " · " + manifest.product.name + " 产品系统";
+        }
+      });
+    };
+    container.addEventListener("scroll", spyHandler, { passive: true });
+  }
+
+  function scrollToSection(pageId) {
+    var sec = document.getElementById("sec-" + pageId);
+    if (sec) sec.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  async function renderContinuous(mod, page) {
+    var content = document.getElementById("content");
+
+    if (continuousModule !== mod.id) {
+      var html = '<div class="doc doc-continuous">';
+      mod.pages.forEach(function (p) {
+        html += '<section class="doc-section" id="sec-' + p.id + '" data-page="' + p.id + '">';
+        html += sectionHeader(p);
+        if (p.type === "markdown") {
+          html += PS.mdToHtml(PS.loadText(p.file));
+        } else if (p.type === "mermaid") {
+          html += '<div class="mermaid-slot" data-file="' + PS.escapeHtml(p.file) + '"></div>';
+        } else if (p.type === "prototype" || p.type === "html-embed") {
+          var url = PS.contentUrl(p.file);
+          var label = p.type === "prototype" ? "低保真线框原型" : "HTML 信息结构图";
+          html +=
+            '<div class="embed-bar"><span>' + label + " · <code>" + PS.escapeHtml(p.file) + "</code></span>" +
+            '<a href="' + url + '" target="_blank" rel="noopener">新窗口打开 ↗</a></div>' +
+            '<iframe class="embed embed-inline" src="' + url + '" title="' + PS.escapeHtml(p.title) + '"></iframe>';
+        }
+        html += "</section>";
+      });
+      html += "</div>";
+
+      content.className = "content";
+      content.innerHTML = html;
+
+      // 独立 mermaid 页与 markdown 内嵌 mermaid 逐个渲染
+      var slots = Array.prototype.slice.call(content.querySelectorAll(".mermaid-slot"));
+      for (var i = 0; i < slots.length; i++) {
+        await PS.renderMermaid(slots[i], PS.loadText(slots[i].dataset.file));
+      }
+      var inlines = Array.prototype.slice.call(content.querySelectorAll(".mermaid-inline"));
+      for (var k = 0; k < inlines.length; k++) {
+        await PS.renderMermaid(inlines[k], inlines[k].textContent);
+      }
+
+      continuousModule = mod.id;
+      attachScrollspy(mod);
+    }
+    scrollToSection(page.id);
+  }
+
   async function renderContent(mod, page) {
     var content = document.getElementById("content");
 
     if (mod.special === "pending-report") {
+      detachScrollspy();
+      continuousModule = null;
       content.className = "content";
       content.innerHTML = '<div class="doc">' + PS.pendingReportHtml(manifest) + "</div>";
       return;
     }
+
+    // 连续长页模块：整模块一次渲染，后续路由仅锚点滚动
+    if (mod.layout === "continuous") {
+      await renderContinuous(mod, page);
+      return;
+    }
+
+    detachScrollspy();
+    continuousModule = null;
 
     if (page.type === "markdown") {
       var text = PS.loadText(page.file);

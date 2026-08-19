@@ -34,6 +34,7 @@ window.__PS_DATA = {
       {
         "id": "requirements",
         "title": "需求文档",
+        "layout": "continuous",
         "pages": [
           {
             "id": "feature-list",
