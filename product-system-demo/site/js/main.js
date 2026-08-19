@@ -17,7 +17,7 @@ PS.boot = async function () {
   try {
     manifest = PS.getManifest();
   } catch (e) {
-    document.getElementById("brand-name").textContent = "产品系统";
+    document.getElementById("brand-name").textContent = "产品方案";
     document.getElementById("content").innerHTML =
       '<div class="callout warn">⚠️ ' + PS.escapeHtml(e.message) + "</div>";
     return;
@@ -99,10 +99,10 @@ PS.boot = async function () {
         if (page) {
           PS.setActive(mod.id, page.id);
           document.getElementById("breadcrumb").innerHTML =
-            "<span>" + PS.escapeHtml(manifest.product.name) + " 产品系统</span><span>/</span>" +
+            "<span>" + PS.escapeHtml(manifest.product.name) + " 产品方案</span><span>/</span>" +
             "<span>" + PS.escapeHtml(mod.title) + "</span><span>/</span><b>" + PS.escapeHtml(page.title) + "</b>";
           document.getElementById("page-badges").innerHTML = PS.badgesHtml(page);
-          document.title = page.title + " · " + manifest.product.name + " 产品系统";
+          document.title = page.title + " · " + manifest.product.name + " 产品方案";
         }
       });
     };
@@ -227,9 +227,9 @@ PS.boot = async function () {
     }
 
     PS.setActive(mod.id, page.id);
-    document.title = page.title + " · " + manifest.product.name + " 产品系统";
+    document.title = page.title + " · " + manifest.product.name + " 产品方案";
     document.getElementById("breadcrumb").innerHTML =
-      "<span>" + PS.escapeHtml(manifest.product.name) + " 产品系统</span><span>/</span>" +
+      "<span>" + PS.escapeHtml(manifest.product.name) + " 产品方案</span><span>/</span>" +
       "<span>" + PS.escapeHtml(mod.title) + "</span><span>/</span><b>" + PS.escapeHtml(page.title) + "</b>";
     document.getElementById("page-badges").innerHTML = mod.special ? "" : PS.badgesHtml(page);
 
