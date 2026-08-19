@@ -7,7 +7,8 @@ window.__PS_DATA = {
       "form": "desktop",
       "version": "0.3.0",
       "tagline": "macOS 剪贴板历史与快速粘贴工具",
-      "updated": "2026-08-18"
+      "updated": "2026-08-18",
+      "audience": "c"
     },
     "modules": [
       {
