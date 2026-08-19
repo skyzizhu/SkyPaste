@@ -52,7 +52,7 @@ window.__PS_DATA = {
             "type": "markdown",
             "file": "requirements/capture.md",
             "source": "origin",
-            "status": "confirmed",
+            "status": "pending",
             "summary": "监听、类型识别、去重与忽略规则"
           },
           {
@@ -97,7 +97,7 @@ window.__PS_DATA = {
             "type": "markdown",
             "file": "requirements/non-functional.md",
             "source": "origin",
-            "status": "confirmed",
+            "status": "pending",
             "summary": "性能、安全隐私、兼容性、可靠性与无障碍"
           },
           {
@@ -208,7 +208,7 @@ window.__PS_DATA = {
             "type": "markdown",
             "file": "testing/acceptance.md",
             "source": "origin",
-            "status": "confirmed",
+            "status": "pending",
             "summary": "Given / When / Then 形式的验收口径"
           },
           {
@@ -241,7 +241,7 @@ window.__PS_DATA = {
             "type": "markdown",
             "file": "launch/tracking.md",
             "source": "origin",
-            "status": "confirmed",
+            "status": "pending",
             "summary": "埋点原则、事件清单与看板口径"
           },
           {

@@ -37,6 +37,13 @@
 
 .doc hr { border: none; border-top: 1px solid var(--line); margin: 22px 0; }
 
+.doc img {
+  max-width: 100%;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  margin: 10px 0;
+}
+
 .doc table {
   display: block;
   overflow-x: auto;

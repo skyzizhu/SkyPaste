@@ -12,6 +12,11 @@ PS.escapeHtml = function (s) {
 
 function inline(s) {
   return PS.escapeHtml(s)
+    // 图片：![alt](src)。src 为 content 相对路径时自动加 ../content/ 前缀，http(s) 原样
+    .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, function (m, alt, src) {
+      var url = /^https?:/i.test(src) ? src : "../content/" + src.replace(/^\.\.\/content\//, "").replace(/^\/+/, "");
+      return '<img src="' + url + '" alt="' + alt + '">';
+    })
     .replace(/`([^`]+)`/g, "<code>$1</code>")
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
