@@ -7,7 +7,7 @@
   --wf-block: #e3e3e3;
   --wf-line: #bdbdbd;
   --wf-ink: #6d6d6d;
-  --wf-faint: #9c9c9c;
+  --wf-faint: #7d7d7d;
 }
 
 * { box-sizing: border-box; }
@@ -43,6 +43,7 @@ body {
   border-radius: 10px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  position: relative; /* 成为绝对定位后代的容器，防误用遮罩铺满整页 */
 }
 
 .wf-titlebar {
@@ -53,6 +54,8 @@ body {
   padding: 9px 12px;
   background: #e9e9e9;
   border-bottom: 1px solid var(--wf-line);
+  position: relative;
+  z-index: 2;
 }
 
 .wf-dot {
@@ -287,6 +290,8 @@ body {
   color: var(--wf-faint);
   background: #e9e9e9;
   border-top: 1px solid var(--wf-line);
+  position: relative;
+  z-index: 2;
 }
 
 /* ---------- 表单（设置页） ---------- */
@@ -418,7 +423,7 @@ body {
   flex: none;
 }
 
-.wf-lines {
+.wf-ann-layer {
   position: absolute;
   inset: 0;
   width: 100%;
@@ -507,10 +512,11 @@ body {
 }
 
 /* 遮罩 + 弹框 */
-.wf-mask { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.35); }
+.wf-mask { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.35); z-index: 1; }
 
 .wf-dialog {
   position: relative;
+  z-index: 3;
   width: 72%;
   background: #fff;
   border: 1px solid var(--wf-line);
