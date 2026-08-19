@@ -25,7 +25,7 @@ PS.buildMenu = function (manifest) {
 
   manifest.modules.forEach(function (mod) {
     var group = document.createElement("div");
-    group.className = "menu-group";
+    group.className = "menu-group" + (mod.layout === "continuous" ? " is-continuous" : "");
     group.dataset.module = mod.id;
 
     if (mod.special === "pending-report") {

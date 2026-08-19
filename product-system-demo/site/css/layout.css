@@ -107,6 +107,18 @@ body.sidebar-collapsed .sidebar-expand { display: block; }
 
 .menu-group.collapsed .menu-item { display: none; }
 
+/* 连续长页模块的二级菜单 = 页内锚点：缩进 + 左侧竖线轨道，与普通分页菜单区分 */
+.menu-group.is-continuous .menu-item {
+  margin-left: 12px;
+  padding-left: 10px;
+  border-left: 2px solid var(--line);
+  border-radius: 0 6px 6px 0;
+}
+
+.menu-group.is-continuous .menu-item.active {
+  border-left-color: var(--accent);
+}
+
 .menu-count {
   font-size: 10.5px;
   font-weight: 700;

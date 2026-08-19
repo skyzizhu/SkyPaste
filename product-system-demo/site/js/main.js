@@ -251,8 +251,12 @@ PS.boot = async function () {
     document.getElementById("page-badges").innerHTML = mod.special ? "" : PS.badgesHtml(page);
 
     var content = document.getElementById("content");
-    content.className = "content";
-    content.innerHTML = '<p class="loading">加载中…</p>';
+    // 连续长页模块已渲染时，点击二级菜单仅锚点滚动，不重置内容（避免闪「加载中」）
+    var alreadyRendered = mod.layout === "continuous" && continuousModule === mod.id;
+    if (!alreadyRendered) {
+      content.className = "content";
+      content.innerHTML = '<p class="loading">加载中…</p>';
+    }
     try {
       await renderContent(mod, page);
     } catch (err) {
