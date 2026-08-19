@@ -12,6 +12,23 @@ var FORM_LABELS = {
   tv: "电视大屏端"
 };
 
+// 侧栏整体收起 / 展开（localStorage 记忆）
+(function () {
+  try {
+    if (localStorage.getItem("ps.sidebar.collapsed") === "1") {
+      document.body.classList.add("sidebar-collapsed");
+    }
+  } catch (e) { /* 忽略 */ }
+  var toggleBtn = document.getElementById("sidebar-toggle");
+  var expandBtn = document.getElementById("sidebar-expand");
+  function setSidebar(collapsed) {
+    document.body.classList.toggle("sidebar-collapsed", collapsed);
+    try { localStorage.setItem("ps.sidebar.collapsed", collapsed ? "1" : "0"); } catch (e) { /* 忽略 */ }
+  }
+  if (toggleBtn) toggleBtn.addEventListener("click", function () { setSidebar(true); });
+  if (expandBtn) expandBtn.addEventListener("click", function () { setSidebar(false); });
+})();
+
 PS.boot = async function () {
   var manifest;
   try {
