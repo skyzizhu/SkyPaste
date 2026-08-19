@@ -473,3 +473,108 @@ body {
 .wf-legend-dot.warn { background: #b08300; }
 .wf-legend-dot.info { background: #1a66d6; }
 .wf-legend-dot.ok { background: #1a7f37; }
+
+/* ---------- 状态与边界组件 ---------- */
+.wf-state-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 14px;
+}
+
+.wf-state-box {
+  width: calc(50% - 8px);
+  border: 1px solid var(--wf-line);
+  border-radius: 6px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.wf-state-label {
+  padding: 8px 12px;
+  font-size: 11px;
+  color: var(--wf-faint);
+  border-bottom: 1px dashed var(--wf-line);
+  background: #f7f7f7;
+}
+
+.wf-state-body {
+  position: relative;
+  height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 遮罩 + 弹框 */
+.wf-mask { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.35); }
+
+.wf-dialog {
+  position: relative;
+  width: 72%;
+  background: #fff;
+  border: 1px solid var(--wf-line);
+  border-radius: 8px;
+  padding: 14px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.wf-dialog-title { font-size: 12.5px; color: var(--wf-ink); margin-bottom: 8px; }
+
+.wf-dialog-text { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+
+.wf-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+
+.wf-btn.danger {
+  background: #f6d9d9;
+  border-color: #d13438;
+  color: #b02a2e;
+}
+
+/* 骨架屏 */
+.wf-skeleton { display: flex; flex-direction: column; gap: 10px; width: 70%; }
+
+.wf-skeleton .wf-line {
+  height: 12px;
+  border-radius: 4px;
+  background: repeating-linear-gradient(90deg, #ececec 0 42%, #f7f7f7 42% 84%);
+}
+
+/* 空态 */
+.wf-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--wf-faint);
+  font-size: 11.5px;
+  padding: 0 24px;
+  text-align: center;
+}
+
+.wf-empty-icon {
+  width: 44px;
+  height: 44px;
+  border: 2px dashed var(--wf-line);
+  border-radius: 50%;
+  flex: none;
+}
+
+/* 轻提示 */
+.wf-toast {
+  position: absolute;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #4a4a4a;
+  color: #fff;
+  font-size: 11px;
+  padding: 6px 14px;
+  border-radius: 14px;
+  white-space: nowrap;
+}
+
+.wf-toast.warn { background: #b02a2e; }
+
+/* 校验错误 */
+.wf-error-text { font-size: 11px; color: #b02a2e; }

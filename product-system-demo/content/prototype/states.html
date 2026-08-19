@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>空态·加载·错误·权限 · 低保真线框</title>
+  <link rel="stylesheet" href="assets/wireframe.css">
+</head>
+<body>
+  <div class="wf-page">
+    <div class="wf-window">
+      <div class="wf-titlebar">
+        <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+        <span class="wf-title">SkyPaste — 状态与边界</span>
+      </div>
+
+      <div class="wf-state-grid">
+        <!-- 1. 首次使用空态 -->
+        <div class="wf-state-box">
+          <div class="wf-state-label">主面板 · 首次使用空态</div>
+          <div class="wf-state-body">
+            <div class="wf-empty">
+              <div class="wf-empty-icon"></div>
+              <span>还没有任何记录</span>
+              <span>复制点东西试试，SkyPaste 会自动记录</span>
+              <div class="wf-btn">查看使用引导</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. 加载骨架 -->
+        <div class="wf-state-box">
+          <div class="wf-state-label">条目详情 · 加载骨架</div>
+          <div class="wf-state-body">
+            <div class="wf-skeleton">
+              <div class="wf-line w-60"></div>
+              <div class="wf-line w-90"></div>
+              <div class="wf-line w-80"></div>
+              <div class="wf-line w-40"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. 搜索无结果 -->
+        <div class="wf-state-box">
+          <div class="wf-state-label">主面板 · 搜索无结果</div>
+          <div class="wf-state-body">
+            <div class="wf-empty">
+              <div class="wf-empty-icon"></div>
+              <span>没有找到「关键字」相关内容</span>
+              <span>试试更短的关键词，或切换类型筛选</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4. 权限引导 -->
+        <div class="wf-state-box">
+          <div class="wf-state-label">辅助功能权限 · 被回收后</div>
+          <div class="wf-state-body">
+            <div class="wf-empty">
+              <div class="wf-empty-icon"></div>
+              <span>回贴需要「辅助功能」权限</span>
+              <span>授权前将降级为仅写入剪贴板</span>
+              <div class="wf-btn">去系统设置授权</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5. 回贴失败 toast -->
+        <div class="wf-state-box">
+          <div class="wf-state-label">回贴失败 · 轻提示</div>
+          <div class="wf-state-body">
+            <div class="wf-empty">
+              <span>目标应用无文本焦点，已复制到剪贴板</span>
+            </div>
+            <div class="wf-toast warn">⚠ 回贴失败：前台应用无文本焦点</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wf-statusbar">
+        <span>空态一律带引导动作；错误提示用 toast 并注明原因</span>
+        <span>权限降级不阻断核心查看能力</span>
+      </div>
+    </div>
+
+    <div class="wf-legend">
+      <span class="wf-legend-title">标注重要程度</span>
+      <span class="wf-legend-row"><span class="wf-legend-dot crit"></span>核心 / 必须</span>
+      <span class="wf-legend-row"><span class="wf-legend-dot warn"></span>待确认 / 注意</span>
+      <span class="wf-legend-row"><span class="wf-legend-dot info"></span>一般说明</span>
+      <span class="wf-legend-row"><span class="wf-legend-dot ok"></span>参考信息</span>
+    </div>
+
+    <svg class="wf-lines" aria-hidden="true">
+      <!-- 1 空态引导（目标最靠上） -->
+      <g class="wf-ann info">
+        <line class="wf-ann-line" x1="783" y1="144" x2="197" y2="162"/>
+        <circle class="wf-ann-dot" cx="193" cy="159" r="9"/>
+        <text class="wf-ann-num" x="193" y="163">1</text>
+        <rect class="wf-ann-box" x="785" y="130" width="205" height="28" rx="6"/>
+        <text class="wf-ann-label" x="795" y="148">1 · 空态带引导动作提升激活</text>
+      </g>
+      <!-- 2 权限降级 -->
+      <g class="wf-ann warn">
+        <line class="wf-ann-line" x1="783" y1="229" x2="573" y2="346"/>
+        <circle class="wf-ann-dot" cx="569" cy="349" r="9"/>
+        <text class="wf-ann-num" x="569" y="353">2</text>
+        <rect class="wf-ann-box" x="785" y="215" width="205" height="28" rx="6"/>
+        <text class="wf-ann-label" x="795" y="233">2 · 权限回收→引导重授权并降级</text>
+      </g>
+      <!-- 3 失败 toast -->
+      <g class="wf-ann info">
+        <line class="wf-ann-line" x1="783" y1="314" x2="197" y2="634"/>
+        <circle class="wf-ann-dot" cx="193" cy="638" r="9"/>
+        <text class="wf-ann-num" x="193" y="642">3</text>
+        <rect class="wf-ann-box" x="785" y="300" width="205" height="28" rx="6"/>
+        <text class="wf-ann-label" x="795" y="318">3 · 失败 toast 注明原因</text>
+      </g>
+    </svg>
+  </div>
+</body>
+</html>

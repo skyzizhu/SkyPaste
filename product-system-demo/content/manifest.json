@@ -192,6 +192,24 @@
           "source": "ai-inferred",
           "status": "pending",
           "summary": "通用 / 快捷键 / 忽略规则 / 存储"
+        },
+        {
+          "id": "dialogs",
+          "title": "弹框与遮罩",
+          "type": "prototype",
+          "file": "prototype/dialogs.html",
+          "source": "origin",
+          "status": "pending",
+          "summary": "危险操作确认、源缺失警告、快捷键冲突校验"
+        },
+        {
+          "id": "states",
+          "title": "空态·加载·错误·权限",
+          "type": "prototype",
+          "file": "prototype/states.html",
+          "source": "ai-inferred",
+          "status": "pending",
+          "summary": "全局状态与边界：空态引导 / 骨架屏 / 无结果 / 权限降级 / 失败提示"
         }
       ]
     },

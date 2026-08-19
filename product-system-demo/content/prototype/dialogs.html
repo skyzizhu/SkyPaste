@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>弹框与遮罩 · 低保真线框</title>
+  <link rel="stylesheet" href="assets/wireframe.css">
+</head>
+<body>
+  <div class="wf-page">
+    <div class="wf-window">
+      <div class="wf-titlebar">
+        <span class="wf-dot"></span><span class="wf-dot"></span><span class="wf-dot"></span>
+        <span class="wf-title">SkyPaste — 弹框与遮罩</span>
+      </div>
+
+      <div class="wf-state-grid">
+        <!-- 1. 清空历史确认（危险操作） -->
+        <div class="wf-state-box">
+          <div class="wf-state-label">清空历史 · 危险操作确认</div>
+          <div class="wf-state-body">
+            <div class="wf-mask"></div>
+            <div class="wf-dialog">
+              <div class="wf-dialog-title">清空全部剪贴板历史？</div>
+              <div class="wf-dialog-text">
+                <div class="wf-line w-90"></div>
+                <div class="wf-line w-60"></div>
+              </div>
+              <div class="wf-dialog-actions">
+                <div class="wf-btn">取消</div>
+                <div class="wf-btn danger">清空</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 2. 源文件缺失警告（真实实现） -->
+        <div class="wf-state-box">
+          <div class="wf-state-label">拖出 · 源文件缺失警告</div>
+          <div class="wf-state-body">
+            <div class="wf-mask"></div>
+            <div class="wf-dialog">
+              <div class="wf-dialog-title">⚠️ 无法拖出：文件已被移动或删除</div>
+              <div class="wf-dialog-text">
+                <div class="wf-line w-90"></div>
+                <div class="wf-line w-40"></div>
+              </div>
+              <div class="wf-dialog-actions">
+                <div class="wf-btn">好</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3. 快捷键冲突校验 -->
+        <div class="wf-state-box">
+          <div class="wf-state-label">设置 · 快捷键冲突校验</div>
+          <div class="wf-state-body">
+            <div class="wf-dialog">
+              <div class="wf-hotkey">⇧ ⌘ V</div>
+              <div class="wf-error-text">该组合已被系统或其他应用占用，请换一组</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="wf-statusbar">
+        <span>弹框均模态：遮罩阻断背景操作</span>
+        <span>Esc = 取消</span>
+      </div>
+    </div>
+
+    <div class="wf-legend">
+      <span class="wf-legend-title">标注重要程度</span>
+      <span class="wf-legend-row"><span class="wf-legend-dot crit"></span>核心 / 必须</span>
+      <span class="wf-legend-row"><span class="wf-legend-dot warn"></span>待确认 / 注意</span>
+      <span class="wf-legend-row"><span class="wf-legend-dot info"></span>一般说明</span>
+      <span class="wf-legend-row"><span class="wf-legend-dot ok"></span>参考信息</span>
+    </div>
+
+    <svg class="wf-lines" aria-hidden="true">
+      <!-- 1 源缺失警告（目标最靠上） -->
+      <g class="wf-ann info">
+        <line class="wf-ann-line" x1="783" y1="144" x2="573" y2="143"/>
+        <circle class="wf-ann-dot" cx="569" cy="140" r="9"/>
+        <text class="wf-ann-num" x="569" y="144">1</text>
+        <rect class="wf-ann-box" x="785" y="130" width="205" height="28" rx="6"/>
+        <text class="wf-ann-label" x="795" y="148">1 · 源缺失警告（0.2.7 实现）</text>
+      </g>
+      <!-- 2 危险操作确认 -->
+      <g class="wf-ann warn">
+        <line class="wf-ann-line" x1="783" y1="229" x2="294" y2="201"/>
+        <circle class="wf-ann-dot" cx="290" cy="198" r="9"/>
+        <text class="wf-ann-num" x="290" y="202">2</text>
+        <rect class="wf-ann-box" x="785" y="215" width="205" height="28" rx="6"/>
+        <text class="wf-ann-label" x="795" y="233">2 · 清空等危险操作必须二次确认</text>
+      </g>
+      <!-- 3 校验即时提示 -->
+      <g class="wf-ann info">
+        <line class="wf-ann-line" x1="783" y1="314" x2="197" y2="371"/>
+        <circle class="wf-ann-dot" cx="193" cy="375" r="9"/>
+        <text class="wf-ann-num" x="193" y="379">3</text>
+        <rect class="wf-ann-box" x="785" y="300" width="205" height="28" rx="6"/>
+        <text class="wf-ann-label" x="795" y="318">3 · 校验错误即时定位到字段</text>
+      </g>
+    </svg>
+  </div>
+</body>
+</html>
