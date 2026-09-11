@@ -22,18 +22,24 @@ enum ClipboardSaveAsService {
             return
         }
 
+        guard let export = imageExportPayload(from: data) else {
+            showSaveError(imagePNGEncodingError(), window: window)
+            completion?()
+            return
+        }
+
         let panel = NSSavePanel()
         panel.title = L10n.tr("save_as.title")
         panel.prompt = L10n.tr("save_as.action")
-        panel.nameFieldStringValue = imageFileName(preferredName: preferredName, data: data)
-        panel.allowedContentTypes = [.png, .jpeg, .tiff]
+        panel.nameFieldStringValue = imageFileName(preferredName: preferredName, fileExtension: export.fileExtension)
+        panel.allowedContentTypes = [export.contentType]
         panel.canCreateDirectories = true
 
         present(panel, window: window) { response in
             defer { completion?() }
             guard response == .OK, let destination = panel.url else { return }
             do {
-                try writeReplacingExistingItem(data: data, to: destination)
+                try writeReplacingExistingItem(data: export.data, to: destination)
             } catch {
                 showSaveError(error, window: window)
             }
@@ -196,21 +202,119 @@ enum ClipboardSaveAsService {
         return url.hasDirectoryPath ? .folder : .file
     }
 
-    private static func imageFileName(preferredName: String?, data: Data) -> String {
+    private static func imageFileName(preferredName: String?, fileExtension: String) -> String {
         let base = sanitizedFileName(preferredName)
-        if base.lowercased().hasSuffix(".png") ||
-            base.lowercased().hasSuffix(".jpg") ||
-            base.lowercased().hasSuffix(".jpeg") ||
-            base.lowercased().hasSuffix(".tiff") {
-            return base
+        let nameWithoutExtension = (base as NSString).deletingPathExtension
+        if nameWithoutExtension.isEmpty {
+            return "SkyPaste Image.\(fileExtension)"
         }
-        return "\(base).\(imageFileExtension(for: data))"
+        return "\(nameWithoutExtension).\(fileExtension)"
     }
 
-    private static func imageFileExtension(for data: Data) -> String {
-        if hasPrefix(data, [0xFF, 0xD8, 0xFF]) { return "jpg" }
-        if hasPrefix(data, [0x49, 0x49, 0x2A, 0x00]) || hasPrefix(data, [0x4D, 0x4D, 0x00, 0x2A]) { return "tiff" }
-        return "png"
+    private struct ImageExportPayload {
+        let data: Data
+        let fileExtension: String
+        let contentType: UTType
+    }
+
+    private static func imageExportPayload(from data: Data) -> ImageExportPayload? {
+        if hasPrefix(data, [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]) {
+            return ImageExportPayload(data: data, fileExtension: "png", contentType: .png)
+        }
+
+        guard let image = NSImage(data: data) else {
+            return nil
+        }
+
+        if let png = pngData(from: image) {
+            return ImageExportPayload(data: png, fileExtension: "png", contentType: .png)
+        }
+
+        if let tiff = image.tiffRepresentation, !tiff.isEmpty {
+            return ImageExportPayload(data: tiff, fileExtension: "tiff", contentType: .tiff)
+        }
+
+        if let jpeg = jpegData(from: image) {
+            return ImageExportPayload(data: jpeg, fileExtension: "jpg", contentType: .jpeg)
+        }
+
+        return nil
+    }
+
+    private static func pngData(from image: NSImage) -> Data? {
+        if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            let bitmap = NSBitmapImageRep(cgImage: cgImage)
+            if let data = bitmap.representation(using: .png, properties: [:]), !data.isEmpty {
+                return data
+            }
+        }
+
+        let size = bestRasterSize(for: image)
+        guard size.width > 0, size.height > 0 else {
+            return nil
+        }
+
+        guard
+            let bitmap = NSBitmapImageRep(
+                bitmapDataPlanes: nil,
+                pixelsWide: Int(size.width),
+                pixelsHigh: Int(size.height),
+                bitsPerSample: 8,
+                samplesPerPixel: 4,
+                hasAlpha: true,
+                isPlanar: false,
+                colorSpaceName: .deviceRGB,
+                bytesPerRow: 0,
+                bitsPerPixel: 0
+            ),
+            let context = NSGraphicsContext(bitmapImageRep: bitmap)
+        else {
+            return nil
+        }
+
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = context
+        context.imageInterpolation = .high
+        image.draw(in: NSRect(origin: .zero, size: size), from: .zero, operation: .copy, fraction: 1)
+        NSGraphicsContext.restoreGraphicsState()
+
+        guard let data = bitmap.representation(using: .png, properties: [:]), !data.isEmpty else {
+            return nil
+        }
+        return data
+    }
+
+    private static func jpegData(from image: NSImage) -> Data? {
+        guard
+            let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil)
+        else {
+            return nil
+        }
+
+        let bitmap = NSBitmapImageRep(cgImage: cgImage)
+        return bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.92])
+    }
+
+    private static func bestRasterSize(for image: NSImage) -> NSSize {
+        if image.size.width > 0, image.size.height > 0 {
+            return image.size
+        }
+
+        if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            return NSSize(width: cgImage.width, height: cgImage.height)
+        }
+
+        return .zero
+    }
+
+    private static func imagePNGEncodingError() -> NSError {
+        NSError(
+            domain: "com.huaibor.skypaste.save-as",
+            code: 1,
+            userInfo: [
+                NSLocalizedDescriptionKey: "SkyPaste could not convert this image to PNG."
+            ]
+        )
     }
 
     private static func hasPrefix(_ data: Data, _ bytes: [UInt8]) -> Bool {

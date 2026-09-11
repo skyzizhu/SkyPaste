@@ -332,52 +332,19 @@ private struct ClipboardRowDragPayload {
             return nil
         }
 
-        // Write the original bytes untouched whenever the format is recognized:
-        // re-encoding large images on the main thread delays the drag session
-        // start, which makes the preview feel detached from the cursor.
         let baseName = sanitizedFileName(preferredName)
-        let writableData: Data
-        let fileExtension: String
+        guard let export = imageExportPayload(from: data) else { return nil }
 
-        switch sniffedImageFormat(data) {
-        case .png:
-            writableData = data
-            fileExtension = "png"
-        case .jpeg:
-            writableData = data
-            fileExtension = "jpg"
-        case .tiff:
-            writableData = data
-            fileExtension = "tiff"
-        case nil:
-            guard let converted = pngData(from: data) else { return nil }
-            writableData = converted
-            fileExtension = "png"
-        }
-
-        let url = directory.appendingPathComponent("\(baseName)-\(itemID.uuidString).\(fileExtension)")
+        let url = directory.appendingPathComponent("\(baseName)-\(itemID.uuidString).\(export.fileExtension)")
 
         do {
-            if needsWrite(of: writableData, to: url, fileManager: fileManager) {
-                try writableData.write(to: url, options: .atomic)
+            if needsWrite(of: export.data, to: url, fileManager: fileManager) {
+                try export.data.write(to: url, options: .atomic)
             }
             return url
         } catch {
             return nil
         }
-    }
-
-    private enum SniffedImageFormat {
-        case png
-        case jpeg
-        case tiff
-    }
-
-    private static func sniffedImageFormat(_ data: Data) -> SniffedImageFormat? {
-        if isPNGData(data) { return .png }
-        if isJPEGData(data) { return .jpeg }
-        if isTIFFData(data) { return .tiff }
-        return nil
     }
 
     private static func hasPrefix(_ data: Data, _ bytes: [UInt8]) -> Bool {
@@ -389,12 +356,33 @@ private struct ClipboardRowDragPayload {
         hasPrefix(data, [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A])
     }
 
-    private static func isJPEGData(_ data: Data) -> Bool {
-        hasPrefix(data, [0xFF, 0xD8, 0xFF])
+    private struct ImageExportPayload {
+        let data: Data
+        let fileExtension: String
     }
 
-    private static func isTIFFData(_ data: Data) -> Bool {
-        hasPrefix(data, [0x49, 0x49, 0x2A, 0x00]) || hasPrefix(data, [0x4D, 0x4D, 0x00, 0x2A])
+    private static func imageExportPayload(from data: Data) -> ImageExportPayload? {
+        if isPNGData(data) {
+            return ImageExportPayload(data: data, fileExtension: "png")
+        }
+
+        guard let image = NSImage(data: data) else {
+            return nil
+        }
+
+        if let png = pngData(from: image) {
+            return ImageExportPayload(data: png, fileExtension: "png")
+        }
+
+        if let tiff = image.tiffRepresentation, !tiff.isEmpty {
+            return ImageExportPayload(data: tiff, fileExtension: "tiff")
+        }
+
+        if let jpeg = jpegData(from: image) {
+            return ImageExportPayload(data: jpeg, fileExtension: "jpg")
+        }
+
+        return nil
     }
 
     private static func needsWrite(of data: Data, to url: URL, fileManager: FileManager) -> Bool {
@@ -407,16 +395,70 @@ private struct ClipboardRowDragPayload {
         return existingSize != data.count
     }
 
-    private static func pngData(from data: Data) -> Data? {
+    private static func pngData(from image: NSImage) -> Data? {
+        if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            let bitmap = NSBitmapImageRep(cgImage: cgImage)
+            if let data = bitmap.representation(using: .png, properties: [:]), !data.isEmpty {
+                return data
+            }
+        }
+
+        let size = bestRasterSize(for: image)
+        guard size.width > 0, size.height > 0 else {
+            return nil
+        }
+
         guard
-            let image = NSImage(data: data),
+            let bitmap = NSBitmapImageRep(
+                bitmapDataPlanes: nil,
+                pixelsWide: Int(size.width),
+                pixelsHigh: Int(size.height),
+                bitsPerSample: 8,
+                samplesPerPixel: 4,
+                hasAlpha: true,
+                isPlanar: false,
+                colorSpaceName: .deviceRGB,
+                bytesPerRow: 0,
+                bitsPerPixel: 0
+            ),
+            let context = NSGraphicsContext(bitmapImageRep: bitmap)
+        else {
+            return nil
+        }
+
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = context
+        context.imageInterpolation = .high
+        image.draw(in: NSRect(origin: .zero, size: size), from: .zero, operation: .copy, fraction: 1)
+        NSGraphicsContext.restoreGraphicsState()
+
+        guard let data = bitmap.representation(using: .png, properties: [:]), !data.isEmpty else {
+            return nil
+        }
+        return data
+    }
+
+    private static func bestRasterSize(for image: NSImage) -> NSSize {
+        if image.size.width > 0, image.size.height > 0 {
+            return image.size
+        }
+
+        if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            return NSSize(width: cgImage.width, height: cgImage.height)
+        }
+
+        return .zero
+    }
+
+    private static func jpegData(from image: NSImage) -> Data? {
+        guard
             let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil)
         else {
             return nil
         }
 
         let bitmap = NSBitmapImageRep(cgImage: cgImage)
-        return bitmap.representation(using: .png, properties: [:])
+        return bitmap.representation(using: .jpeg, properties: [.compressionFactor: 0.92])
     }
 
     private static func sanitizedFileName(_ value: String?) -> String {
@@ -428,7 +470,9 @@ private struct ClipboardRowDragPayload {
             .components(separatedBy: invalidCharacters)
             .joined(separator: "-")
             .trimmingCharacters(in: .whitespacesAndNewlines)
-        return cleaned.isEmpty ? fallback : cleaned
+        let cleanName = cleaned.isEmpty ? fallback : cleaned
+        let nameWithoutExtension = (cleanName as NSString).deletingPathExtension
+        return nameWithoutExtension.isEmpty ? fallback : nameWithoutExtension
     }
 
     private static func removeExpiredTemporaryFiles(in directory: URL, fileManager: FileManager) {
