@@ -32,6 +32,7 @@ struct MenuBarClipboardView: View {
     let onCopyFileSystemPath: (ClipboardItem) -> Void
     let onOpenURL: (ClipboardItem) -> Void
     let onOpenEmail: (ClipboardItem) -> Void
+    let onSaveAs: (ClipboardItem) -> Void
     let onOpenPanel: () -> Void
     let onOpenPreferences: () -> Void
     let onQuit: () -> Void
@@ -1081,6 +1082,14 @@ struct MenuBarClipboardView: View {
                     share(item)
                 } label: {
                     Label(L10n.tr("menu.share"), systemImage: "square.and.arrow.up")
+                }
+            }
+            if item.supportsSaveAs {
+                Button {
+                    selectedID = item.id
+                    onSaveAs(item)
+                } label: {
+                    Label(L10n.tr("menu.save_as"), systemImage: "square.and.arrow.down")
                 }
             }
             if item.isFileCollection {

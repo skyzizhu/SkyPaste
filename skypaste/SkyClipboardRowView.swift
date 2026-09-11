@@ -81,7 +81,13 @@ struct ClipboardRowView: View {
         .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-                .stroke(borderColor, lineWidth: 1)
+                .stroke(isDragActive ? Color.accentColor.opacity(0.78) : borderColor, lineWidth: isDragActive ? 1.5 : 1)
+        }
+        .overlay {
+            if isDragActive {
+                dragHint
+                    .transition(.opacity.combined(with: .scale(scale: 0.96)))
+            }
         }
         .overlay(alignment: .bottomTrailing) {
             if showSelectionCopyHint {
@@ -91,8 +97,9 @@ struct ClipboardRowView: View {
                     .transition(.opacity.combined(with: .scale(scale: 0.98)))
             }
         }
-        .opacity(isDragActive ? 0.4 : 1)
-        .scaleEffect(isDragActive ? 0.98 : 1)
+        .shadow(color: isDragActive ? Color.accentColor.opacity(colorScheme == .dark ? 0.28 : 0.20) : .clear, radius: isDragActive ? 12 : 0, y: isDragActive ? 5 : 0)
+        .opacity(isDragActive ? 0.88 : 1)
+        .scaleEffect(isDragActive ? 1.015 : 1)
         .animation(.easeOut(duration: 0.12), value: isDragActive)
         .onHover { hovering in
             isHovered = hovering
@@ -126,6 +133,19 @@ struct ClipboardRowView: View {
             .font(.system(size: 8.5, weight: .regular, design: .rounded))
             .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.76) : Color.primary.opacity(0.55))
             .lineLimit(1)
+    }
+
+    private var dragHint: some View {
+        Label(L10n.tr("drag.row_hint"), systemImage: "arrow.up.left.and.arrow.down.right")
+            .font(.system(size: 11, weight: .semibold, design: .rounded))
+            .foregroundStyle(colorScheme == .dark ? Color.black.opacity(0.86) : Color.white.opacity(0.96))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(colorScheme == .dark ? Color.white.opacity(0.94) : Color.black.opacity(0.82))
+            )
+            .shadow(color: Color.black.opacity(colorScheme == .dark ? 0.28 : 0.18), radius: 10, y: 4)
     }
 
     @ViewBuilder

@@ -3,8 +3,10 @@ import SwiftUI
 
 struct ImagePreviewView: View {
     @Environment(\.colorScheme) private var colorScheme
+    @ObservedObject var store: ClipboardStore
     let item: ClipboardItem
     let onCopy: () -> Void
+    let onSaveAs: () -> Void
     @State private var zoomScale: CGFloat = 1
     @State private var zoomAnimationNonce = 0
 
@@ -12,28 +14,30 @@ struct ImagePreviewView: View {
         item.previewImage
     }
 
+    private var currentItem: ClipboardItem {
+        store.items.first(where: { $0.id == item.id }) ?? item
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            HStack(alignment: .center, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.tr("preview.title"))
-                        .font(.system(size: 20, weight: .semibold, design: .rounded))
-                    Text(item.title)
-                        .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    Text(item.subtitle)
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
+            PreviewHeaderView(
+                title: L10n.tr("preview.title"),
+                secondaryText: currentItem.subtitle,
+                item: currentItem
+            ) {
                 HStack(spacing: 8) {
+                    PreviewHeaderFavoriteButton(isFavorite: currentItem.isFavorite) {
+                        store.toggleFavorite(for: item.id)
+                    }
+
                     Button(action: onCopy) {
                         Label(L10n.tr("menu.copy"), systemImage: "doc.on.doc")
                     }
 
-                    if item.supportsSharing {
-                        PreviewHeaderShareButton(item: item)
+                    PreviewHeaderSaveAsButton(item: currentItem, onSaveAs: onSaveAs)
+
+                    if currentItem.supportsSharing {
+                        PreviewHeaderShareButton(item: currentItem)
                     }
 
                     Button {
@@ -47,6 +51,7 @@ struct ImagePreviewView: View {
                     } label: {
                         Text(resetButtonTitle)
                             .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .frame(minWidth: 52)
                     }
 
                     Button {
@@ -58,9 +63,6 @@ struct ImagePreviewView: View {
                 .buttonStyle(.bordered)
                 .controlSize(.regular)
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .background(.ultraThinMaterial)
 
             Divider()
 

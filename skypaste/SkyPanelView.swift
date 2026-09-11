@@ -32,6 +32,7 @@ struct PanelView: View {
     let onCopyFileSystemPath: (ClipboardItem) -> Void
     let onOpenURL: (ClipboardItem) -> Void
     let onOpenEmail: (ClipboardItem) -> Void
+    let onSaveAs: (ClipboardItem) -> Void
     let onClose: () -> Void
 
     @State private var selectedID: ClipboardItem.ID?
@@ -1308,6 +1309,14 @@ struct PanelView: View {
                     share(item)
                 } label: {
                     Label(L10n.tr("menu.share"), systemImage: "square.and.arrow.up")
+                }
+            }
+            if item.supportsSaveAs {
+                Button {
+                    selectedID = item.id
+                    onSaveAs(item)
+                } label: {
+                    Label(L10n.tr("menu.save_as"), systemImage: "square.and.arrow.down")
                 }
             }
             if item.isFileCollection {
