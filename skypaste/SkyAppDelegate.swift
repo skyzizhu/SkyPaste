@@ -245,6 +245,9 @@ private extension AppDelegate {
                 self?.closeStatusPopover()
                 self?.coordinator.openEmailComposer(for: item)
             },
+            onSaveAs: { [weak self] item in
+                self?.saveAsFromStatusPopover(item)
+            },
             onOpenPanel: { [weak self] in
                 self?.closeStatusPopover()
                 self?.coordinator.togglePanel()
@@ -308,6 +311,18 @@ private extension AppDelegate {
         removePopoverAutoCloseMonitors()
     }
 
+    func saveAsFromStatusPopover(_ item: ClipboardItem) {
+        let popoverWindow = statusPopover?.contentViewController?.view.window
+        removePopoverAutoCloseMonitors()
+
+        coordinator.saveAs(item, relativeTo: popoverWindow) { [weak self] in
+            guard let self else { return }
+            if self.statusPopover?.isShown == true {
+                self.installPopoverAutoCloseMonitors()
+            }
+        }
+    }
+
     func installPopoverAutoCloseMonitors() {
         guard localPopoverMonitor == nil, globalPopoverMonitor == nil else { return }
 
@@ -353,6 +368,11 @@ private extension AppDelegate {
         if let globalPopoverMonitor {
             NSEvent.removeMonitor(globalPopoverMonitor)
             self.globalPopoverMonitor = nil
+        }
+
+        if let appDeactivationObserver {
+            NotificationCenter.default.removeObserver(appDeactivationObserver)
+            self.appDeactivationObserver = nil
         }
     }
 

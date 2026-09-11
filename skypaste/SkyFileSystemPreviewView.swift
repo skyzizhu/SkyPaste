@@ -324,12 +324,18 @@ struct FileSystemPreviewDirectoryEntry: Identifiable, Equatable {
 }
 
 struct FileSystemPreviewView: View {
+    @ObservedObject var store: ClipboardStore
     let item: ClipboardItem
     let onCopy: () -> Void
     let onCopyPath: () -> Void
     let onOpen: () -> Void
     let onRevealInFinder: (() -> Void)?
+    let onSaveAs: () -> Void
     @StateObject private var model: FileSystemPreviewModel
+
+    private var currentItem: ClipboardItem {
+        store.items.first(where: { $0.id == item.id }) ?? item
+    }
 
     private var headerActions: [PreviewHeaderAction] {
         var actions = [
@@ -337,6 +343,11 @@ struct FileSystemPreviewView: View {
                 title: L10n.tr("menu.copy"),
                 systemImage: "doc.on.doc",
                 action: onCopy
+            ),
+            PreviewHeaderAction(
+                title: L10n.tr("menu.save_as"),
+                systemImage: "square.and.arrow.down",
+                action: onSaveAs
             ),
             PreviewHeaderAction(
                 title: L10n.tr("menu.copy_path"),
@@ -367,17 +378,21 @@ struct FileSystemPreviewView: View {
     }
 
     init(
+        store: ClipboardStore,
         item: ClipboardItem,
         onCopy: @escaping () -> Void,
         onCopyPath: @escaping () -> Void,
         onOpen: @escaping () -> Void,
-        onRevealInFinder: (() -> Void)? = nil
+        onRevealInFinder: (() -> Void)? = nil,
+        onSaveAs: @escaping () -> Void
     ) {
+        self.store = store
         self.item = item
         self.onCopy = onCopy
         self.onCopyPath = onCopyPath
         self.onOpen = onOpen
         self.onRevealInFinder = onRevealInFinder
+        self.onSaveAs = onSaveAs
         _model = StateObject(wrappedValue: FileSystemPreviewModel(item: item))
     }
 
@@ -411,44 +426,22 @@ struct FileSystemPreviewView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .center, spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(L10n.tr("preview.file_system_title"))
-                    .font(.system(size: 20, weight: .semibold, design: .rounded))
-                Text(headerTitleText)
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                Text(item.subtitle)
-                    .font(.system(size: 12, weight: .medium, design: .rounded))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-            }
-
-            Spacer()
-
+        PreviewHeaderView(
+            title: L10n.tr("preview.file_system_title"),
+            secondaryText: currentItem.subtitle,
+            item: currentItem
+        ) {
             HStack(spacing: 8) {
-                if item.supportsSharing {
-                    PreviewHeaderShareButton(item: item)
+                PreviewHeaderFavoriteButton(isFavorite: currentItem.isFavorite) {
+                    store.toggleFavorite(for: item.id)
+                }
+
+                if currentItem.supportsSharing {
+                    PreviewHeaderShareButton(item: currentItem)
                 }
                 PreviewHeaderActionBar(actions: headerActions)
-                    .layoutPriority(1)
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 16)
-        .background(.ultraThinMaterial)
-    }
-
-    private var headerTitleText: String {
-        guard item.singleFileSystemItemKind == .folder,
-              let folderURL = item.fileURLs?.first,
-              item.fileURLs?.count == 1 else {
-            return item.title
-        }
-
-        return folderURL.lastPathComponent
     }
 
     private var loadingView: some View {

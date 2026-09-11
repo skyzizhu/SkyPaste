@@ -62,7 +62,7 @@ extension AppCoordinator {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.titleVisibility = .hidden
         panel.titlebarAppearsTransparent = true
-        panel.isMovableByWindowBackground = true
+        panel.isMovableByWindowBackground = false
         panel.center()
         panel.contentView = hostingView
         panel.orderOut(nil)
@@ -92,6 +92,8 @@ extension AppCoordinator {
             self?.openURLInBrowser(for: item)
         }, onOpenEmail: { [weak self] item in
             self?.openEmailComposer(for: item)
+        }, onSaveAs: { [weak self] item in
+            self?.saveAs(item)
         }, onClose: { [weak self] in
             self?.closePanel()
         })
@@ -164,9 +166,16 @@ extension AppCoordinator {
     func showImagePreview(for item: ClipboardItem) {
         guard item.isImage else { return }
         let previewItem = store.itemForPreview(item)
-        let rootView = ImagePreviewView(item: previewItem) { [weak self] in
-            self?.copyOnly(previewItem)
-        }
+        let rootView = ImagePreviewView(
+            store: store,
+            item: previewItem,
+            onCopy: { [weak self] in
+                self?.copyOnly(previewItem)
+            },
+            onSaveAs: { [weak self] in
+                self?.saveAs(previewItem)
+            }
+        )
 
         if imagePreviewWindow == nil {
             let window = NSWindow(
@@ -238,6 +247,7 @@ extension AppCoordinator {
     func showTextPreview(for item: ClipboardItem) {
         guard let text = item.previewText else { return }
         let rootView = TextPreviewView(
+            store: store,
             item: item,
             text: text,
             onCopy: { [weak self] in
@@ -286,6 +296,7 @@ extension AppCoordinator {
     func showFileSystemPreview(for item: ClipboardItem) {
         guard item.isFileCollection else { return }
         let rootView = FileSystemPreviewView(
+            store: store,
             item: item,
             onCopy: { [weak self] in
                 self?.copyOnly(item)
@@ -298,6 +309,9 @@ extension AppCoordinator {
             },
             onRevealInFinder: { [weak self] in
                 self?.revealInFinder(for: item)
+            },
+            onSaveAs: { [weak self] in
+                self?.saveAs(item)
             }
         )
 
@@ -414,6 +428,14 @@ extension AppCoordinator {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(pathText, forType: .string)
         showGlobalCopyToast()
+    }
+
+    func saveAs(_ item: ClipboardItem, relativeTo window: NSWindow? = nil, completion: (() -> Void)? = nil) {
+        ClipboardSaveAsService.saveAs(
+            store.itemForPreview(item),
+            relativeTo: window ?? NSApp.keyWindow ?? panelWindow,
+            completion: completion
+        )
     }
 }
 

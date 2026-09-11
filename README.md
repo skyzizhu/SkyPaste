@@ -25,10 +25,13 @@ macOS clipboard manager, clipboard history, clipboard search, clipboard sync, iC
 
 ## What's New
 
+- Added Save As for copied images, files, and folders in list menus and detail views.
+- Improved detail pages with cleaner action layouts, favorite controls, sharing, source app display, copy path, Finder reveal, and open actions where applicable.
 - Added drag-and-drop for images, files, and folders: drag items from the menu bar or main panel straight into Finder, Mail, and other apps.
 - Finder-style drag previews with stacked icons, an item-count badge, and a dimmed source row while dragging.
 - Dragged images always use the original full-resolution data instead of the list thumbnail.
 - Shows an alert when a dragged file or folder no longer exists on disk.
+- Improved sandbox file access for Save As, drag-and-drop, and file/folder operations.
 - Refactored the app into a dedicated app coordinator and separate image, text, and file preview windows.
 
 ## Screenshots
@@ -57,9 +60,11 @@ macOS clipboard manager, clipboard history, clipboard search, clipboard sync, iC
 - Filters for All, Text, Image, Files, Folders, Code, URL, Email, and Favorites.
 - Email recognition with a dedicated Email category and Send Email action.
 - URL recognition with Open in Browser action.
-- File and folder recognition with preview, copy path, Finder reveal, and open actions.
+- File and folder recognition with preview, Save As, copy path, Finder reveal, and open actions.
 - Drag images, files, and folders out of the list into Finder and other apps.
+- Share text, links, images, files, and folders with the macOS system share sheet.
 - Image preview with zoom and pan support.
+- Detail pages show the source app and provide copy, share, favorite, and type-specific actions.
 - Favorites that remain available even when regular history is trimmed.
 - Batch selection, batch delete, and batch favorite actions.
 - Source app badges for locally copied content.

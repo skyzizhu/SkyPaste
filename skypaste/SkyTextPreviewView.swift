@@ -2,16 +2,21 @@ import AppKit
 import SwiftUI
 
 struct TextPreviewView: View {
+    @ObservedObject var store: ClipboardStore
     let item: ClipboardItem
     let text: String
     let onCopy: () -> Void
     let onOpenURL: (() -> Void)?
     let onOpenEmail: (() -> Void)?
 
+    private var currentItem: ClipboardItem {
+        store.items.first(where: { $0.id == item.id }) ?? item
+    }
+
     private var headerActions: [PreviewHeaderAction] {
         var actions = [
             PreviewHeaderAction(
-                title: item.isURL ? L10n.tr("menu.copy_link") : L10n.tr("menu.copy"),
+                title: currentItem.isURL ? L10n.tr("menu.copy_link") : L10n.tr("menu.copy"),
                 systemImage: "doc.on.doc",
                 action: onCopy
             )
@@ -40,35 +45,46 @@ struct TextPreviewView: View {
         return actions
     }
 
+    private var previewTitle: String {
+        if currentItem.isEmail {
+            return L10n.tr("preview.email_title")
+        }
+
+        if currentItem.isURL {
+            return L10n.tr("preview.url_title")
+        }
+
+        if currentItem.isCode {
+            return L10n.tr("preview.code_title")
+        }
+
+        return L10n.tr("preview.text_title")
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            HStack(alignment: .center, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(L10n.tr("preview.text_title"))
-                        .font(.system(size: 20, weight: .semibold, design: .rounded))
-                    Text(item.subtitle)
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundStyle(.secondary)
-                }
-
-                Spacer()
-
+            PreviewHeaderView(
+                title: previewTitle,
+                secondaryText: currentItem.subtitle,
+                item: currentItem
+            ) {
                 HStack(spacing: 8) {
-                    if item.supportsSharing {
-                        PreviewHeaderShareButton(item: item)
+                    PreviewHeaderFavoriteButton(isFavorite: currentItem.isFavorite) {
+                        store.toggleFavorite(for: item.id)
+                    }
+
+                    if currentItem.supportsSharing {
+                        PreviewHeaderShareButton(item: currentItem)
                     }
                     PreviewHeaderActionBar(actions: headerActions)
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
-            .background(.ultraThinMaterial)
 
             Divider()
 
             ScrollView {
                 Text(text)
-                    .font(.system(size: item.isCode ? 13 : 14, weight: .regular, design: item.isCode ? .monospaced : .default))
+                    .font(.system(size: currentItem.isCode ? 13 : 14, weight: .regular, design: currentItem.isCode ? .monospaced : .default))
                     .foregroundStyle(.primary)
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
