@@ -279,6 +279,21 @@ struct SkyPasteCoreModelTests {
         #expect(wideEdge.redComponent > wideEdge.greenComponent + 0.2)
     }
 
+    @Test @MainActor func nativeImageZoomKeepsClickedPointInPlace() {
+        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 200, height: 100))
+        scrollView.allowsMagnification = true
+        scrollView.maxMagnification = 5
+        scrollView.documentView = NSView(frame: NSRect(x: 0, y: 0, width: 200, height: 100))
+
+        let point = CGPoint(x: 50, y: 50)
+        scrollView.setMagnification(3, centeredAt: point)
+        let viewportX = (point.x - scrollView.contentView.bounds.minX) * scrollView.magnification
+        let viewportY = (point.y - scrollView.contentView.bounds.minY) * scrollView.magnification
+
+        #expect(abs(viewportX - point.x) < 0.01)
+        #expect(abs(viewportY - point.y) < 0.01)
+    }
+
     @Test func urlSubtitleUsesURLLabelInsteadOfRawLink() {
         let item = ClipboardItem(
             content: .text("https://example.com/path?q=1"),

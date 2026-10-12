@@ -20,8 +20,6 @@ struct ImagePreviewView: View {
     @State private var annotationExportID = UUID()
 
     private let image: NSImage?
-    private let imagePixelSize: CGSize?
-
     init(
         store: ClipboardStore,
         item: ClipboardItem,
@@ -36,11 +34,6 @@ struct ImagePreviewView: View {
         self.onSaveAs = onSaveAs
         let image = item.previewImage
         self.image = image
-        if let image, let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-            self.imagePixelSize = CGSize(width: cgImage.width, height: cgImage.height)
-        } else {
-            self.imagePixelSize = image?.size
-        }
     }
 
     private var currentItem: ClipboardItem {
@@ -128,10 +121,7 @@ struct ImagePreviewView: View {
             GeometryReader { proxy in
                 ZStack {
                     if let image {
-                        let viewport = previewSize(
-                            for: image,
-                            available: CGSize(width: proxy.size.width - 48, height: proxy.size.height - 48)
-                        )
+                        let viewport = CGSize(width: max(proxy.size.width, 1), height: max(proxy.size.height, 1))
                         MagnifiableImagePreviewRepresentable(
                             image: image,
                             annotationStrokes: annotationStrokes,
@@ -145,12 +135,6 @@ struct ImagePreviewView: View {
                             availableSize: viewport
                         )
                         .frame(width: viewport.width, height: viewport.height)
-                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .stroke(Color.primary.opacity(0.10), lineWidth: 1)
-                        }
-                        .shadow(color: .black.opacity(0.08), radius: 14, y: 8)
                     } else {
                         ContentUnavailableView(
                             L10n.tr("preview.unavailable"),
@@ -338,13 +322,6 @@ struct ImagePreviewView: View {
         )
     }
 
-    private func previewSize(for image: NSImage, available: CGSize) -> CGSize {
-        let imageSize = imagePixelSize ?? image.size
-        guard imageSize.width > 0, imageSize.height > 0 else { return CGSize(width: 240, height: 240) }
-        let scale = min(max(available.width, 1) / imageSize.width, max(available.height, 1) / imageSize.height)
-        return CGSize(width: imageSize.width * scale, height: imageSize.height * scale)
-    }
-
     private func clampedScale(_ value: CGFloat) -> CGFloat {
         min(max(value, 0.4), 5)
     }
@@ -457,11 +434,9 @@ private struct MagnifiableImagePreviewRepresentable: NSViewRepresentable {
         }
 
         func updateZoomScale(_ magnification: CGFloat) {
-            DispatchQueue.main.async {
-                let clamped = min(max(magnification, 0.4), 5)
-                if abs(self.zoomScale - clamped) > 0.001 {
-                    self.zoomScale = clamped
-                }
+            let clamped = min(max(magnification, 0.4), 5)
+            if abs(zoomScale - clamped) > 0.001 {
+                zoomScale = clamped
             }
         }
 
@@ -485,9 +460,10 @@ private final class MagnifiableImageScrollView: NSScrollView {
     private let annotationView = ImageAnnotationCanvasView()
     private var sourceImage: NSImage?
     private var sourceImageSize = CGSize(width: 240, height: 240)
-    private var baseImageSize: CGSize = CGSize(width: 240, height: 240)
-    private var currentScale: CGFloat = 1
+    private var lastAvailableSize: CGSize = .zero
     private var panStartOrigin: CGPoint = .zero
+    private var internalTargetScale: CGFloat?
+    private var animationGeneration = 0
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -500,17 +476,24 @@ private final class MagnifiableImageScrollView: NSScrollView {
     }
 
     func update(image: NSImage, zoomScale: CGFloat, animated: Bool, availableSize: CGSize) {
-        if sourceImage !== image {
+        let imageChanged = sourceImage !== image
+        let sizeChanged = lastAvailableSize != availableSize
+        if imageChanged {
             sourceImage = image
             sourceImageSize = imageDisplaySize(for: image)
             imageView.image = image
         }
-        baseImageSize = fittedImageSize(imageSize: sourceImageSize, availableSize: availableSize)
-        let scaleChanged = abs(currentScale - zoomScale) > 0.001
-        if scaleChanged {
-            currentScale = zoomScale
+        if imageChanged || sizeChanged {
+            lastAvailableSize = availableSize
+            layoutImage(in: availableSize)
         }
-        applyLayout(animated: animated && scaleChanged)
+        if let internalTargetScale, abs(internalTargetScale - zoomScale) < 0.001 {
+            return
+        }
+        if abs(magnification - zoomScale) > 0.001 {
+            let center = CGPoint(x: contentView.bounds.midX, y: contentView.bounds.midY)
+            zoom(to: zoomScale, centeredAt: center, animated: animated && !imageChanged && !sizeChanged)
+        }
     }
 
     func updateAnnotations(
@@ -535,15 +518,12 @@ private final class MagnifiableImageScrollView: NSScrollView {
         updateCursor()
     }
 
-    override func layout() {
-        super.layout()
-        applyLayout(animated: false)
-    }
-
     override func magnify(with event: NSEvent) {
-        currentScale = min(max(currentScale + event.magnification, 0.4), 5)
-        onMagnificationChanged?(currentScale)
-        applyLayout(animated: false)
+        animationGeneration += 1
+        internalTargetScale = nil
+        super.magnify(with: event)
+        onMagnificationChanged?(magnification)
+        updateCursor()
     }
 
     private func configure() {
@@ -552,7 +532,9 @@ private final class MagnifiableImageScrollView: NSScrollView {
         hasHorizontalScroller = true
         autohidesScrollers = true
         borderType = .noBorder
-        currentScale = 1
+        allowsMagnification = true
+        minMagnification = 0.4
+        maxMagnification = 5
 
         imageView.imageScaling = .scaleProportionallyUpOrDown
         imageView.imageAlignment = .alignCenter
@@ -577,56 +559,41 @@ private final class MagnifiableImageScrollView: NSScrollView {
         documentView = containerView
     }
 
-    private func applyLayout(animated: Bool) {
-        let metrics = layoutMetrics()
-        let targetBounds = CGRect(origin: .zero, size: metrics.containerSize)
-
-        if animated {
-            NSAnimationContext.runAnimationGroup { context in
-                context.duration = 0.16
-                context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-                containerView.animator().frame = targetBounds
-                imageView.animator().frame = metrics.imageFrame
-                annotationView.animator().frame = metrics.imageFrame
-                contentView.animator().setBoundsOrigin(metrics.targetOrigin)
-            } completionHandler: { [weak self] in
-                guard let self else { return }
-                self.reflectScrolledClipView(self.contentView)
-                self.updateCursor()
-            }
-            return
-        }
-
-        containerView.frame = targetBounds
-        imageView.frame = metrics.imageFrame
-        annotationView.frame = metrics.imageFrame
-        scroll(to: metrics.targetOrigin)
+    private func layoutImage(in availableSize: CGSize) {
+        let size = CGSize(width: max(availableSize.width, 1), height: max(availableSize.height, 1))
+        let imageSize = fittedImageSize(imageSize: sourceImageSize, availableSize: size)
+        let imageFrame = CGRect(
+            x: (size.width - imageSize.width) / 2,
+            y: (size.height - imageSize.height) / 2,
+            width: imageSize.width,
+            height: imageSize.height
+        )
+        containerView.frame = CGRect(origin: .zero, size: size)
+        imageView.frame = imageFrame
+        annotationView.frame = imageFrame
         updateCursor()
     }
 
-    private func layoutMetrics() -> (containerSize: CGSize, imageFrame: CGRect, targetOrigin: CGPoint) {
-        let scaledSize = CGSize(
-            width: max(1, baseImageSize.width * currentScale),
-            height: max(1, baseImageSize.height * currentScale)
-        )
-        let visibleSize = contentView.bounds.size
-        let containerSize = CGSize(
-            width: max(visibleSize.width, scaledSize.width),
-            height: max(visibleSize.height, scaledSize.height)
-        )
-        let imageFrame = CGRect(
-            x: max(0, (containerSize.width - scaledSize.width) / 2),
-            y: max(0, (containerSize.height - scaledSize.height) / 2),
-            width: scaledSize.width,
-            height: scaledSize.height
-        )
-        let targetOrigin: CGPoint
-        if currentScale <= 1.001 {
-            targetOrigin = .zero
+    private func zoom(to scale: CGFloat, centeredAt point: CGPoint, animated: Bool) {
+        let target = min(max(scale, minMagnification), maxMagnification)
+        animationGeneration += 1
+        let generation = animationGeneration
+        internalTargetScale = target
+        if animated {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.24
+                context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+                animator().setMagnification(target, centeredAt: point)
+            } completionHandler: { [weak self] in
+                guard let self, self.animationGeneration == generation else { return }
+                self.internalTargetScale = nil
+                self.updateCursor()
+            }
         } else {
-            targetOrigin = clampedContentOrigin(contentView.bounds.origin)
+            setMagnification(target, centeredAt: point)
+            internalTargetScale = nil
+            updateCursor()
         }
-        return (containerSize, imageFrame, targetOrigin)
     }
 
     private func fittedImageSize(imageSize: CGSize, availableSize: CGSize) -> CGSize {
@@ -676,35 +643,11 @@ private final class MagnifiableImageScrollView: NSScrollView {
     }
 
     private func handleDoubleClick(at location: CGPoint) {
-        currentScale = currentScale > 1.01 ? 1 : 3
-        onDoubleClickZoom?(currentScale)
-        let metrics = layoutMetrics()
-        let targetOrigin: CGPoint
-
-        if currentScale > 1.01 {
-            let visibleSize = contentView.bounds.size
-            targetOrigin = clampedContentOrigin(
-                CGPoint(
-                    x: location.x - (visibleSize.width / 2),
-                    y: location.y - (visibleSize.height / 2)
-                )
-            )
-        } else {
-            targetOrigin = .zero
-        }
-
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = 0.18
-            context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
-            containerView.animator().frame = CGRect(origin: .zero, size: metrics.containerSize)
-            imageView.animator().frame = metrics.imageFrame
-            annotationView.animator().frame = metrics.imageFrame
-            contentView.animator().setBoundsOrigin(targetOrigin)
-        } completionHandler: { [weak self] in
-            guard let self else { return }
-            self.reflectScrolledClipView(self.contentView)
-            self.updateCursor()
-        }
+        guard imageView.frame.contains(location) else { return }
+        let target: CGFloat = magnification > 1.01 ? 1 : 3
+        internalTargetScale = target
+        onDoubleClickZoom?(target)
+        zoom(to: target, centeredAt: location, animated: true)
     }
 
     private func scroll(to origin: CGPoint) {
@@ -740,7 +683,7 @@ private final class MagnifiableImageScrollView: NSScrollView {
     }
 }
 
-private final class PannableImageContainerView: NSView, NSDraggingSource {
+private final class PannableImageContainerView: NSView, NSDraggingSource, NSGestureRecognizerDelegate {
     var onPan: ((CGPoint, NSGestureRecognizer.State) -> Void)?
     var onDoubleClick: ((CGPoint) -> Void)?
     var shouldPan: (() -> Bool)?
@@ -758,6 +701,7 @@ private final class PannableImageContainerView: NSView, NSDraggingSource {
     private lazy var panGestureRecognizer: NSPanGestureRecognizer = {
         let gesture = NSPanGestureRecognizer(target: self, action: #selector(handlePanGesture(_:)))
         gesture.buttonMask = 0x1
+        gesture.delegate = self
         return gesture
     }()
 
@@ -781,6 +725,13 @@ private final class PannableImageContainerView: NSView, NSDraggingSource {
 
     override func resetCursorRects() {
         addCursorRect(bounds, cursor: cursor)
+    }
+
+    func gestureRecognizerShouldBegin(_ gestureRecognizer: NSGestureRecognizer) -> Bool {
+        if gestureRecognizer === panGestureRecognizer {
+            return (NSApp.currentEvent?.clickCount ?? 1) < 2
+        }
+        return true
     }
 
     func draggingSession(_ session: NSDraggingSession, sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {

@@ -165,6 +165,16 @@ extension AppCoordinator {
 extension AppCoordinator {
     func showImagePreview(for item: ClipboardItem) {
         guard item.isImage else { return }
+        let screen = NSApp.keyWindow?.screen ?? NSScreen.main
+        let visibleSize = screen?.visibleFrame.size ?? NSSize(width: 1080, height: 720)
+        let preferredSize = NSSize(
+            width: max(1, min(1080, visibleSize.width - 32)),
+            height: max(1, min(720, visibleSize.height - 32))
+        )
+        let minimumSize = NSSize(
+            width: min(860, preferredSize.width),
+            height: min(600, preferredSize.height)
+        )
         let previewItem = store.itemForPreview(item)
         let rootView = ImagePreviewView(
             store: store,
@@ -180,17 +190,14 @@ extension AppCoordinator {
             }
         )
 
-        if imagePreviewWindow == nil {
-            let visibleSize = NSScreen.main?.visibleFrame.size ?? NSSize(width: 1600, height: 1100)
-            let windowWidth = max(1, min(1600, visibleSize.width - 32))
-            let windowHeight = max(1, min(1100, visibleSize.height - 32))
+        let isNewWindow = imagePreviewWindow == nil
+        if isNewWindow {
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: windowWidth, height: windowHeight),
+                contentRect: NSRect(origin: .zero, size: preferredSize),
                 styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                 backing: .buffered,
                 defer: false
             )
-            window.minSize = NSSize(width: min(680, windowWidth), height: min(480, windowHeight))
             window.isReleasedWhenClosed = false
             window.tabbingMode = .disallowed
             window.hidesOnDeactivate = false
@@ -204,15 +211,26 @@ extension AppCoordinator {
             imagePreviewWindow = window
         }
 
+        guard let window = imagePreviewWindow else { return }
+        let previousSize = window.contentRect(forFrameRect: window.frame).size
+        let contentSize = isNewWindow || previousSize.width < minimumSize.width || previousSize.height < minimumSize.height
+            ? preferredSize
+            : NSSize(
+                width: min(previousSize.width, preferredSize.width),
+                height: min(previousSize.height, preferredSize.height)
+            )
         let controller = NSHostingController(rootView: rootView)
-        imagePreviewWindow?.title = L10n.tr("preview.title")
-        imagePreviewWindow?.contentViewController = controller
+        controller.sizingOptions = []
+        window.title = L10n.tr("preview.title")
+        window.contentViewController = controller
+        window.minSize = minimumSize
+        window.setContentSize(contentSize)
         applyAppearance()
-        centerWindow(imagePreviewWindow)
+        centerWindow(window)
 
         NSApp.activate(ignoringOtherApps: true)
-        imagePreviewWindow?.makeKeyAndOrderFront(nil)
-        imagePreviewWindow?.orderFrontRegardless()
+        window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
     }
 
     func showSettingsWindow() {
