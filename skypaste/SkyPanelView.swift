@@ -26,6 +26,7 @@ struct PanelView: View {
     let onCopy: (ClipboardItem) -> Void
     let onPreview: (ClipboardItem) -> Void
     let onTextPreview: (ClipboardItem) -> Void
+    let onTranslateText: (ClipboardItem) -> Void
     let onFileSystemPreview: (ClipboardItem) -> Void
     let onOpenFileItem: (ClipboardItem) -> Void
     let onOpenContainingFolder: (ClipboardItem) -> Void
@@ -1376,6 +1377,14 @@ struct PanelView: View {
                     onTextPreview(item)
                 } label: {
                     Label(L10n.tr("preview.text_open"), systemImage: "text.viewfinder")
+                }
+            }
+            if item.supportsTranslation {
+                Button {
+                    selectedID = item.id
+                    onTranslateText(item)
+                } label: {
+                    Label(L10n.tr("menu.translate"), systemImage: "translate")
                 }
             }
             Button {

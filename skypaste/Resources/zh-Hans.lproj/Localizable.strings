@@ -83,6 +83,7 @@
 "menu.copy_path" = "复制路径";
 "menu.copy_link" = "复制链接";
 "menu.share" = "分享";
+"menu.translate" = "翻译";
 "menu.save_as" = "另存为...";
 "menu.open_in_browser" = "浏览器打开";
 "menu.open_email" = "发送邮件";

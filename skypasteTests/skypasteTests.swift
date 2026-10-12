@@ -60,6 +60,19 @@ struct SkyPasteCoreModelTests {
         #expect(!item.isURL)
         #expect(!item.isCode)
         #expect(ClipboardFilter.text.matches(item))
+        #expect(item.supportsTranslation)
+    }
+
+    @Test func translationIsOnlyAvailableForNonemptyPlainText() {
+        let url = ClipboardItem(content: .text("https://example.com"), fingerprint: "translate-url")
+        let email = ClipboardItem(content: .text("hello@example.com"), fingerprint: "translate-email")
+        let code = ClipboardItem(content: .text("func greet() { print(\"hello\") }"), fingerprint: "translate-code")
+        let whitespace = ClipboardItem(content: .text("  \n "), fingerprint: "translate-whitespace")
+
+        #expect(!url.supportsTranslation)
+        #expect(!email.supportsTranslation)
+        #expect(!code.supportsTranslation)
+        #expect(!whitespace.supportsTranslation)
     }
 
     @Test func codeLikeTextIsDetectedAsCode() {
