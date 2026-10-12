@@ -5,10 +5,16 @@ struct ImagePreviewView: View {
     @Environment(\.colorScheme) private var colorScheme
     @ObservedObject var store: ClipboardStore
     let item: ClipboardItem
-    let onCopy: () -> Void
-    let onSaveAs: () -> Void
+    let onCopy: (ClipboardItem) -> Void
+    let onOpen: (ClipboardItem) -> Void
+    let onSaveAs: (ClipboardItem) -> Void
     @State private var zoomScale: CGFloat = 1
     @State private var zoomAnimationNonce = 0
+    @State private var isAnnotating = false
+    @State private var annotationColor: ImageAnnotationColor = .red
+    @State private var annotationStrokeWidth = 4.0
+    @State private var annotationStrokes: [ImageAnnotationStroke] = []
+    @State private var annotationExportFailed = false
 
     private var image: NSImage? {
         item.previewImage
@@ -30,14 +36,39 @@ struct ImagePreviewView: View {
                         store.toggleFavorite(for: item.id)
                     }
 
-                    Button(action: onCopy) {
+                    Button {
+                        if let actionItem = makeActionItem() { onCopy(actionItem) }
+                    } label: {
                         Label(L10n.tr("menu.copy"), systemImage: "doc.on.doc")
                     }
 
-                    PreviewHeaderSaveAsButton(item: currentItem, onSaveAs: onSaveAs)
+                    Button {
+                        if let actionItem = makeActionItem() { onOpen(actionItem) }
+                    } label: {
+                        Label(L10n.tr("preview.open_image"), systemImage: "arrow.up.forward.app")
+                    }
+
+                    PreviewHeaderSaveAsButton(item: currentItem) {
+                        if let actionItem = makeActionItem() { onSaveAs(actionItem) }
+                    }
 
                     if currentItem.supportsSharing {
-                        PreviewHeaderShareButton(item: currentItem)
+                        Button {
+                            if let actionItem = makeActionItem() {
+                                ClipboardSharingService.presentPicker(for: actionItem)
+                            }
+                        } label: {
+                            Label(L10n.tr("menu.share"), systemImage: "square.and.arrow.up")
+                        }
+                    }
+
+                    Button {
+                        isAnnotating.toggle()
+                    } label: {
+                        Label(
+                            L10n.tr(isAnnotating ? "preview.annotation_done" : "preview.annotate"),
+                            systemImage: "pencil.tip"
+                        )
                     }
 
                     Button {
@@ -66,39 +97,36 @@ struct ImagePreviewView: View {
 
             Divider()
 
+            if isAnnotating {
+                annotationToolbar
+                Divider()
+            }
+
             GeometryReader { proxy in
                 ZStack {
-                    RoundedRectangle(cornerRadius: 28, style: .continuous)
-                        .fill(
-                            LinearGradient(
-                                colors: colorScheme == .dark
-                                    ? [
-                                        Color.white.opacity(0.04),
-                                        Color(nsColor: .controlBackgroundColor)
-                                    ]
-                                    : [
-                                        Color.black.opacity(0.05),
-                                        Color.white.opacity(0.52)
-                                    ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 28, style: .continuous)
-                                .stroke(Color.primary.opacity(0.06), lineWidth: 1)
-                        }
-
                     if let image {
+                        let viewport = previewSize(
+                            for: image,
+                            available: CGSize(width: proxy.size.width - 48, height: proxy.size.height - 48)
+                        )
                         MagnifiableImagePreviewRepresentable(
                             image: image,
+                            annotationStrokes: annotationStrokes,
+                            isAnnotating: isAnnotating,
+                            annotationColor: annotationColor,
+                            annotationStrokeWidth: CGFloat(annotationStrokeWidth),
+                            onStrokeCompleted: { annotationStrokes.append($0) },
+                            onResolveDragItem: { makeActionItem() },
                             zoomScale: $zoomScale,
                             zoomAnimationNonce: zoomAnimationNonce,
-                            availableSize: CGSize(
-                                width: max(proxy.size.width - 120, 280),
-                                height: max(proxy.size.height - 120, 280)
-                            )
+                            availableSize: viewport
                         )
+                        .frame(width: viewport.width, height: viewport.height)
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .stroke(Color.primary.opacity(0.10), lineWidth: 1)
+                        }
                         .shadow(color: .black.opacity(0.08), radius: 14, y: 8)
                     } else {
                         ContentUnavailableView(
@@ -109,7 +137,19 @@ struct ImagePreviewView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                 }
-                .padding(24)
+                .frame(width: proxy.size.width, height: proxy.size.height)
+                .overlay(alignment: .bottomTrailing) {
+                    if image != nil {
+                        if isAnnotating {
+                            annotationDoneButton
+                                .padding(24)
+                        } else {
+                            dragHint
+                                .padding(24)
+                                .allowsHitTesting(false)
+                        }
+                    }
+                }
                 .clipped()
                 .background(
                     LinearGradient(
@@ -123,12 +163,144 @@ struct ImagePreviewView: View {
                 )
             }
         }
-        .frame(minWidth: 760, minHeight: 560)
+        .frame(minWidth: 860, minHeight: 600)
         .background(Color(nsColor: .windowBackgroundColor))
+        .alert(
+            L10n.tr("preview.annotation_export_error_title"),
+            isPresented: $annotationExportFailed
+        ) {
+            Button(L10n.tr("menu.ok"), role: .cancel) {}
+        } message: {
+            Text(L10n.tr("preview.annotation_export_error_message"))
+        }
+    }
+
+    private var annotationToolbar: some View {
+        HStack(spacing: 12) {
+            Text(L10n.tr("preview.annotation_hint"))
+                .font(.system(size: 11.5, weight: .medium))
+                .foregroundStyle(.secondary)
+
+            ForEach(ImageAnnotationColor.allCases, id: \.self) { color in
+                Button {
+                    annotationColor = color
+                } label: {
+                    Circle()
+                        .fill(Color(nsColor: color.nsColor))
+                        .frame(width: 17, height: 17)
+                        .overlay {
+                            Circle()
+                                .stroke(Color.primary.opacity(0.35), lineWidth: 0.8)
+                        }
+                        .padding(3)
+                        .overlay {
+                            Circle()
+                                .stroke(annotationColor == color ? Color.accentColor : .clear, lineWidth: 2)
+                        }
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(L10n.tr(color.localizationKey))
+            }
+
+            HStack(spacing: 6) {
+                Image(systemName: "lineweight")
+                    .foregroundStyle(.secondary)
+                Slider(value: $annotationStrokeWidth, in: 2...12, step: 1)
+                    .frame(width: 104)
+                    .accessibilityLabel(L10n.tr("preview.annotation_width"))
+                Text("\(Int(annotationStrokeWidth))")
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .monospacedDigit()
+                    .frame(width: 18, alignment: .trailing)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.leading, 4)
+
+            Spacer()
+
+            Button {
+                _ = annotationStrokes.popLast()
+            } label: {
+                Label(L10n.tr("preview.annotation_undo"), systemImage: "arrow.uturn.backward")
+            }
+            .disabled(annotationStrokes.isEmpty)
+
+            Button {
+                annotationStrokes.removeAll()
+            } label: {
+                Label(L10n.tr("preview.annotation_clear"), systemImage: "trash")
+            }
+            .disabled(annotationStrokes.isEmpty)
+        }
+        .buttonStyle(.bordered)
+        .controlSize(.small)
+        .padding(.horizontal, 26)
+        .padding(.vertical, 4)
+    }
+
+    private func makeActionItem() -> ClipboardItem? {
+        guard !annotationStrokes.isEmpty else { return currentItem }
+        guard let image, let data = ImageAnnotationRenderer.pngData(for: image, strokes: annotationStrokes) else {
+            annotationExportFailed = true
+            return nil
+        }
+        let originalName: String?
+        if case .image(_, let name, _, _) = currentItem.content {
+            originalName = name
+        } else {
+            originalName = nil
+        }
+        let baseName = originalName.map { ($0 as NSString).deletingPathExtension } ?? "SkyPaste Image"
+        return ClipboardItem(
+            content: .image(data: data, name: "\(baseName).png", originalByteCount: data.count, previewOnly: false),
+            fingerprint: UUID().uuidString
+        )
+    }
+
+    private func previewSize(for image: NSImage, available: CGSize) -> CGSize {
+        let imageSize: CGSize
+        if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            imageSize = CGSize(width: cgImage.width, height: cgImage.height)
+        } else {
+            imageSize = image.size
+        }
+        guard imageSize.width > 0, imageSize.height > 0 else { return CGSize(width: 240, height: 240) }
+        let scale = min(max(available.width, 1) / imageSize.width, max(available.height, 1) / imageSize.height)
+        return CGSize(width: imageSize.width * scale, height: imageSize.height * scale)
     }
 
     private func clampedScale(_ value: CGFloat) -> CGFloat {
         min(max(value, 0.4), 5)
+    }
+
+    private var dragHint: some View {
+        Label(
+            L10n.tr(zoomScale > 1.01 ? "preview.drag_zoomed_hint" : "preview.drag_hint"),
+            systemImage: "hand.point.up.left"
+        )
+        .font(.system(size: 11, weight: .medium, design: .rounded))
+        .foregroundStyle(.primary)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.regularMaterial, in: Capsule())
+        .overlay {
+            Capsule()
+                .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+        }
+    }
+
+    private var annotationDoneButton: some View {
+        Button {
+            isAnnotating = false
+        } label: {
+            Label(L10n.tr("preview.annotation_done"), systemImage: "checkmark")
+                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
+                .background(Color.accentColor, in: Capsule())
+        }
+        .buttonStyle(.plain)
     }
 
     private func updateZoomScale(_ value: CGFloat, animated: Bool) {
@@ -150,6 +322,12 @@ struct ImagePreviewView: View {
 
 private struct MagnifiableImagePreviewRepresentable: NSViewRepresentable {
     let image: NSImage
+    let annotationStrokes: [ImageAnnotationStroke]
+    let isAnnotating: Bool
+    let annotationColor: ImageAnnotationColor
+    let annotationStrokeWidth: CGFloat
+    let onStrokeCompleted: (ImageAnnotationStroke) -> Void
+    let onResolveDragItem: () -> ClipboardItem?
     @Binding var zoomScale: CGFloat
     let zoomAnimationNonce: Int
     let availableSize: CGSize
@@ -170,6 +348,14 @@ private struct MagnifiableImagePreviewRepresentable: NSViewRepresentable {
     }
 
     func updateNSView(_ nsView: MagnifiableImageScrollView, context: Context) {
+        nsView.onResolveDragItem = onResolveDragItem
+        nsView.updateAnnotations(
+            strokes: annotationStrokes,
+            isEditing: isAnnotating,
+            color: annotationColor,
+            strokeWidth: annotationStrokeWidth,
+            onStrokeCompleted: onStrokeCompleted
+        )
         nsView.onMagnificationChanged = { magnification in
             context.coordinator.updateZoomScale(magnification)
         }
@@ -212,9 +398,13 @@ private struct MagnifiableImagePreviewRepresentable: NSViewRepresentable {
 private final class MagnifiableImageScrollView: NSScrollView {
     var onMagnificationChanged: ((CGFloat) -> Void)?
     var onDoubleClickZoom: ((CGFloat) -> Void)?
+    var onResolveDragItem: (() -> ClipboardItem?)? {
+        didSet { containerView.onResolveDragItem = onResolveDragItem }
+    }
 
     private let containerView = PannableImageContainerView()
     private let imageView = NSImageView()
+    private let annotationView = ImageAnnotationCanvasView()
     private var baseImageSize: CGSize = CGSize(width: 240, height: 240)
     private var currentScale: CGFloat = 1
     private var panStartOrigin: CGPoint = .zero
@@ -237,6 +427,28 @@ private final class MagnifiableImageScrollView: NSScrollView {
             currentScale = zoomScale
         }
         applyLayout(animated: animated && scaleChanged)
+    }
+
+    func updateAnnotations(
+        strokes: [ImageAnnotationStroke],
+        isEditing: Bool,
+        color: ImageAnnotationColor,
+        strokeWidth: CGFloat,
+        onStrokeCompleted: @escaping (ImageAnnotationStroke) -> Void
+    ) {
+        if annotationView.strokes != strokes {
+            annotationView.strokes = strokes
+        }
+        if annotationView.isEditing != isEditing {
+            annotationView.isEditing = isEditing
+        }
+        annotationView.color = color
+        annotationView.strokeWidth = strokeWidth
+        annotationView.onStrokeCompleted = onStrokeCompleted
+        if containerView.isAnnotating != isEditing {
+            containerView.isAnnotating = isEditing
+        }
+        updateCursor()
     }
 
     override func layout() {
@@ -265,8 +477,15 @@ private final class MagnifiableImageScrollView: NSScrollView {
         containerView.wantsLayer = true
         containerView.layer?.backgroundColor = NSColor.clear.cgColor
         containerView.addSubview(imageView)
+        containerView.addSubview(annotationView)
         containerView.onPan = { [weak self] translation, state in
             self?.handlePan(translation: translation, state: state)
+        }
+        containerView.shouldPan = { [weak self] in
+            self?.canPanContent == true
+        }
+        containerView.canBeginDrag = { [weak self] location in
+            self?.imageView.frame.contains(location) == true
         }
         containerView.onDoubleClick = { [weak self] location in
             self?.handleDoubleClick(at: location)
@@ -284,6 +503,7 @@ private final class MagnifiableImageScrollView: NSScrollView {
                 context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
                 containerView.animator().frame = targetBounds
                 imageView.animator().frame = metrics.imageFrame
+                annotationView.animator().frame = metrics.imageFrame
                 contentView.animator().setBoundsOrigin(metrics.targetOrigin)
             } completionHandler: { [weak self] in
                 guard let self else { return }
@@ -295,14 +515,15 @@ private final class MagnifiableImageScrollView: NSScrollView {
 
         containerView.frame = targetBounds
         imageView.frame = metrics.imageFrame
+        annotationView.frame = metrics.imageFrame
         scroll(to: metrics.targetOrigin)
         updateCursor()
     }
 
     private func layoutMetrics() -> (containerSize: CGSize, imageFrame: CGRect, targetOrigin: CGPoint) {
         let scaledSize = CGSize(
-            width: max(120, baseImageSize.width * currentScale),
-            height: max(120, baseImageSize.height * currentScale)
+            width: max(1, baseImageSize.width * currentScale),
+            height: max(1, baseImageSize.height * currentScale)
         )
         let visibleSize = contentView.bounds.size
         let containerSize = CGSize(
@@ -331,7 +552,7 @@ private final class MagnifiableImageScrollView: NSScrollView {
 
         let widthScale = availableSize.width / imageSize.width
         let heightScale = availableSize.height / imageSize.height
-        let scale = min(widthScale, heightScale, 1)
+        let scale = min(widthScale, heightScale)
 
         return CGSize(
             width: imageSize.width * scale,
@@ -423,7 +644,9 @@ private final class MagnifiableImageScrollView: NSScrollView {
     }
 
     private func updateCursor() {
-        if canPanContent {
+        if annotationView.isEditing {
+            containerView.cursor = .arrow
+        } else if canPanContent {
             containerView.cursor = .openHand
         } else {
             containerView.cursor = .arrow
@@ -432,10 +655,20 @@ private final class MagnifiableImageScrollView: NSScrollView {
     }
 }
 
-private final class PannableImageContainerView: NSView {
+private final class PannableImageContainerView: NSView, NSDraggingSource {
     var onPan: ((CGPoint, NSGestureRecognizer.State) -> Void)?
     var onDoubleClick: ((CGPoint) -> Void)?
+    var shouldPan: (() -> Bool)?
+    var canBeginDrag: ((CGPoint) -> Bool)?
+    var onResolveDragItem: (() -> ClipboardItem?)?
+    var isAnnotating = false {
+        didSet {
+            panGestureRecognizer.isEnabled = !isAnnotating
+            doubleClickGestureRecognizer.isEnabled = !isAnnotating
+        }
+    }
     var cursor: NSCursor = .arrow
+    private var didStartDrag = false
 
     private lazy var panGestureRecognizer: NSPanGestureRecognizer = {
         let gesture = NSPanGestureRecognizer(target: self, action: #selector(handlePanGesture(_:)))
@@ -465,8 +698,42 @@ private final class PannableImageContainerView: NSView {
         addCursorRect(bounds, cursor: cursor)
     }
 
+    func draggingSession(_ session: NSDraggingSession, sourceOperationMaskFor context: NSDraggingContext) -> NSDragOperation {
+        .copy
+    }
+
+    func ignoreModifierKeys(for session: NSDraggingSession) -> Bool {
+        true
+    }
+
+    func draggingSession(_ session: NSDraggingSession, endedAt screenPoint: NSPoint, operation: NSDragOperation) {
+        didStartDrag = false
+    }
+
     @objc
     private func handlePanGesture(_ gesture: NSPanGestureRecognizer) {
+        let shouldDrag = shouldPan?() != true || NSEvent.modifierFlags.contains(.option)
+        if shouldDrag {
+            if gesture.state == .began, !didStartDrag,
+               let event = NSApp.currentEvent, event.type == .leftMouseDragged,
+               canBeginDrag?(gesture.location(in: self)) == true,
+               let dragItem = onResolveDragItem?(), let payload = ClipboardRowDragPayload(item: dragItem) {
+                if let missing = payload.firstMissingItem {
+                    showMissingItemAlert(for: missing)
+                    return
+                }
+                if let draggingItems = payload.makeDraggingItems(anchor: gesture.location(in: self)) {
+                    didStartDrag = true
+                    let session = beginDraggingSession(with: draggingItems, event: event, source: self)
+                    session.animatesToStartingPositionsOnCancelOrFail = true
+                }
+            }
+            if gesture.state == .ended || gesture.state == .cancelled || gesture.state == .failed {
+                didStartDrag = false
+            }
+            return
+        }
+
         let translation = gesture.translation(in: self)
         if gesture.state == .began || gesture.state == .changed {
             gesture.view?.window?.invalidateCursorRects(for: self)
@@ -476,6 +743,23 @@ private final class PannableImageContainerView: NSView {
             gesture.view?.window?.invalidateCursorRects(for: self)
         }
         onPan?(translation, gesture.state)
+    }
+
+    private func showMissingItemAlert(for missing: (url: URL, kind: ClipboardFileSystemItemKind)) {
+        let alert = NSAlert()
+        alert.messageText = missing.kind == .folder
+            ? L10n.tr("drag.missing_folder_title")
+            : L10n.tr("drag.missing_file_title")
+        alert.informativeText = L10n.format("drag.missing_item_message", missing.url.path)
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: L10n.tr("menu.ok"))
+
+        if let window {
+            alert.beginSheetModal(for: window)
+        } else {
+            NSApp.activate(ignoringOtherApps: true)
+            alert.runModal()
+        }
     }
 
     @objc

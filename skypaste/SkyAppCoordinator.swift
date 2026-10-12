@@ -169,22 +169,28 @@ extension AppCoordinator {
         let rootView = ImagePreviewView(
             store: store,
             item: previewItem,
-            onCopy: { [weak self] in
-                self?.copyOnly(previewItem)
+            onCopy: { [weak self] actionItem in
+                self?.copyOnly(actionItem)
             },
-            onSaveAs: { [weak self] in
-                self?.saveAs(previewItem)
+            onOpen: { [weak self] actionItem in
+                self?.openImage(for: actionItem)
+            },
+            onSaveAs: { [weak self] actionItem in
+                self?.saveAs(actionItem)
             }
         )
 
         if imagePreviewWindow == nil {
+            let visibleSize = NSScreen.main?.visibleFrame.size ?? NSSize(width: 1600, height: 1100)
+            let windowWidth = min(1600, max(860, visibleSize.width - 32))
+            let windowHeight = min(1100, max(640, visibleSize.height - 32))
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 1180, height: 860),
+                contentRect: NSRect(x: 0, y: 0, width: windowWidth, height: windowHeight),
                 styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                 backing: .buffered,
                 defer: false
             )
-            window.minSize = NSSize(width: 860, height: 640)
+            window.minSize = NSSize(width: min(940, windowWidth), height: min(680, windowHeight))
             window.isReleasedWhenClosed = false
             window.tabbingMode = .disallowed
             window.hidesOnDeactivate = false
@@ -192,7 +198,7 @@ extension AppCoordinator {
             window.titlebarAppearsTransparent = true
             window.titlebarSeparatorStyle = .none
             window.toolbarStyle = .unifiedCompact
-            window.isMovableByWindowBackground = true
+            window.isMovableByWindowBackground = false
             window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
             window.center()
             imagePreviewWindow = window
@@ -352,6 +358,16 @@ extension AppCoordinator {
 
 @MainActor
 extension AppCoordinator {
+    func openImage(for item: ClipboardItem) {
+        guard item.isImage, let payload = ClipboardRowDragPayload(item: store.itemForPreview(item)) else { return }
+        if let missing = payload.firstMissingItem {
+            showMissingFileSystemItemAlert(for: missing.url, kind: missing.kind)
+            return
+        }
+        guard let url = payload.dragURLs.first else { return }
+        NSWorkspace.shared.open(url)
+    }
+
     func openFileSystemItem(for item: ClipboardItem) {
         guard let urls = item.fileURLs, !urls.isEmpty else { return }
 
