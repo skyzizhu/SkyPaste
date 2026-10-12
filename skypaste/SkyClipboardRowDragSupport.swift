@@ -259,7 +259,7 @@ private final class RowMouseDownEventCoordinator {
     }
 }
 
-private struct ClipboardRowDragPayload {
+struct ClipboardRowDragPayload {
     private static let temporaryImageExpiration: TimeInterval = 48 * 60 * 60
 
     enum PayloadKind {

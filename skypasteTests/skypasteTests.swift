@@ -218,6 +218,82 @@ struct SkyPasteCoreModelTests {
         #expect(ClipboardFilter.image.matches(item))
     }
 
+    @Test @MainActor func imageAnnotationsExportRealPNGWithVisibleStroke() throws {
+        let source = try #require(NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: 64,
+            pixelsHigh: 32,
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: .deviceRGB,
+            bytesPerRow: 0,
+            bitsPerPixel: 0
+        ))
+        let graphics = try #require(NSGraphicsContext(bitmapImageRep: source))
+        NSGraphicsContext.saveGraphicsState()
+        NSGraphicsContext.current = graphics
+        NSColor.white.setFill()
+        NSRect(x: 0, y: 0, width: 64, height: 32).fill()
+        graphics.flushGraphics()
+        NSGraphicsContext.restoreGraphicsState()
+        let image = NSImage(size: NSSize(width: 64, height: 32))
+        image.addRepresentation(source)
+
+        let stroke = ImageAnnotationStroke(
+            points: [CGPoint(x: 0.25, y: 0.5), CGPoint(x: 0.75, y: 0.5)],
+            color: .red,
+            widthFraction: 0.125
+        )
+        let png = try #require(ImageAnnotationRenderer.pngData(for: image, strokes: [stroke]))
+        #expect(png.prefix(8).elementsEqual([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]))
+        let sourcePNG = try #require(source.representation(using: .png, properties: [:]))
+        let backgroundPNG = try #require(ImageAnnotationRenderer.pngData(for: sourcePNG, strokes: [stroke]))
+        #expect(backgroundPNG.prefix(8).elementsEqual([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]))
+
+        let rendered = try #require(NSBitmapImageRep(data: png))
+        let backgroundRendered = try #require(NSBitmapImageRep(data: backgroundPNG))
+        #expect(rendered.pixelsWide == 64)
+        #expect(rendered.pixelsHigh == 32)
+        #expect(backgroundRendered.pixelsWide == 64)
+        #expect(backgroundRendered.pixelsHigh == 32)
+        let markedPixel = try #require(rendered.colorAt(x: 32, y: 16)?.usingColorSpace(.deviceRGB))
+        let backgroundMarkedPixel = try #require(backgroundRendered.colorAt(x: 32, y: 16)?.usingColorSpace(.deviceRGB))
+        let untouchedPixel = try #require(rendered.colorAt(x: 2, y: 2)?.usingColorSpace(.deviceRGB))
+        #expect(markedPixel.redComponent > markedPixel.greenComponent + 0.2)
+        #expect(backgroundMarkedPixel.redComponent > backgroundMarkedPixel.greenComponent + 0.2)
+        #expect(untouchedPixel.redComponent > 0.9)
+        #expect(untouchedPixel.greenComponent > 0.9)
+
+        let wideStroke = ImageAnnotationStroke(
+            points: stroke.points,
+            color: .red,
+            widthFraction: 0.5
+        )
+        let widePNG = try #require(ImageAnnotationRenderer.pngData(for: image, strokes: [wideStroke]))
+        let wideImage = try #require(NSBitmapImageRep(data: widePNG))
+        let thinEdge = try #require(rendered.colorAt(x: 32, y: 11)?.usingColorSpace(.deviceRGB))
+        let wideEdge = try #require(wideImage.colorAt(x: 32, y: 11)?.usingColorSpace(.deviceRGB))
+        #expect(thinEdge.greenComponent > 0.9)
+        #expect(wideEdge.redComponent > wideEdge.greenComponent + 0.2)
+    }
+
+    @Test @MainActor func nativeImageZoomKeepsClickedPointInPlace() {
+        let scrollView = NSScrollView(frame: NSRect(x: 0, y: 0, width: 200, height: 100))
+        scrollView.allowsMagnification = true
+        scrollView.maxMagnification = 5
+        scrollView.documentView = NSView(frame: NSRect(x: 0, y: 0, width: 200, height: 100))
+
+        let point = CGPoint(x: 50, y: 50)
+        scrollView.setMagnification(3, centeredAt: point)
+        let viewportX = (point.x - scrollView.contentView.bounds.minX) * scrollView.magnification
+        let viewportY = (point.y - scrollView.contentView.bounds.minY) * scrollView.magnification
+
+        #expect(abs(viewportX - point.x) < 0.01)
+        #expect(abs(viewportY - point.y) < 0.01)
+    }
+
     @Test func urlSubtitleUsesURLLabelInsteadOfRawLink() {
         let item = ClipboardItem(
             content: .text("https://example.com/path?q=1"),

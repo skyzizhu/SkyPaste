@@ -165,26 +165,39 @@ extension AppCoordinator {
 extension AppCoordinator {
     func showImagePreview(for item: ClipboardItem) {
         guard item.isImage else { return }
+        let screen = NSApp.keyWindow?.screen ?? NSScreen.main
+        let visibleSize = screen?.visibleFrame.size ?? NSSize(width: 1080, height: 720)
+        let preferredSize = NSSize(
+            width: max(1, min(1080, visibleSize.width - 32)),
+            height: max(1, min(720, visibleSize.height - 32))
+        )
+        let minimumSize = NSSize(
+            width: min(860, preferredSize.width),
+            height: min(600, preferredSize.height)
+        )
         let previewItem = store.itemForPreview(item)
         let rootView = ImagePreviewView(
             store: store,
             item: previewItem,
-            onCopy: { [weak self] in
-                self?.copyOnly(previewItem)
+            onCopy: { [weak self] actionItem in
+                self?.copyOnly(actionItem)
             },
-            onSaveAs: { [weak self] in
-                self?.saveAs(previewItem)
+            onOpen: { [weak self] actionItem in
+                self?.openImage(for: actionItem)
+            },
+            onSaveAs: { [weak self] actionItem in
+                self?.saveAs(actionItem)
             }
         )
 
-        if imagePreviewWindow == nil {
+        let isNewWindow = imagePreviewWindow == nil
+        if isNewWindow {
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 1180, height: 860),
+                contentRect: NSRect(origin: .zero, size: preferredSize),
                 styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                 backing: .buffered,
                 defer: false
             )
-            window.minSize = NSSize(width: 860, height: 640)
             window.isReleasedWhenClosed = false
             window.tabbingMode = .disallowed
             window.hidesOnDeactivate = false
@@ -192,21 +205,32 @@ extension AppCoordinator {
             window.titlebarAppearsTransparent = true
             window.titlebarSeparatorStyle = .none
             window.toolbarStyle = .unifiedCompact
-            window.isMovableByWindowBackground = true
+            window.isMovableByWindowBackground = false
             window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
             window.center()
             imagePreviewWindow = window
         }
 
+        guard let window = imagePreviewWindow else { return }
+        let previousSize = window.contentRect(forFrameRect: window.frame).size
+        let contentSize = isNewWindow || previousSize.width < minimumSize.width || previousSize.height < minimumSize.height
+            ? preferredSize
+            : NSSize(
+                width: min(previousSize.width, preferredSize.width),
+                height: min(previousSize.height, preferredSize.height)
+            )
         let controller = NSHostingController(rootView: rootView)
-        imagePreviewWindow?.title = L10n.tr("preview.title")
-        imagePreviewWindow?.contentViewController = controller
+        controller.sizingOptions = []
+        window.title = L10n.tr("preview.title")
+        window.contentViewController = controller
+        window.minSize = minimumSize
+        window.setContentSize(contentSize)
         applyAppearance()
-        centerWindow(imagePreviewWindow)
+        centerWindow(window)
 
         NSApp.activate(ignoringOtherApps: true)
-        imagePreviewWindow?.makeKeyAndOrderFront(nil)
-        imagePreviewWindow?.orderFrontRegardless()
+        window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
     }
 
     func showSettingsWindow() {
@@ -352,6 +376,16 @@ extension AppCoordinator {
 
 @MainActor
 extension AppCoordinator {
+    func openImage(for item: ClipboardItem) {
+        guard item.isImage, let payload = ClipboardRowDragPayload(item: store.itemForPreview(item)) else { return }
+        if let missing = payload.firstMissingItem {
+            showMissingFileSystemItemAlert(for: missing.url, kind: missing.kind)
+            return
+        }
+        guard let url = payload.dragURLs.first else { return }
+        NSWorkspace.shared.open(url)
+    }
+
     func openFileSystemItem(for item: ClipboardItem) {
         guard let urls = item.fileURLs, !urls.isEmpty else { return }
 
