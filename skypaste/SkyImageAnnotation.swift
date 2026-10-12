@@ -1,4 +1,5 @@
 import AppKit
+import ImageIO
 
 enum ImageAnnotationColor: CaseIterable {
     case black
@@ -35,8 +36,39 @@ struct ImageAnnotationStroke: Equatable {
 }
 
 enum ImageAnnotationRenderer {
+    private static let maximumExportPixels = 24_000_000.0
+
     static func pngData(for image: NSImage, strokes: [ImageAnnotationStroke]) -> Data? {
         guard let source = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
+        return pngData(for: source, strokes: strokes)
+    }
+
+    static func pngData(for imageData: Data, strokes: [ImageAnnotationStroke]) -> Data? {
+        guard let source = CGImageSourceCreateWithData(imageData as CFData, nil) else { return nil }
+        let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
+        let width = properties?[kCGImagePropertyPixelWidth] as? Int ?? 0
+        let height = properties?[kCGImagePropertyPixelHeight] as? Int ?? 0
+        let orientation = properties?[kCGImagePropertyOrientation] as? Int ?? 1
+        let pixelCount = Double(width) * Double(height)
+        let image: CGImage?
+        if width > 0, height > 0, pixelCount > maximumExportPixels || orientation != 1 {
+            let ratio = min(1, sqrt(maximumExportPixels / max(pixelCount, 1)))
+            let maximumDimension = max(1, Int(Double(max(width, height)) * ratio))
+            let options: [CFString: Any] = [
+                kCGImageSourceCreateThumbnailFromImageAlways: true,
+                kCGImageSourceCreateThumbnailWithTransform: true,
+                kCGImageSourceThumbnailMaxPixelSize: maximumDimension
+            ]
+            image = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
+        } else {
+            image = CGImageSourceCreateImageAtIndex(source, 0, nil)
+        }
+        guard let image else { return nil }
+        return pngData(for: image, strokes: strokes)
+    }
+
+    private static func pngData(for source: CGImage, strokes: [ImageAnnotationStroke]) -> Data? {
+        guard !Task<Never, Never>.isCancelled else { return nil }
         guard let context = CGContext(
             data: nil,
             width: source.width,
@@ -52,6 +84,7 @@ enum ImageAnnotationRenderer {
         context.setLineCap(.round)
         context.setLineJoin(.round)
         for stroke in strokes {
+            guard !Task<Never, Never>.isCancelled else { return nil }
             guard let first = stroke.points.first else { continue }
             let lineWidth = max(1, min(size.width, size.height) * stroke.widthFraction)
             context.setLineWidth(lineWidth)
@@ -78,7 +111,13 @@ enum ImageAnnotationRenderer {
         }
 
         guard let rendered = context.makeImage() else { return nil }
-        return NSBitmapImageRep(cgImage: rendered).representation(using: .png, properties: [:])
+        let data = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(data, "public.png" as CFString, 1, nil) else {
+            return nil
+        }
+        CGImageDestinationAddImage(destination, rendered, nil)
+        guard CGImageDestinationFinalize(destination) else { return nil }
+        return data as Data
     }
 }
 

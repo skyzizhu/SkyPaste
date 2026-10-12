@@ -182,6 +182,7 @@
 "preview.annotation_width" = "画笔粗细";
 "preview.annotation_export_error_title" = "无法导出标注";
 "preview.annotation_export_error_message" = "无法生成标注后的图片，请重试。";
+"preview.annotation_preparing" = "正在准备图片…";
 "preview.title" = "图片预览";
 "preview.text_open" = "预览文字";
 "preview.text_title" = "文字预览";

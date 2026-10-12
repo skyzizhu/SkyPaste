@@ -182,15 +182,15 @@ extension AppCoordinator {
 
         if imagePreviewWindow == nil {
             let visibleSize = NSScreen.main?.visibleFrame.size ?? NSSize(width: 1600, height: 1100)
-            let windowWidth = min(1600, max(860, visibleSize.width - 32))
-            let windowHeight = min(1100, max(640, visibleSize.height - 32))
+            let windowWidth = max(1, min(1600, visibleSize.width - 32))
+            let windowHeight = max(1, min(1100, visibleSize.height - 32))
             let window = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: windowWidth, height: windowHeight),
                 styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
                 backing: .buffered,
                 defer: false
             )
-            window.minSize = NSSize(width: min(940, windowWidth), height: min(680, windowHeight))
+            window.minSize = NSSize(width: min(680, windowWidth), height: min(480, windowHeight))
             window.isReleasedWhenClosed = false
             window.tabbingMode = .disallowed
             window.hidesOnDeactivate = false

@@ -183,6 +183,7 @@
 "preview.annotation_width" = "Brush width";
 "preview.annotation_export_error_title" = "Could Not Export Annotations";
 "preview.annotation_export_error_message" = "The marked-up image could not be created. Please try again.";
+"preview.annotation_preparing" = "Preparing image…";
 "preview.title" = "Image Preview";
 "preview.text_open" = "Preview Text";
 "preview.text_title" = "Text Preview";

@@ -182,6 +182,7 @@
 "preview.annotation_width" = "Épaisseur du trait";
 "preview.annotation_export_error_title" = "Exportation impossible";
 "preview.annotation_export_error_message" = "Impossible de créer l’image annotée. Réessayez.";
+"preview.annotation_preparing" = "Préparation de l’image…";
 "preview.title" = "Aperçu de l’image";
 "preview.text_open" = "Aperçu du texte";
 "preview.text_title" = "Aperçu du texte";

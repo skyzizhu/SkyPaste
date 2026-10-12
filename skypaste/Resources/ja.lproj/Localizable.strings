@@ -182,6 +182,7 @@
 "preview.annotation_width" = "線の太さ";
 "preview.annotation_export_error_title" = "注釈を書き出せません";
 "preview.annotation_export_error_message" = "注釈付き画像を作成できませんでした。もう一度お試しください。";
+"preview.annotation_preparing" = "画像を準備中…";
 "preview.title" = "画像プレビュー";
 "preview.text_open" = "テキストをプレビュー";
 "preview.text_title" = "テキストプレビュー";

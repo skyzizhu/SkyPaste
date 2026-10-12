@@ -182,6 +182,7 @@
 "preview.annotation_width" = "畫筆粗細";
 "preview.annotation_export_error_title" = "無法匯出標註";
 "preview.annotation_export_error_message" = "無法產生標註後的圖片，請再試一次。";
+"preview.annotation_preparing" = "正在準備圖片…";
 "preview.title" = "圖片預覽";
 "preview.text_open" = "預覽文字";
 "preview.text_title" = "文字預覽";

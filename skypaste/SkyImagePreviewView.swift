@@ -15,9 +15,32 @@ struct ImagePreviewView: View {
     @State private var annotationStrokeWidth = 4.0
     @State private var annotationStrokes: [ImageAnnotationStroke] = []
     @State private var annotationExportFailed = false
+    @State private var annotatedPNG: Data?
+    @State private var annotationRenderTask: Task<Data?, Never>?
+    @State private var annotationExportID = UUID()
 
-    private var image: NSImage? {
-        item.previewImage
+    private let image: NSImage?
+    private let imagePixelSize: CGSize?
+
+    init(
+        store: ClipboardStore,
+        item: ClipboardItem,
+        onCopy: @escaping (ClipboardItem) -> Void,
+        onOpen: @escaping (ClipboardItem) -> Void,
+        onSaveAs: @escaping (ClipboardItem) -> Void
+    ) {
+        self.store = store
+        self.item = item
+        self.onCopy = onCopy
+        self.onOpen = onOpen
+        self.onSaveAs = onSaveAs
+        let image = item.previewImage
+        self.image = image
+        if let image, let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+            self.imagePixelSize = CGSize(width: cgImage.width, height: cgImage.height)
+        } else {
+            self.imagePixelSize = image?.size
+        }
     }
 
     private var currentItem: ClipboardItem {
@@ -37,24 +60,24 @@ struct ImagePreviewView: View {
                     }
 
                     Button {
-                        if let actionItem = makeActionItem() { onCopy(actionItem) }
+                        performImageAction(onCopy)
                     } label: {
                         Label(L10n.tr("menu.copy"), systemImage: "doc.on.doc")
                     }
 
                     Button {
-                        if let actionItem = makeActionItem() { onOpen(actionItem) }
+                        performImageAction(onOpen)
                     } label: {
                         Label(L10n.tr("preview.open_image"), systemImage: "arrow.up.forward.app")
                     }
 
                     PreviewHeaderSaveAsButton(item: currentItem) {
-                        if let actionItem = makeActionItem() { onSaveAs(actionItem) }
+                        performImageAction(onSaveAs)
                     }
 
                     if currentItem.supportsSharing {
                         Button {
-                            if let actionItem = makeActionItem() {
+                            performImageAction { actionItem in
                                 ClipboardSharingService.presentPicker(for: actionItem)
                             }
                         } label: {
@@ -115,8 +138,8 @@ struct ImagePreviewView: View {
                             isAnnotating: isAnnotating,
                             annotationColor: annotationColor,
                             annotationStrokeWidth: CGFloat(annotationStrokeWidth),
-                            onStrokeCompleted: { annotationStrokes.append($0) },
-                            onResolveDragItem: { makeActionItem() },
+                            onStrokeCompleted: addAnnotationStroke,
+                            onResolveDragItem: dragItem,
                             zoomScale: $zoomScale,
                             zoomAnimationNonce: zoomAnimationNonce,
                             availableSize: viewport
@@ -163,8 +186,8 @@ struct ImagePreviewView: View {
                 )
             }
         }
-        .frame(minWidth: 860, minHeight: 600)
         .background(Color(nsColor: .windowBackgroundColor))
+        .onDisappear { annotationRenderTask?.cancel() }
         .alert(
             L10n.tr("preview.annotation_export_error_title"),
             isPresented: $annotationExportFailed
@@ -176,61 +199,65 @@ struct ImagePreviewView: View {
     }
 
     private var annotationToolbar: some View {
-        HStack(spacing: 12) {
-            Text(L10n.tr("preview.annotation_hint"))
-                .font(.system(size: 11.5, weight: .medium))
-                .foregroundStyle(.secondary)
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 12) {
+                Text(L10n.tr("preview.annotation_hint"))
+                    .font(.system(size: 11.5, weight: .medium))
+                    .foregroundStyle(.secondary)
 
-            ForEach(ImageAnnotationColor.allCases, id: \.self) { color in
-                Button {
-                    annotationColor = color
-                } label: {
-                    Circle()
-                        .fill(Color(nsColor: color.nsColor))
-                        .frame(width: 17, height: 17)
-                        .overlay {
-                            Circle()
-                                .stroke(Color.primary.opacity(0.35), lineWidth: 0.8)
-                        }
-                        .padding(3)
-                        .overlay {
-                            Circle()
-                                .stroke(annotationColor == color ? Color.accentColor : .clear, lineWidth: 2)
-                        }
+                ForEach(ImageAnnotationColor.allCases, id: \.self) { color in
+                    Button {
+                        annotationColor = color
+                    } label: {
+                        Circle()
+                            .fill(Color(nsColor: color.nsColor))
+                            .frame(width: 17, height: 17)
+                            .overlay {
+                                Circle()
+                                    .stroke(Color.primary.opacity(0.35), lineWidth: 0.8)
+                            }
+                            .padding(3)
+                            .overlay {
+                                Circle()
+                                    .stroke(annotationColor == color ? Color.accentColor : .clear, lineWidth: 2)
+                            }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(L10n.tr(color.localizationKey))
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(L10n.tr(color.localizationKey))
-            }
 
-            HStack(spacing: 6) {
-                Image(systemName: "lineweight")
-                    .foregroundStyle(.secondary)
-                Slider(value: $annotationStrokeWidth, in: 2...12, step: 1)
-                    .frame(width: 104)
-                    .accessibilityLabel(L10n.tr("preview.annotation_width"))
-                Text("\(Int(annotationStrokeWidth))")
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .monospacedDigit()
-                    .frame(width: 18, alignment: .trailing)
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.leading, 4)
+                HStack(spacing: 6) {
+                    Image(systemName: "lineweight")
+                        .foregroundStyle(.secondary)
+                    Slider(value: $annotationStrokeWidth, in: 2...12, step: 1)
+                        .frame(width: 104)
+                        .accessibilityLabel(L10n.tr("preview.annotation_width"))
+                    Text("\(Int(annotationStrokeWidth))")
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .monospacedDigit()
+                        .frame(width: 18, alignment: .trailing)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.leading, 4)
 
-            Spacer()
+                Spacer()
 
-            Button {
-                _ = annotationStrokes.popLast()
-            } label: {
-                Label(L10n.tr("preview.annotation_undo"), systemImage: "arrow.uturn.backward")
-            }
-            .disabled(annotationStrokes.isEmpty)
+                Button {
+                    _ = annotationStrokes.popLast()
+                    prepareAnnotationExport()
+                } label: {
+                    Label(L10n.tr("preview.annotation_undo"), systemImage: "arrow.uturn.backward")
+                }
+                .disabled(annotationStrokes.isEmpty)
 
-            Button {
-                annotationStrokes.removeAll()
-            } label: {
-                Label(L10n.tr("preview.annotation_clear"), systemImage: "trash")
+                Button {
+                    annotationStrokes.removeAll()
+                    prepareAnnotationExport()
+                } label: {
+                    Label(L10n.tr("preview.annotation_clear"), systemImage: "trash")
+                }
+                .disabled(annotationStrokes.isEmpty)
             }
-            .disabled(annotationStrokes.isEmpty)
         }
         .buttonStyle(.bordered)
         .controlSize(.small)
@@ -238,12 +265,64 @@ struct ImagePreviewView: View {
         .padding(.vertical, 4)
     }
 
-    private func makeActionItem() -> ClipboardItem? {
-        guard !annotationStrokes.isEmpty else { return currentItem }
-        guard let image, let data = ImageAnnotationRenderer.pngData(for: image, strokes: annotationStrokes) else {
-            annotationExportFailed = true
-            return nil
+    private func addAnnotationStroke(_ stroke: ImageAnnotationStroke) {
+        annotationStrokes.append(stroke)
+        prepareAnnotationExport()
+    }
+
+    private func prepareAnnotationExport() {
+        annotationRenderTask?.cancel()
+        annotatedPNG = nil
+        annotationExportID = UUID()
+        guard !annotationStrokes.isEmpty, let sourceData = item.previewImageData else {
+            annotationRenderTask = nil
+            return
         }
+        let strokes = annotationStrokes
+        let task = Task.detached(priority: .userInitiated) {
+            ImageAnnotationRenderer.pngData(for: sourceData, strokes: strokes)
+        }
+        annotationRenderTask = task
+        Task {
+            let data = await task.value
+            if annotationStrokes == strokes {
+                annotatedPNG = data
+            }
+        }
+    }
+
+    private func performImageAction(_ action: @escaping (ClipboardItem) -> Void) {
+        guard !annotationStrokes.isEmpty else {
+            action(currentItem)
+            return
+        }
+        let strokes = annotationStrokes
+        if let annotatedPNG {
+            action(actionItem(with: annotatedPNG))
+            return
+        }
+        guard let task = annotationRenderTask else {
+            annotationExportFailed = true
+            return
+        }
+        Task {
+            guard let data = await task.value else {
+                if annotationStrokes == strokes { annotationExportFailed = true }
+                return
+            }
+            guard annotationStrokes == strokes else { return }
+            annotatedPNG = data
+            action(actionItem(with: data))
+        }
+    }
+
+    private func dragItem() -> ClipboardItem? {
+        guard !annotationStrokes.isEmpty else { return currentItem }
+        guard let annotatedPNG else { return nil }
+        return actionItem(with: annotatedPNG)
+    }
+
+    private func actionItem(with data: Data) -> ClipboardItem {
         let originalName: String?
         if case .image(_, let name, _, _) = currentItem.content {
             originalName = name
@@ -252,18 +331,15 @@ struct ImagePreviewView: View {
         }
         let baseName = originalName.map { ($0 as NSString).deletingPathExtension } ?? "SkyPaste Image"
         return ClipboardItem(
+            id: annotationExportID,
+            createdAt: currentItem.createdAt,
             content: .image(data: data, name: "\(baseName).png", originalByteCount: data.count, previewOnly: false),
-            fingerprint: UUID().uuidString
+            fingerprint: annotationExportID.uuidString
         )
     }
 
     private func previewSize(for image: NSImage, available: CGSize) -> CGSize {
-        let imageSize: CGSize
-        if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-            imageSize = CGSize(width: cgImage.width, height: cgImage.height)
-        } else {
-            imageSize = image.size
-        }
+        let imageSize = imagePixelSize ?? image.size
         guard imageSize.width > 0, imageSize.height > 0 else { return CGSize(width: 240, height: 240) }
         let scale = min(max(available.width, 1) / imageSize.width, max(available.height, 1) / imageSize.height)
         return CGSize(width: imageSize.width * scale, height: imageSize.height * scale)
@@ -275,7 +351,9 @@ struct ImagePreviewView: View {
 
     private var dragHint: some View {
         Label(
-            L10n.tr(zoomScale > 1.01 ? "preview.drag_zoomed_hint" : "preview.drag_hint"),
+            L10n.tr(!annotationStrokes.isEmpty && annotatedPNG == nil
+                ? "preview.annotation_preparing"
+                : zoomScale > 1.01 ? "preview.drag_zoomed_hint" : "preview.drag_hint"),
             systemImage: "hand.point.up.left"
         )
         .font(.system(size: 11, weight: .medium, design: .rounded))
@@ -405,6 +483,8 @@ private final class MagnifiableImageScrollView: NSScrollView {
     private let containerView = PannableImageContainerView()
     private let imageView = NSImageView()
     private let annotationView = ImageAnnotationCanvasView()
+    private var sourceImage: NSImage?
+    private var sourceImageSize = CGSize(width: 240, height: 240)
     private var baseImageSize: CGSize = CGSize(width: 240, height: 240)
     private var currentScale: CGFloat = 1
     private var panStartOrigin: CGPoint = .zero
@@ -420,8 +500,12 @@ private final class MagnifiableImageScrollView: NSScrollView {
     }
 
     func update(image: NSImage, zoomScale: CGFloat, animated: Bool, availableSize: CGSize) {
-        imageView.image = image
-        baseImageSize = fittedImageSize(imageSize: imageDisplaySize(for: image), availableSize: availableSize)
+        if sourceImage !== image {
+            sourceImage = image
+            sourceImageSize = imageDisplaySize(for: image)
+            imageView.image = image
+        }
+        baseImageSize = fittedImageSize(imageSize: sourceImageSize, availableSize: availableSize)
         let scaleChanged = abs(currentScale - zoomScale) > 0.001
         if scaleChanged {
             currentScale = zoomScale
@@ -614,6 +698,7 @@ private final class MagnifiableImageScrollView: NSScrollView {
             context.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             containerView.animator().frame = CGRect(origin: .zero, size: metrics.containerSize)
             imageView.animator().frame = metrics.imageFrame
+            annotationView.animator().frame = metrics.imageFrame
             contentView.animator().setBoundsOrigin(targetOrigin)
         } completionHandler: { [weak self] in
             guard let self else { return }
