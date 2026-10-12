@@ -80,6 +80,8 @@ extension AppCoordinator {
             self?.showImagePreview(for: item)
         }, onTextPreview: { [weak self] item in
             self?.showTextPreview(for: item)
+        }, onTranslateText: { [weak self] item in
+            self?.showTextPreview(for: item, translating: true)
         }, onFileSystemPreview: { [weak self] item in
             self?.showFileSystemPreview(for: item)
         }, onOpenFileItem: { [weak self] item in
@@ -268,7 +270,7 @@ extension AppCoordinator {
         settingsWindow?.orderFrontRegardless()
     }
 
-    func showTextPreview(for item: ClipboardItem) {
+    func showTextPreview(for item: ClipboardItem, translating: Bool = false) {
         guard let text = item.previewText else { return }
         let rootView = TextPreviewView(
             store: store,
@@ -282,7 +284,8 @@ extension AppCoordinator {
             } : nil,
             onOpenEmail: item.mailtoURL != nil ? { [weak self] in
                 self?.openEmailComposer(for: item)
-            } : nil
+            } : nil,
+            startTranslation: translating
         )
 
         if textPreviewWindow == nil {

@@ -84,6 +84,7 @@
 "menu.copy_path" = "Copy Path";
 "menu.copy_link" = "Copy Link";
 "menu.share" = "Share";
+"menu.translate" = "Translate";
 "menu.save_as" = "Save As...";
 "menu.open_in_browser" = "Open in Browser";
 "menu.open_email" = "Send Email";

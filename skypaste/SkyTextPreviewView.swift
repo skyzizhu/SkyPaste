@@ -1,5 +1,6 @@
 import AppKit
 import SwiftUI
+import Translation
 
 struct TextPreviewView: View {
     @ObservedObject var store: ClipboardStore
@@ -8,6 +9,9 @@ struct TextPreviewView: View {
     let onCopy: () -> Void
     let onOpenURL: (() -> Void)?
     let onOpenEmail: (() -> Void)?
+    let startTranslation: Bool
+
+    @State private var isTranslationPresented = false
 
     private var currentItem: ClipboardItem {
         store.items.first(where: { $0.id == item.id }) ?? item
@@ -38,6 +42,16 @@ struct TextPreviewView: View {
                     title: L10n.tr("menu.open_email"),
                     systemImage: "envelope",
                     action: onOpenEmail
+                )
+            )
+        }
+
+        if currentItem.supportsTranslation {
+            actions.append(
+                PreviewHeaderAction(
+                    title: L10n.tr("menu.translate"),
+                    systemImage: "translate",
+                    action: { isTranslationPresented = true }
                 )
             )
         }
@@ -90,6 +104,7 @@ struct TextPreviewView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(24)
             }
+            .translationPresentation(isPresented: $isTranslationPresented, text: text)
             .background(
                 LinearGradient(
                     colors: [
@@ -103,5 +118,10 @@ struct TextPreviewView: View {
         }
         .frame(minWidth: 680, minHeight: 480)
         .background(Color(nsColor: .windowBackgroundColor))
+        .task(id: item.id) {
+            guard startTranslation && currentItem.supportsTranslation else { return }
+            await Task.yield()
+            isTranslationPresented = true
+        }
     }
 }

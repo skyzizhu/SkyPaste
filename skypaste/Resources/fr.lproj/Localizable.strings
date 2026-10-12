@@ -83,6 +83,7 @@
 "menu.copy_path" = "Copier le chemin";
 "menu.copy_link" = "Copier le lien";
 "menu.share" = "Partager";
+"menu.translate" = "Traduire";
 "menu.save_as" = "Enregistrer sous...";
 "menu.open_in_browser" = "Ouvrir dans le navigateur";
 "menu.open_email" = "Envoyer un e-mail";

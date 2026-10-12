@@ -83,6 +83,7 @@
 "menu.copy_path" = "경로 복사";
 "menu.copy_link" = "링크 복사";
 "menu.share" = "공유";
+"menu.translate" = "번역";
 "menu.save_as" = "다른 이름으로 저장...";
 "menu.open_in_browser" = "브라우저에서 열기";
 "menu.open_email" = "이메일 보내기";

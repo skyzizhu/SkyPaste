@@ -83,6 +83,7 @@
 "menu.copy_path" = "パスをコピー";
 "menu.copy_link" = "リンクをコピー";
 "menu.share" = "共有";
+"menu.translate" = "翻訳";
 "menu.save_as" = "別名で保存...";
 "menu.open_in_browser" = "ブラウザで開く";
 "menu.open_email" = "メールを送信";

@@ -222,6 +222,10 @@ private extension AppDelegate {
                 self?.closeStatusPopover()
                 self?.coordinator.showTextPreview(for: item)
             },
+            onTranslateText: { [weak self] item in
+                self?.closeStatusPopover()
+                self?.coordinator.showTextPreview(for: item, translating: true)
+            },
             onFileSystemPreview: { [weak self] item in
                 self?.closeStatusPopover()
                 self?.coordinator.showFileSystemPreview(for: item)

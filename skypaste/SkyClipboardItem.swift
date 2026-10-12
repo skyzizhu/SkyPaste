@@ -304,6 +304,11 @@ struct ClipboardItem: Identifiable, Equatable {
         previewText != nil
     }
 
+    var supportsTranslation: Bool {
+        guard let text = previewText else { return false }
+        return isPlainText && !isCode && !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     var supportsSharing: Bool {
         switch content {
         case .text(let value):
