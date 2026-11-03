@@ -129,7 +129,7 @@ struct ClipboardRowView: View {
     }
 
     private var selectionCopyHint: some View {
-        Text(L10n.tr("menu.command_v_copy"))
+        Text(L10n.tr("menu.command_c_copy"))
             .font(.system(size: 8.5, weight: .regular, design: .rounded))
             .foregroundStyle(colorScheme == .dark ? Color.white.opacity(0.76) : Color.primary.opacity(0.55))
             .lineLimit(1)

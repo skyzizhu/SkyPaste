@@ -114,7 +114,19 @@ struct ImagePreviewView: View {
             Divider()
 
             if isAnnotating {
-                annotationToolbar
+                ImageAnnotationToolbarView(
+                    color: $annotationColor,
+                    strokeWidth: $annotationStrokeWidth,
+                    canUndo: !annotationStrokes.isEmpty,
+                    onUndo: {
+                        _ = annotationStrokes.popLast()
+                        prepareAnnotationExport()
+                    },
+                    onClear: {
+                        annotationStrokes.removeAll()
+                        prepareAnnotationExport()
+                    }
+                )
                 Divider()
             }
 
@@ -180,73 +192,6 @@ struct ImagePreviewView: View {
         } message: {
             Text(L10n.tr("preview.annotation_export_error_message"))
         }
-    }
-
-    private var annotationToolbar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
-                Text(L10n.tr("preview.annotation_hint"))
-                    .font(.system(size: 11.5, weight: .medium))
-                    .foregroundStyle(.secondary)
-
-                ForEach(ImageAnnotationColor.allCases, id: \.self) { color in
-                    Button {
-                        annotationColor = color
-                    } label: {
-                        Circle()
-                            .fill(Color(nsColor: color.nsColor))
-                            .frame(width: 17, height: 17)
-                            .overlay {
-                                Circle()
-                                    .stroke(Color.primary.opacity(0.35), lineWidth: 0.8)
-                            }
-                            .padding(3)
-                            .overlay {
-                                Circle()
-                                    .stroke(annotationColor == color ? Color.accentColor : .clear, lineWidth: 2)
-                            }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(L10n.tr(color.localizationKey))
-                }
-
-                HStack(spacing: 6) {
-                    Image(systemName: "lineweight")
-                        .foregroundStyle(.secondary)
-                    Slider(value: $annotationStrokeWidth, in: 2...12, step: 1)
-                        .frame(width: 104)
-                        .accessibilityLabel(L10n.tr("preview.annotation_width"))
-                    Text("\(Int(annotationStrokeWidth))")
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
-                        .monospacedDigit()
-                        .frame(width: 18, alignment: .trailing)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.leading, 4)
-
-                Spacer()
-
-                Button {
-                    _ = annotationStrokes.popLast()
-                    prepareAnnotationExport()
-                } label: {
-                    Label(L10n.tr("preview.annotation_undo"), systemImage: "arrow.uturn.backward")
-                }
-                .disabled(annotationStrokes.isEmpty)
-
-                Button {
-                    annotationStrokes.removeAll()
-                    prepareAnnotationExport()
-                } label: {
-                    Label(L10n.tr("preview.annotation_clear"), systemImage: "trash")
-                }
-                .disabled(annotationStrokes.isEmpty)
-            }
-        }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
-        .padding(.horizontal, 26)
-        .padding(.vertical, 4)
     }
 
     private func addAnnotationStroke(_ stroke: ImageAnnotationStroke) {
@@ -375,7 +320,7 @@ struct ImagePreviewView: View {
     }
 }
 
-private struct MagnifiableImagePreviewRepresentable: NSViewRepresentable {
+struct MagnifiableImagePreviewRepresentable: NSViewRepresentable {
     let image: NSImage
     let annotationStrokes: [ImageAnnotationStroke]
     let isAnnotating: Bool
@@ -448,7 +393,7 @@ private struct MagnifiableImagePreviewRepresentable: NSViewRepresentable {
     }
 }
 
-private final class MagnifiableImageScrollView: NSScrollView {
+final class MagnifiableImageScrollView: NSScrollView {
     var onMagnificationChanged: ((CGFloat) -> Void)?
     var onDoubleClickZoom: ((CGFloat) -> Void)?
     var onResolveDragItem: (() -> ClipboardItem?)? {

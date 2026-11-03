@@ -80,7 +80,22 @@ struct PreviewHeaderView<ActionContent: View>: View {
     let title: String
     let secondaryText: String?
     let item: ClipboardItem
+    let titleAction: PreviewHeaderAction?
     @ViewBuilder let actions: () -> ActionContent
+
+    init(
+        title: String,
+        secondaryText: String?,
+        item: ClipboardItem,
+        titleAction: PreviewHeaderAction? = nil,
+        @ViewBuilder actions: @escaping () -> ActionContent
+    ) {
+        self.title = title
+        self.secondaryText = secondaryText
+        self.item = item
+        self.titleAction = titleAction
+        self.actions = actions
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -88,9 +103,29 @@ struct PreviewHeaderView<ActionContent: View>: View {
                 itemIcon
 
                 VStack(alignment: .leading, spacing: 5) {
-                    Text(title)
-                        .font(.system(size: 22, weight: .semibold, design: .rounded))
-                        .lineLimit(1)
+                    HStack(spacing: 12) {
+                        Text(title)
+                            .font(.system(size: 22, weight: .semibold, design: .rounded))
+                            .lineLimit(1)
+
+                        if let titleAction {
+                            Button(action: titleAction.action) {
+                                Label(titleAction.title, systemImage: titleAction.systemImage)
+                                    .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(Color.accentColor)
+                                    .lineLimit(1)
+                                    .padding(.horizontal, 12)
+                                    .padding(.vertical, 6)
+                                    .background(Color.accentColor.opacity(0.12), in: Capsule())
+                                    .overlay {
+                                        Capsule()
+                                            .stroke(Color.accentColor.opacity(0.18), lineWidth: 1)
+                                    }
+                            }
+                            .buttonStyle(.plain)
+                            .fixedSize()
+                        }
+                    }
 
                     if let secondaryText, !secondaryText.isEmpty {
                         Text(secondaryText)

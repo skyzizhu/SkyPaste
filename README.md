@@ -25,14 +25,10 @@ macOS clipboard manager, clipboard history, clipboard search, clipboard sync, iC
 
 ## What's New
 
-- Added Save As for copied images, files, and folders in list menus and detail views.
-- Improved detail pages with cleaner action layouts, favorite controls, sharing, source app display, copy path, Finder reveal, and open actions where applicable.
-- Added drag-and-drop for images, files, and folders: drag items from the menu bar or main panel straight into Finder, Mail, and other apps.
-- Finder-style drag previews with stacked icons, an item-count badge, and a dimmed source row while dragging.
-- Dragged images always use the original full-resolution data instead of the list thumbnail.
-- Shows an alert when a dragged file or folder no longer exists on disk.
-- Improved sandbox file access for Save As, drag-and-drop, and file/folder operations.
-- Refactored the app into a dedicated app coordinator and separate image, text, and file preview windows.
+- Added Clipboard Insights with copy trends, category breakdowns, and source-app statistics across five time ranges.
+- Added an interactive image preview to image-file details, with zoom, drag-out, and annotation tools.
+- Fixed selected-item copying and improved panel rendering after wake or display changes.
+- Added WenPai to the app recommendations in Preferences.
 
 ## Screenshots
 
@@ -64,6 +60,8 @@ macOS clipboard manager, clipboard history, clipboard search, clipboard sync, iC
 - Drag images, files, and folders out of the list into Finder and other apps.
 - Share text, links, images, files, and folders with the macOS system share sheet.
 - Image preview with zoom and pan support.
+- Image-file details can switch between file information and an interactive image preview.
+- Clipboard Insights shows copy trends, category distribution, and source-app counts.
 - Detail pages show the source app and provide copy, share, favorite, and type-specific actions.
 - Favorites that remain available even when regular history is trimmed.
 - Batch selection, batch delete, and batch favorite actions.

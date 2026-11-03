@@ -17,6 +17,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
     private var languageObserver: NSObjectProtocol?
     private var iCloudSyncObserver: NSObjectProtocol?
     private var appearanceObserver: NSObjectProtocol?
+    private var wakeObserver: NSObjectProtocol?
+    private var screenParametersObserver: NSObjectProtocol?
 
     private var isRunningUITests: Bool {
         ProcessInfo.processInfo.arguments.contains("--uitesting")
@@ -28,6 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSPopoverDelegate {
 @MainActor
 extension AppDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
+        ProcessInfo.processInfo.disableAutomaticTermination("SkyPaste monitors the clipboard and provides a menu bar item")
         applyAppearance()
         coordinator.configureWindow()
 
@@ -50,6 +53,7 @@ extension AppDelegate {
 
         applyHotKeyRegistration()
         observeSettingsChanges()
+        observeDisplayChanges()
         setupStatusItem()
     }
 
@@ -76,6 +80,16 @@ extension AppDelegate {
         if let appearanceObserver {
             NotificationCenter.default.removeObserver(appearanceObserver)
             self.appearanceObserver = nil
+        }
+
+        if let wakeObserver {
+            NSWorkspace.shared.notificationCenter.removeObserver(wakeObserver)
+            self.wakeObserver = nil
+        }
+
+        if let screenParametersObserver {
+            NotificationCenter.default.removeObserver(screenParametersObserver)
+            self.screenParametersObserver = nil
         }
 
         if let appDeactivationObserver {
@@ -136,6 +150,28 @@ private extension AppDelegate {
         ) { [weak self] _ in
             Task { @MainActor in
                 self?.applyAppearance()
+            }
+        }
+    }
+
+    func observeDisplayChanges() {
+        wakeObserver = NSWorkspace.shared.notificationCenter.addObserver(
+            forName: NSWorkspace.didWakeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.coordinator.invalidatePanelRendering()
+            }
+        }
+
+        screenParametersObserver = NotificationCenter.default.addObserver(
+            forName: NSApplication.didChangeScreenParametersNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.coordinator.invalidatePanelRendering()
             }
         }
     }
@@ -255,6 +291,12 @@ private extension AppDelegate {
             onOpenPanel: { [weak self] in
                 self?.closeStatusPopover()
                 self?.coordinator.togglePanel()
+            },
+            onOpenStatistics: { [weak self] in
+                self?.closeStatusPopover()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    self?.coordinator.showStatisticsWindow()
+                }
             },
             onOpenPreferences: { [weak self] in
                 self?.closeStatusPopover()

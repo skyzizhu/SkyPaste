@@ -1,4 +1,5 @@
 import AppKit
+import ImageIO
 import SwiftUI
 
 @MainActor
@@ -24,6 +25,69 @@ final class FileSystemPreviewModel: ObservableObject {
                 self.state = .loaded(snapshot)
             }
         }
+    }
+}
+
+@MainActor
+final class ImageFilePreviewModel: ObservableObject {
+    enum State {
+        case idle
+        case loading
+        case loaded(NSImage)
+        case unavailable
+    }
+
+    @Published private(set) var state: State = .idle
+    private var requestID = 0
+
+    func loadIfNeeded(from url: URL) {
+        switch state {
+        case .loading:
+            return
+        case .loaded where FileManager.default.fileExists(atPath: url.path):
+            return
+        case .idle, .loaded, .unavailable:
+            break
+        }
+        requestID += 1
+        let currentRequestID = requestID
+        state = .loading
+
+        Task {
+            let image = await Task.detached(priority: .userInitiated) {
+                ImageFilePreviewDecoder.decode(at: url)
+            }.value
+            guard currentRequestID == requestID else { return }
+            if let image {
+                state = .loaded(NSImage(cgImage: image, size: NSSize(width: image.width, height: image.height)))
+            } else {
+                state = .unavailable
+            }
+        }
+    }
+}
+
+enum ImageFilePreviewDecoder {
+    static func decode(at url: URL) -> CGImage? {
+        let didStartAccess = url.startAccessingSecurityScopedResource()
+        defer {
+            if didStartAccess {
+                url.stopAccessingSecurityScopedResource()
+            }
+        }
+
+        guard FileManager.default.fileExists(atPath: url.path),
+              let source = CGImageSourceCreateWithURL(url as CFURL, [kCGImageSourceShouldCache: false] as CFDictionary)
+        else {
+            return nil
+        }
+
+        let options: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: 4096
+        ]
+        return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
     }
 }
 
@@ -332,6 +396,8 @@ struct FileSystemPreviewView: View {
     let onRevealInFinder: (() -> Void)?
     let onSaveAs: () -> Void
     @StateObject private var model: FileSystemPreviewModel
+    @StateObject private var imagePreviewModel = ImageFilePreviewModel()
+    @State private var showsImagePreview = false
 
     private var currentItem: ClipboardItem {
         store.items.first(where: { $0.id == item.id }) ?? item
@@ -402,12 +468,27 @@ struct FileSystemPreviewView: View {
 
             Divider()
 
-            Group {
-                switch model.state {
-                case .loading:
-                    loadingView
-                case .loaded(let snapshot):
-                    contentView(for: snapshot)
+            ZStack {
+                Group {
+                    switch model.state {
+                    case .loading:
+                        loadingView
+                    case .loaded(let snapshot):
+                        contentView(for: snapshot)
+                    }
+                }
+                .opacity(showsImagePreview ? 0 : 1)
+                .allowsHitTesting(!showsImagePreview)
+
+                switch imagePreviewModel.state {
+                case .loaded(let image):
+                    ImageFilePreviewWorkspace(item: item, image: image)
+                        .opacity(showsImagePreview ? 1 : 0)
+                        .allowsHitTesting(showsImagePreview)
+                case .idle, .loading, .unavailable:
+                    if showsImagePreview {
+                        imagePreviewStatusView
+                    }
                 }
             }
             .background(
@@ -429,7 +510,19 @@ struct FileSystemPreviewView: View {
         PreviewHeaderView(
             title: L10n.tr("preview.file_system_title"),
             secondaryText: currentItem.subtitle,
-            item: currentItem
+            item: currentItem,
+            titleAction: item.isSingleImageFile
+                ? PreviewHeaderAction(
+                    title: L10n.tr(showsImagePreview ? "preview.file_system_show_info" : "preview.file_system_show_image"),
+                    systemImage: "arrow.left.arrow.right",
+                    action: {
+                        showsImagePreview.toggle()
+                        if showsImagePreview, let url = item.singleFileURL {
+                            imagePreviewModel.loadIfNeeded(from: url)
+                        }
+                    }
+                )
+                : nil
         ) {
             HStack(spacing: 8) {
                 PreviewHeaderFavoriteButton(isFavorite: currentItem.isFavorite) {
@@ -453,6 +546,27 @@ struct FileSystemPreviewView: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var imagePreviewStatusView: some View {
+        GeometryReader { proxy in
+            Group {
+                switch imagePreviewModel.state {
+                case .idle, .loading:
+                    ProgressView()
+                        .controlSize(.large)
+                case .loaded:
+                    EmptyView()
+                case .unavailable:
+                    ContentUnavailableView(
+                        L10n.tr("preview.unavailable"),
+                        systemImage: "photo",
+                        description: Text(L10n.tr("preview.unavailable_message"))
+                    )
+                }
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height)
+        }
     }
 
     private func contentView(for snapshot: FileSystemPreviewSnapshot) -> some View {

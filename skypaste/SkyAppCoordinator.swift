@@ -11,6 +11,7 @@ final class AppCoordinator {
     private var panelWindow: NSWindow?
     private var debugWindow: NSWindow?
     private var settingsWindow: NSWindow?
+    private var statisticsWindow: NSWindow?
     private var imagePreviewWindow: NSWindow?
     private var textPreviewWindow: NSWindow?
     private var fileSystemPreviewWindow: NSWindow?
@@ -19,6 +20,7 @@ final class AppCoordinator {
     private var settingsWindowController: NSWindowController?
     private var previousApp: NSRunningApplication?
     private var toastDismissWorkItem: DispatchWorkItem?
+    private var panelNeedsRenderingRefresh = false
 
     init(settings: AppSettings) {
         self.settings = settings
@@ -120,8 +122,16 @@ extension AppCoordinator {
 
     private func showPanel() {
         guard let panelWindow else { return }
+        if panelNeedsRenderingRefresh {
+            configureWindow()
+            panelNeedsRenderingRefresh = false
+        }
         NSApp.activate(ignoringOtherApps: true)
         panelWindow.makeKeyAndOrderFront(nil)
+    }
+
+    func invalidatePanelRendering() {
+        panelNeedsRenderingRefresh = true
     }
 
     func closePanel() {
@@ -158,6 +168,34 @@ extension AppCoordinator {
 
     var isSettingsWindowVisible: Bool {
         settingsWindow?.isVisible == true
+    }
+
+    func showStatisticsWindow() {
+        let window: NSWindow
+        if let statisticsWindow {
+            window = statisticsWindow
+        } else {
+            window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 860, height: 660),
+                styleMask: [.titled, .closable, .miniaturizable],
+                backing: .buffered,
+                defer: false
+            )
+            window.isReleasedWhenClosed = false
+            window.minSize = NSSize(width: 720, height: 570)
+            window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
+            window.title = L10n.tr("stats.title")
+            window.center()
+            statisticsWindow = window
+        }
+
+        window.title = L10n.tr("stats.title")
+        window.contentView = NSHostingView(rootView: ClipboardStatisticsView(store: store))
+        window.appearance = settings.appearanceMode.nsAppearance
+        NSApp.activate(ignoringOtherApps: true)
+        if window.isMiniaturized { window.deminiaturize(nil) }
+        window.makeKeyAndOrderFront(nil)
+        window.orderFrontRegardless()
     }
 }
 
@@ -518,7 +556,7 @@ extension AppCoordinator {
 extension AppCoordinator {
     func applyAppearance() {
         let appearance = settings.appearanceMode.nsAppearance
-        [panelWindow, debugWindow, settingsWindow, imagePreviewWindow, textPreviewWindow, fileSystemPreviewWindow].forEach { window in
+        [panelWindow, debugWindow, settingsWindow, statisticsWindow, imagePreviewWindow, textPreviewWindow, fileSystemPreviewWindow].forEach { window in
             window?.appearance = appearance
         }
     }

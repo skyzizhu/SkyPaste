@@ -1207,6 +1207,7 @@ struct PanelView: View {
 
     private func performPrimaryAction() {
         guard !isBatchSelectionMode else { return }
+        pendingPrimaryAction?.cancel()
         guard let selected = presentation.orderedItems.first(where: { $0.id == selectedID }) else { return }
         if settings.autoPasteEnabled {
             onPick(selected)
@@ -1218,6 +1219,7 @@ struct PanelView: View {
 
     private func copySelected() {
         guard !isBatchSelectionMode else { return }
+        pendingPrimaryAction?.cancel()
         guard let selected = presentation.orderedItems.first(where: { $0.id == selectedID }) else { return }
         onCopy(selected)
     }

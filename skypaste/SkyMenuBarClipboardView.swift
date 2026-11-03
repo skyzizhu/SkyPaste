@@ -35,6 +35,7 @@ struct MenuBarClipboardView: View {
     let onOpenEmail: (ClipboardItem) -> Void
     let onSaveAs: (ClipboardItem) -> Void
     let onOpenPanel: () -> Void
+    let onOpenStatistics: () -> Void
     let onOpenPreferences: () -> Void
     let onQuit: () -> Void
 
@@ -502,6 +503,23 @@ struct MenuBarClipboardView: View {
 
             Spacer()
 
+            Button(action: onOpenStatistics) {
+                Image(systemName: "chart.bar.xaxis")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(Color.primary.opacity(colorScheme == .dark ? 0.82 : 0.72))
+                    .frame(width: 24, height: 24)
+                    .background(
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .fill(filterChipFill)
+                    )
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 9, style: .continuous)
+                            .stroke(Color.primary.opacity(0.08), lineWidth: 0.9)
+                    }
+            }
+            .buttonStyle(.plain)
+            .help(L10n.tr("stats.title"))
+
             Button(action: toggleSearch) {
                 Image(systemName: isSearchActive ? "magnifyingglass.circle.fill" : "magnifyingglass")
                     .font(.system(size: 11, weight: .medium))
@@ -919,6 +937,7 @@ struct MenuBarClipboardView: View {
     private var footer: some View {
         HStack(spacing: 8) {
             actionButton(title: L10n.tr("menu.copy_selected")) {
+                pendingPrimaryAction?.cancel()
                 guard let selected = presentation.orderedItems.first(where: { $0.id == selectedID }) else { return }
                 copy(selected)
             }

@@ -325,6 +325,17 @@ struct SettingsView: View {
                 actionTitle: L10n.tr("yourtools.open"),
                 action: openYourTools
             )
+
+            Divider()
+                .padding(.vertical, 0.5)
+
+            promotionalCard(
+                icon: AnyView(wenPaiLogo),
+                title: L10n.tr("wenpai.title"),
+                subtitle: L10n.tr("wenpai.subtitle"),
+                actionTitle: L10n.tr("wenpai.open"),
+                action: openWenPai
+            )
         }
     }
 
@@ -375,8 +386,27 @@ struct SettingsView: View {
         }
     }
 
+    private var wenPaiLogo: some View {
+        promoIconContainer {
+            if let image = Self.cachedWenPaiLogo {
+                promoIconImage(image, scale: 0.84)
+            } else {
+                Image(systemName: "text.alignleft")
+                    .font(.system(size: 26, weight: .medium))
+                    .foregroundStyle(Color.accentColor)
+            }
+        }
+    }
+
     private static let cachedYourToolsLogo: NSImage? = {
         guard let imageURL = Bundle.main.url(forResource: "yourtools-logo", withExtension: "jpg") else {
+            return nil
+        }
+        return NSImage(contentsOf: imageURL)
+    }()
+
+    private static let cachedWenPaiLogo: NSImage? = {
+        guard let imageURL = Bundle.main.url(forResource: "wenpai-icon", withExtension: "png") else {
             return nil
         }
         return NSImage(contentsOf: imageURL)
@@ -403,6 +433,11 @@ struct SettingsView: View {
 
     private func openYourTools() {
         guard let url = URL(string: "https://apps.apple.com/us/app/your-tools-ai-toolbox/id6670400942") else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    private func openWenPai() {
+        guard let url = URL(string: "https://wol.yourtools.xyz/") else { return }
         NSWorkspace.shared.open(url)
     }
 

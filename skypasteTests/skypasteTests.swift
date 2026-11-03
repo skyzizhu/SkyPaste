@@ -658,6 +658,54 @@ struct SkyPasteCoreModelTests {
         #expect(!snapshot.directoryEntries.map(\.name).contains("deep.txt"))
     }
 
+    @Test func imageFilePreviewDecodesExistingImageFile() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).png")
+        let bitmap = try #require(NSBitmapImageRep(
+            bitmapDataPlanes: nil,
+            pixelsWide: 12,
+            pixelsHigh: 8,
+            bitsPerSample: 8,
+            samplesPerPixel: 4,
+            hasAlpha: true,
+            isPlanar: false,
+            colorSpaceName: .deviceRGB,
+            bytesPerRow: 0,
+            bitsPerPixel: 0
+        ))
+        let data = try #require(bitmap.representation(using: .png, properties: [:]))
+        try data.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        let item = ClipboardItem(content: .fileURLs(urls: [url], pasteboardPayload: nil), fingerprint: url.path)
+        let preview = ImageFilePreviewDecoder.decode(at: url)
+
+        #expect(item.isSingleImageFile)
+        #expect(preview?.width == 12)
+        #expect(preview?.height == 8)
+
+        let stroke = ImageAnnotationStroke(
+            points: [CGPoint(x: 0.2, y: 0.2), CGPoint(x: 0.8, y: 0.8)],
+            color: .red,
+            widthFraction: 0.08
+        )
+        let annotatedData = try #require(ImageAnnotationRenderer.pngData(for: url, strokes: [stroke]))
+        #expect(NSImage(data: annotatedData) != nil)
+        #expect(ImageFilePreviewDecoder.decode(at: url)?.width == 12)
+    }
+
+    @Test func imageFilePreviewIsUnavailableWhenFileIsMissing() {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).png")
+        #expect(ImageFilePreviewDecoder.decode(at: url) == nil)
+    }
+
+    @Test func imageFilePreviewIsUnavailableWhenImageDataIsInvalid() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).png")
+        try Data("not an image".utf8).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        #expect(ImageFilePreviewDecoder.decode(at: url) == nil)
+    }
+
     @Test func supportedLanguagesAreRecognized() {
         #expect(LanguageCatalog.isSupported("en"))
         #expect(LanguageCatalog.isSupported("zh-Hans"))

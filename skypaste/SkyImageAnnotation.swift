@@ -45,6 +45,21 @@ enum ImageAnnotationRenderer {
 
     static func pngData(for imageData: Data, strokes: [ImageAnnotationStroke]) -> Data? {
         guard let source = CGImageSourceCreateWithData(imageData as CFData, nil) else { return nil }
+        return pngData(for: source, strokes: strokes)
+    }
+
+    static func pngData(for imageURL: URL, strokes: [ImageAnnotationStroke]) -> Data? {
+        let didStartAccess = imageURL.startAccessingSecurityScopedResource()
+        defer {
+            if didStartAccess {
+                imageURL.stopAccessingSecurityScopedResource()
+            }
+        }
+        guard let source = CGImageSourceCreateWithURL(imageURL as CFURL, nil) else { return nil }
+        return pngData(for: source, strokes: strokes)
+    }
+
+    private static func pngData(for source: CGImageSource, strokes: [ImageAnnotationStroke]) -> Data? {
         let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
         let width = properties?[kCGImagePropertyPixelWidth] as? Int ?? 0
         let height = properties?[kCGImagePropertyPixelHeight] as? Int ?? 0

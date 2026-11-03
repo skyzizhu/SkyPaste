@@ -48,6 +48,11 @@ final class RowMouseDownObserverView: NSView, NSDraggingSource {
         true
     }
 
+    fileprivate func containsVisibleWindowPoint(_ point: NSPoint) -> Bool {
+        let localPoint = convert(point, from: nil)
+        return visibleRect.contains(localPoint)
+    }
+
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
         if window == nil {
@@ -248,8 +253,7 @@ private final class RowMouseDownEventCoordinator {
                 continue
             }
 
-            let point = view.convert(event.locationInWindow, from: nil)
-            guard view.bounds.contains(point) else { continue }
+            guard view.containsVisibleWindowPoint(event.locationInWindow) else { continue }
             view.handleMouseDownEvent(event)
             if event.type == .leftMouseDown {
                 activeMouseDownView = view

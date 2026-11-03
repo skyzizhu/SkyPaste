@@ -9,11 +9,13 @@ final class ClipboardStore: ObservableObject {
     @Published private(set) var filteredItemsByFilter: [ClipboardFilter: [ClipboardItem]] = [:]
     @Published private(set) var sourceAppOptionsByFilter: [ClipboardFilter: [ClipboardSourceAppOption]] = [:]
     @Published private(set) var appliedSearchText: String = ""
+    @Published private(set) var statisticsRevision = 0
     @Published var startupNotice: String?
     var onLocalItemAdded: ((ClipboardItem) -> Void)?
 
     private let settings: AppSettings
     private let database: ClipboardDatabase?
+    private let statisticsStore: ClipboardStatisticsStore?
     private let filterQueue = DispatchQueue(label: "com.huaibor.skypaste.search-filter", qos: .userInitiated)
     private let databaseWriteQueue = DispatchQueue(label: "com.huaibor.skypaste.database-write", qos: .utility)
     private var cancellables = Set<AnyCancellable>()
@@ -25,6 +27,10 @@ final class ClipboardStore: ObservableObject {
         self.settings = settings
         let initialization = Self.makeDatabase()
         self.database = initialization.database
+        self.statisticsStore = initialization.database.flatMap { database in
+            let url = database.fileURL.deletingLastPathComponent().appendingPathComponent("statistics.sqlite")
+            return try? ClipboardStatisticsStore(fileURL: url)
+        }
         self.startupNotice = initialization.notice
 
         if let database {
@@ -37,6 +43,14 @@ final class ClipboardStore: ObservableObject {
                 }
             } catch {
                 print("[ClipboardStore] Failed to load history: \(error)")
+            }
+        }
+
+        if let statisticsStore {
+            do {
+                try statisticsStore.seedRetainedHistoryIfNeeded(items)
+            } catch {
+                print("[ClipboardStore] Failed to seed statistics from retained history: \(error)")
             }
         }
 
@@ -87,7 +101,7 @@ final class ClipboardStore: ObservableObject {
             return
         }
 
-        persist(item)
+        persist(item, recordStatistic: true)
 
         items.removeAll { $0.fingerprint == memoryItem.fingerprint }
         items.insert(memoryItem, at: 0)
@@ -109,7 +123,7 @@ final class ClipboardStore: ObservableObject {
             return
         }
 
-        persist(item)
+        persist(item, recordStatistic: true)
 
         let memoryItem = ClipboardImageOptimizer.memoryOptimizedItem(item)
         items.removeAll { $0.fingerprint == memoryItem.fingerprint }
@@ -323,11 +337,26 @@ final class ClipboardStore: ObservableObject {
         return item.withSourceApp(ClipboardSourceApp(bundleID: bundleID, name: name))
     }
 
-    private func persist(_ item: ClipboardItem) {
+    var statisticsDatabaseURL: URL? {
+        guard statisticsStore != nil, let database else { return nil }
+        return database.fileURL.deletingLastPathComponent().appendingPathComponent("statistics.sqlite")
+    }
+
+    private func persist(_ item: ClipboardItem, recordStatistic: Bool = false) {
         guard let database else { return }
 
         do {
             try database.save(item, maxItems: settings.historyLimit)
+            if recordStatistic {
+                do {
+                    try statisticsStore?.record(item)
+                    if statisticsStore != nil {
+                        statisticsRevision &+= 1
+                    }
+                } catch {
+                    print("[ClipboardStore] Failed to record statistics: \(error)")
+                }
+            }
         } catch {
             print("[ClipboardStore] Failed to persist history: \(error)")
         }
