@@ -265,6 +265,8 @@
   <data name="settings.lan_sync_token_hint" xml:space="preserve"><value>スマホから送信する場合は X-SkyPaste-Token ヘッダーを付けてください。手順は README を参照。</value></data>
   <data name="settings.lan_sync_qr" xml:space="preserve"><value>Web クリップボード QR コード</value></data>
   <data name="settings.lan_sync_qr_hint" xml:space="preserve"><value>スマホのカメラで読み取ると Web クリップボードが開きます（アプリ不要）。</value></data>
+  <data name="settings.lan_sync_qr_generated" xml:space="preserve"><value>QR コード生成時刻: %@</value></data>
+  <data name="settings.lan_sync_ip_changed_toast" xml:space="preserve"><value>LAN IP が %@ に変わりました。QR を再スキャンしてください</value></data>
   <data name="settings.lan_sync_device_name" xml:space="preserve"><value>デバイス名</value></data>
   <data name="settings.lan_sync_port" xml:space="preserve"><value>ポート</value></data>
   <data name="sync.received_from" xml:space="preserve"><value>%@ から受信しました</value></data>

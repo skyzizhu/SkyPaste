@@ -245,6 +245,22 @@ NEW_KEYS: dict[str, dict[str, str]] = {
         "ko": "웹 클립보드 QR 코드",
         "fr": "QR code du presse-papiers web",
     },
+    "settings.lan_sync_qr_generated": {
+        "en": "QR generated at %@",
+        "zh-Hans": "二维码生成于 %@",
+        "zh-Hant": "二維碼生成於 %@",
+        "ja": "QR コード生成時刻: %@",
+        "ko": "QR 코드 생성 시각: %@",
+        "fr": "QR généré à %@"
+    },
+    "settings.lan_sync_ip_changed_toast": {
+        "en": "LAN IP changed to %@ — re-scan the pairing QR",
+        "zh-Hans": "局域网 IP 已变更为 %@，请重新扫码配对",
+        "zh-Hant": "區域網路 IP 已變更為 %@，請重新掃描配對 QR",
+        "ja": "LAN IP が %@ に変わりました。QR を再スキャンしてください",
+        "ko": "LAN IP가 %@(으)로 변경되었습니다. QR을 다시 스캔하세요",
+        "fr": "L'IP LAN a changé vers %@ — re-scannez le QR d'appairage"
+    },
     "settings.lan_sync_qr_hint": {
         "en": "Scan with your phone camera to open the web clipboard (no app needed).",
         "zh-Hans": "用手机相机扫码打开网页剪贴板，无需安装任何应用。",

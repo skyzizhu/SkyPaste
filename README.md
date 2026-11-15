@@ -48,6 +48,8 @@ SkyPaste records clipboard history, keeps content searchable, groups items by ty
 - **macOS ↔ macOS**: iCloud (CloudKit) text sync, plus Universal Clipboard receive from iPhone.
 - **macOS ↔ Windows ↔ phone**: optional **LAN sync** (token-protected local HTTP + UDP discovery; nothing leaves your network). Phones push via iOS Shortcuts / Android HTTP — see the [Windows README](SkyPasteWindows/README.md) for step-by-step pairing.
 
+> Note: your computer's LAN IP may change (DHCP). SkyPaste detects the change, refreshes the pairing QR in Preferences and notifies you; consider a DHCP static reservation for the desktop on your router for a permanent fix.
+
 ## Screenshots
 
 ### Menu Bar Clipboard History (macOS)

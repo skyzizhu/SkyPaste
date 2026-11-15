@@ -272,3 +272,7 @@
 "settings.lan_sync_qr" = "Web クリップボード QR コード";
 
 "settings.lan_sync_qr_hint" = "スマホのカメラで読み取ると Web クリップボードが開きます（アプリ不要）。";
+
+"settings.lan_sync_qr_generated" = "QR コード生成時刻: %@";
+
+"settings.lan_sync_ip_changed_toast" = "LAN IP が %@ に変わりました。QR を再スキャンしてください";

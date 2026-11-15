@@ -272,3 +272,7 @@
 "settings.lan_sync_qr" = "웹 클립보드 QR 코드";
 
 "settings.lan_sync_qr_hint" = "휴대폰 카메라로 스캔하면 웹 클립보드가 열립니다(앱 불필요).";
+
+"settings.lan_sync_qr_generated" = "QR 코드 생성 시각: %@";
+
+"settings.lan_sync_ip_changed_toast" = "LAN IP가 %@(으)로 변경되었습니다. QR을 다시 스캔하세요";

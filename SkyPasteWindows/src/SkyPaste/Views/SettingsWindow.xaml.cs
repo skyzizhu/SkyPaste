@@ -42,11 +42,13 @@ public partial class SettingsWindow : Window
         ApplyLocalization();
 
         _app.LanSync.StatusChanged += UpdateLanSyncStatus;
+        _app.LanSync.IpChanged += OnLanIpChanged;
         _app.HotKeys.RegistrationChanged += UpdateHotKeyDisplay;
         L10n.LanguageChanged += ApplyLocalization;
         Closed += (_, _) =>
         {
             _app.LanSync.StatusChanged -= UpdateLanSyncStatus;
+            _app.LanSync.IpChanged -= OnLanIpChanged;
             _app.HotKeys.RegistrationChanged -= UpdateHotKeyDisplay;
             L10n.LanguageChanged -= ApplyLocalization;
         };
@@ -398,6 +400,8 @@ public partial class SettingsWindow : Window
         QrHint.Text = L10n.T("settings.lan_sync_qr_hint");
         var url = _app.LanSync.PairingUrl;
         QrUrlText.Text = url;
+        QrMetaText.Text = "IP: " + (Core.Services.LanSyncService.LocalIPv4 ?? "-")
+            + " · " + L10n.Format("settings.lan_sync_qr_generated", DateTime.Now.ToString("HH:mm:ss"));
         try
         {
             using var generator = new QRCoder.QRCodeGenerator();
@@ -412,6 +416,15 @@ public partial class SettingsWindow : Window
         {
             QrImage.Source = null;
         }
+    }
+
+    private void OnLanIpChanged(string ip)
+    {
+        Dispatcher.Invoke(() =>
+        {
+            UpdateQrPanel();
+            _app.Toast.Show(L10n.Format("settings.lan_sync_ip_changed_toast", ip));
+        });
     }
 
     private void UpdateLanSyncStatus()

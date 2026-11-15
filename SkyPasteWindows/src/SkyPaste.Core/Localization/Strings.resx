@@ -265,6 +265,8 @@
   <data name="settings.lan_sync_token_hint" xml:space="preserve"><value>Send clipboard from your phone with the X-SkyPaste-Token header. See README for iOS Shortcuts and Android steps.</value></data>
   <data name="settings.lan_sync_qr" xml:space="preserve"><value>Web clipboard QR code</value></data>
   <data name="settings.lan_sync_qr_hint" xml:space="preserve"><value>Scan with your phone camera to open the web clipboard (no app needed).</value></data>
+  <data name="settings.lan_sync_qr_generated" xml:space="preserve"><value>QR generated at %@</value></data>
+  <data name="settings.lan_sync_ip_changed_toast" xml:space="preserve"><value>LAN IP changed to %@ — re-scan the pairing QR</value></data>
   <data name="settings.lan_sync_device_name" xml:space="preserve"><value>Device name</value></data>
   <data name="settings.lan_sync_port" xml:space="preserve"><value>Port</value></data>
   <data name="sync.received_from" xml:space="preserve"><value>Received from %@</value></data>

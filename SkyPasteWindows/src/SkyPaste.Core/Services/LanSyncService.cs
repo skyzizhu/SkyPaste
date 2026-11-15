@@ -40,6 +40,11 @@ public sealed class LanSyncService : IDisposable
     private UdpClient? _beaconSender;
     private Timer? _beaconTimer;
     private Timer? _pullTimer;
+    private System.Threading.Timer? _ipMonitorTimer;
+    private string? _advertisedIP;
+
+    /// <summary>Fired (any thread) when the machine's LAN IPv4 changes.</summary>
+    public event Action<string>? IpChanged;
     private CancellationTokenSource? _listenerCts;
 
     private readonly Dictionary<string, (string Name, string Host, int Port)> _peers = new();
@@ -88,6 +93,14 @@ public sealed class LanSyncService : IDisposable
 
     // ---- lifecycle ---------------------------------------------------------
 
+    private void CheckIPChange()
+    {
+            var ip = LocalIPv4;
+            if (ip == _advertisedIP) return;
+            _advertisedIP = ip;
+            try { IpChanged?.Invoke(ip ?? string.Empty); } catch { }
+    }
+
     public void ApplyCurrentSetting()
     {
         if (_settings.LanSyncEnabled)
@@ -120,6 +133,8 @@ public sealed class LanSyncService : IDisposable
             _beaconSender = new UdpClient();
             _beaconTimer = new Timer(_ => SendBeacon(), null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
             _pullTimer = new Timer(_ => _ = PullPeersAsync(), null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(10));
+            _advertisedIP = LocalIPv4;
+            _ipMonitorTimer = new System.Threading.Timer(_ => CheckIPChange(), null, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(15));
 
             Status = LanSyncStatus.Synced;
         }
@@ -137,6 +152,8 @@ public sealed class LanSyncService : IDisposable
         {
             _beaconTimer?.Dispose();
             _pullTimer?.Dispose();
+            _ipMonitorTimer?.Dispose();
+            _ipMonitorTimer = null;
             _listenerCts?.Cancel();
             _beaconListener?.Dispose();
             _beaconSender?.Dispose();

@@ -272,3 +272,7 @@
 "settings.lan_sync_qr" = "QR code du presse-papiers web";
 
 "settings.lan_sync_qr_hint" = "Scannez avec l'appareil photo du téléphone pour ouvrir le presse-papiers web (aucune app requise).";
+
+"settings.lan_sync_qr_generated" = "QR généré à %@";
+
+"settings.lan_sync_ip_changed_toast" = "L'IP LAN a changé vers %@ — re-scannez le QR d'appairage";

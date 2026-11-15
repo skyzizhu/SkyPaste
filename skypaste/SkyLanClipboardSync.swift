@@ -60,6 +60,30 @@ public enum LanClipboardSync {
         return NSImage(cgImage: cg, size: NSSize(width: scaled.extent.width, height: scaled.extent.height))
     }
 
+    static var ipMonitorTimer: Timer?
+    /// The LAN IP advertised in the current QR/bookmark.
+    public static private(set) var advertisedIP: String?
+    public static let ipChangedNotification = Notification.Name("SkyPasteLanIPChanged")
+
+    static func startIPMonitor() {
+        stopIPMonitor()
+        advertisedIP = localIPv4
+        ipMonitorTimer = Timer.scheduledTimer(withTimeInterval: 15, repeats: true) { _ in
+            let ip = localIPv4
+            if ip != advertisedIP {
+                advertisedIP = ip
+                DispatchQueue.main.async {
+                    NotificationCenter.default.post(name: ipChangedNotification, object: nil)
+                }
+            }
+        }
+    }
+
+    static func stopIPMonitor() {
+        ipMonitorTimer?.invalidate()
+        ipMonitorTimer = nil
+    }
+
     // MARK: - Settings surface
 
     public static var token: String {
@@ -129,6 +153,7 @@ public enum LanClipboardSync {
         startServer()
         startBeacon()
         startPullTimer()
+        startIPMonitor()
     }
 
     public static func stop() {
@@ -140,6 +165,7 @@ public enum LanClipboardSync {
         beaconTimer = nil
         pullTimer?.invalidate()
         pullTimer = nil
+        stopIPMonitor()
     }
 
     static func startServer() {
@@ -149,7 +175,8 @@ public enum LanClipboardSync {
             let listener = try NWListener(using: parameters, on: NWEndpoint.Port(rawValue: listenPort) ?? 26177)
             self.listener = listener
             listener.newConnectionHandler = { connection in
-                receiveHTTP(connection, accumulated: Data())
+                let peer = remoteHost(of: connection) ?? "(unknown)"
+                receiveHTTP(connection, peer: peer, accumulated: Data())
             }
             listener.stateUpdateHandler = { state in
                 switch state {
@@ -177,24 +204,26 @@ public enum LanClipboardSync {
         var query: [String: String]
         var headers: [String: String]
         var body: Data
+        var remoteHost: String = "(unknown)"
     }
 
-    static func receiveHTTP(_ connection: NWConnection, accumulated: Data) {
+    static func receiveHTTP(_ connection: NWConnection, peer: String, accumulated: Data) {
         connection.start(queue: DispatchQueue(label: "com.huaibor.skypaste.lan-conn"))
-        receiveRequest(connection, accumulated: accumulated)
+        receiveRequest(connection, peer: peer, accumulated: accumulated)
     }
 
-    static func receiveRequest(_ connection: NWConnection, accumulated: Data) {
+    static func receiveRequest(_ connection: NWConnection, peer: String, accumulated: Data) {
         connection.receive(minimumIncompleteLength: 1, maximumLength: 64 * 1024) { data, _, isComplete, error in
             var buffer = accumulated
             if let data {
                 buffer.append(data)
             }
-            if let request = parseHTTP(buffer) {
+            if var request = parseHTTP(buffer) {
+                request.remoteHost = peer
                 let response = route(request)
                 send(response: response, on: connection)
             } else if error == nil, !isComplete, buffer.count < 32 * 1024 * 1024 {
-                receiveRequest(connection, accumulated: buffer)
+                receiveRequest(connection, peer: peer, accumulated: buffer)
             } else {
                 connection.cancel()
             }
@@ -269,11 +298,21 @@ public enum LanClipboardSync {
     }()
 
     static func lanDebug(_ line: String) {
-        // NSLog works inside the App Sandbox and lands in the unified log.
+        // Sandbox container file (readable from outside the sandbox) + unified log.
+        let stamped = logFormatter.string(from: Date()) + " " + line + "\n"
+        let url = URL(fileURLWithPath: NSHomeDirectory() + "/lan-debug.log")
+        if let handle = FileHandle(forWritingAtPath: url.path) {
+            handle.seekToEndOfFile()
+            handle.write(stamped.data(using: .utf8)!)
+            handle.closeFile()
+        } else {
+            try? stamped.write(to: url, atomically: true, encoding: .utf8)
+        }
         NSLog("SkyPasteLAN %@", line)
     }
 
     static func route(_ request: HTTPRequest) -> (code: Int, body: Data, contentType: String) {
+        lanDebug("REQ \(request.method) \(request.path) token=\(request.headers["x-skypaste-token"] ?? "(none)") from=\(request.remoteHost)")
         // The web clipboard shell is public; the API endpoints below enforce the token.
         if request.path == "/" {
             return (200, Data(webClipboardHTML().utf8), "text/html")

@@ -265,6 +265,8 @@
   <data name="settings.lan_sync_token_hint" xml:space="preserve"><value>手机发送剪贴板时请携带 X-SkyPaste-Token 请求头。iOS 快捷指令与 Android 配置步骤见 README。</value></data>
   <data name="settings.lan_sync_qr" xml:space="preserve"><value>手机网页剪贴板二维码</value></data>
   <data name="settings.lan_sync_qr_hint" xml:space="preserve"><value>用手机相机扫码打开网页剪贴板，无需安装任何应用。</value></data>
+  <data name="settings.lan_sync_qr_generated" xml:space="preserve"><value>二维码生成于 %@</value></data>
+  <data name="settings.lan_sync_ip_changed_toast" xml:space="preserve"><value>局域网 IP 已变更为 %@，请重新扫码配对</value></data>
   <data name="settings.lan_sync_device_name" xml:space="preserve"><value>设备名称</value></data>
   <data name="settings.lan_sync_port" xml:space="preserve"><value>端口</value></data>
   <data name="sync.received_from" xml:space="preserve"><value>已接收来自 %@ 的内容</value></data>

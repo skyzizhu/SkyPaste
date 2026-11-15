@@ -48,6 +48,8 @@ SkyPaste 会记录剪贴板历史，让内容始终可搜索、按类型分组�
 - **Mac ↔ Mac**：iCloud（CloudKit）文本同步；可接收 iPhone 通用剪贴板。
 - **Mac ↔ Windows ↔ 手机**：可选**局域网同步**（令牌保护的本地 HTTP + UDP 发现，数据不出内网）；手机端通过 iOS 快捷指令 / Android HTTP 推送，配对教程见 [Windows README](SkyPasteWindows/README.md)。
 
+> 提示：电脑的局域网 IP 可能被路由器重新分配（DHCP）。SkyPaste 会自动检测 IP 变化并刷新设置页二维码、弹窗提醒重新扫码；建议在路由器管理页把电脑的 IP 绑定为静态（DHCP 静态租约），一劳永逸。。
+
 ## 截图（macOS）
 
 ### 菜单栏剪贴板历史

@@ -272,3 +272,7 @@
 "settings.lan_sync_qr" = "手機網頁剪貼簿二維碼";
 
 "settings.lan_sync_qr_hint" = "用手機相機掃碼開啟網頁剪貼簿，無需安裝任何應用。";
+
+"settings.lan_sync_qr_generated" = "二維碼生成於 %@";
+
+"settings.lan_sync_ip_changed_toast" = "區域網路 IP 已變更為 %@，請重新掃描配對 QR";

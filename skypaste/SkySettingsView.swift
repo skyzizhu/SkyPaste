@@ -180,6 +180,9 @@ struct SettingsView: View {
         }
     }
 
+    @State private var qrTick = 0
+    @State private var qrGeneratedAt = Date()
+
     private var lanSyncEnabled: Bool {
         UserDefaults.standard.bool(forKey: "settings.lanSyncEnabled")
     }
@@ -275,6 +278,10 @@ struct SettingsView: View {
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                                 .textSelection(.enabled)
+                            Text("IP: \(LanClipboardSync.localIPv4 ?? "-") · \(L10n.format("settings.lan_sync_qr_generated", qrGeneratedAt.formatted(date: .omitted, time: .shortened)))")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
                             Text(url.absoluteString)
                                 .font(.caption2)
                                 .fontDesign(.monospaced)
@@ -282,6 +289,11 @@ struct SettingsView: View {
                                 .textSelection(.enabled)
                         }
                         .padding(.top, 4)
+                        .id(qrTick)
+                        .onReceive(NotificationCenter.default.publisher(for: LanClipboardSync.ipChangedNotification)) { _ in
+                            qrGeneratedAt = Date()
+                            qrTick += 1
+                        }
                     }
                 }
                 .padding(.leading, 18)
