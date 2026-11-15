@@ -263,6 +263,8 @@
   <data name="stats.apps.note" xml:space="preserve"><value>僅統計可辨識的 Mac 應用；百分比以有來源應用的記錄為基數。之前已刪除的歷史無法補算。</value></data>
   <data name="settings.lan_sync_token" xml:space="preserve"><value>配對權杖</value></data>
   <data name="settings.lan_sync_token_hint" xml:space="preserve"><value>手機傳送剪貼簿時請攜帶 X-SkyPaste-Token 請求標頭。iOS 捷徑與 Android 設定步驟見 README。</value></data>
+  <data name="settings.lan_sync_qr" xml:space="preserve"><value>手機網頁剪貼簿二維碼</value></data>
+  <data name="settings.lan_sync_qr_hint" xml:space="preserve"><value>用手機相機掃碼開啟網頁剪貼簿，無需安裝任何應用。</value></data>
   <data name="settings.lan_sync_device_name" xml:space="preserve"><value>裝置名稱</value></data>
   <data name="settings.lan_sync_port" xml:space="preserve"><value>連接埠</value></data>
   <data name="sync.received_from" xml:space="preserve"><value>已接收來自 %@ 的內容</value></data>

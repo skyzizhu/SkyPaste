@@ -263,6 +263,8 @@
   <data name="stats.apps.note" xml:space="preserve"><value>仅统计可识别的 Mac 应用；占比以有来源应用的记录为基数。之前已删除的历史无法补算。</value></data>
   <data name="settings.lan_sync_token" xml:space="preserve"><value>配对令牌</value></data>
   <data name="settings.lan_sync_token_hint" xml:space="preserve"><value>手机发送剪贴板时请携带 X-SkyPaste-Token 请求头。iOS 快捷指令与 Android 配置步骤见 README。</value></data>
+  <data name="settings.lan_sync_qr" xml:space="preserve"><value>手机网页剪贴板二维码</value></data>
+  <data name="settings.lan_sync_qr_hint" xml:space="preserve"><value>用手机相机扫码打开网页剪贴板，无需安装任何应用。</value></data>
   <data name="settings.lan_sync_device_name" xml:space="preserve"><value>设备名称</value></data>
   <data name="settings.lan_sync_port" xml:space="preserve"><value>端口</value></data>
   <data name="sync.received_from" xml:space="preserve"><value>已接收来自 %@ 的内容</value></data>

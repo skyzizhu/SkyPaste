@@ -268,3 +268,7 @@
 "settings.lan_sync_token_hint" = "Windows SkyPaste uses this token to pair with this Mac over the local network.";
 
 "settings.lan_sync_hint2" = "Syncs clipboard text between this Mac and Windows PCs on the same network.";
+
+"settings.lan_sync_qr" = "Web clipboard QR code";
+
+"settings.lan_sync_qr_hint" = "Scan with your phone camera to open the web clipboard (no app needed).";

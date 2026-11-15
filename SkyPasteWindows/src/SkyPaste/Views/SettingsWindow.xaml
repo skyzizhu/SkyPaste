@@ -161,6 +161,16 @@
                                          Background="{DynamicResource SearchField.Background}"
                                          Foreground="{DynamicResource Text.Primary}" BorderThickness="1"
                                          BorderBrush="{DynamicResource SearchField.Border}" />
+                                <StackPanel x:Name="QrPanel" Margin="0,10,0,0">
+                                    <TextBlock x:Name="QrLabel" Text="Web clipboard QR code" FontSize="11"
+                                               Foreground="{DynamicResource Text.Primary}" />
+                                    <Image x:Name="QrImage" Width="132" Height="132" Margin="0,6,0,0"
+                                           HorizontalAlignment="Left" />
+                                    <TextBlock x:Name="QrHint" FontSize="10" TextWrapping="Wrap"
+                                               Foreground="{DynamicResource Text.Secondary}" />
+                                    <TextBlock x:Name="QrUrlText" FontSize="10" FontFamily="Consolas, monospace"
+                                               Foreground="{DynamicResource Text.Secondary}" Margin="0,2,0,0" />
+                                </StackPanel>
                             </StackPanel>
                         </Grid>
                     </StackPanel>

@@ -1,3 +1,5 @@
+import AppKit
+import CoreImage
 import Foundation
 import Network
 
@@ -13,6 +15,50 @@ public enum LanClipboardSync {
     static let portKey = "settings.lanSyncPort"
     static let deviceNameKey = "settings.lanSyncDeviceName"
     static let peersKey = "settings.lanSyncPeers"
+
+    // MARK: - Pairing helpers
+
+    /// First non-loopback IPv4 address (for the pairing QR/URL shown in Preferences).
+    static var localIPv4: String? {
+        var address: String?
+        var ifaddr: UnsafeMutablePointer<ifaddrs>?
+        guard getifaddrs(&ifaddr) == 0, let first = ifaddr else { return nil }
+        defer { freeifaddrs(first) }
+
+        var current: UnsafeMutablePointer<ifaddrs>? = first
+        while let item = current {
+            defer { current = item.pointee.ifa_next }
+            guard let sa = item.pointee.ifa_addr, sa.pointee.sa_family == UInt8(AF_INET) else { continue }
+            var host = [CChar](repeating: 0, count: Int(NI_MAXHOST))
+            let result = getnameinfo(
+                sa, socklen_t(sa.pointee.sa_len), &host, socklen_t(host.count), nil, 0, NI_NUMERICHOST)
+            if result == 0 {
+                let ip = String(cString: host)
+                if !ip.hasPrefix("127.") {
+                    address = ip
+                    break
+                }
+            }
+        }
+        return address
+    }
+
+    /// URL the phone opens (carries the pairing token in the query).
+    static var pairingURL: URL? {
+        guard let ip = localIPv4 else { return nil }
+        return URL(string: "http://\(ip):\(listenPort)/?t=\(token)")
+    }
+
+    /// Generates a QR code image for the pairing URL (CoreImage, no deps).
+    static func qrImage(for string: String) -> NSImage? {
+        guard let filter = CIFilter(name: "CIQRCodeGenerator") else { return nil }
+        filter.setValue(Data(string.utf8), forKey: "inputMessage")
+        filter.setValue("M", forKey: "inputCorrectionLevel")
+        guard let output = filter.outputImage else { return nil }
+        let scaled = output.transformed(by: CGAffineTransform(scaleX: 10, y: 10))
+        guard let cg = CIContext().createCGImage(scaled, from: scaled.extent) else { return nil }
+        return NSImage(cgImage: cg, size: NSSize(width: scaled.extent.width, height: scaled.extent.height))
+    }
 
     // MARK: - Settings surface
 
@@ -199,7 +245,7 @@ public enum LanClipboardSync {
         return HTTPRequest(method: parts[0], path: path, query: query, headers: headers, body: body)
     }
 
-    static func send(response: (code: Int, body: Data), on connection: NWConnection) {
+    static func send(response: (code: Int, body: Data, contentType: String), on connection: NWConnection) {
         let statusText: String
         switch response.code {
         case 200: statusText = "OK"
@@ -208,15 +254,19 @@ public enum LanClipboardSync {
         case 403: statusText = "Forbidden"
         default: statusText = "Not Found"
         }
-        let head = "HTTP/1.1 \(response.code) \(statusText)\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: \(response.body.count)\r\nConnection: close\r\n\r\n"
+        let head = "HTTP/1.1 \(response.code) \(statusText)\r\nContent-Type: \(response.contentType); charset=utf-8\r\nContent-Length: \(response.body.count)\r\nConnection: close\r\n\r\n"
         connection.send(content: Data(head.utf8) + response.body, completion: .contentProcessed { _ in
             connection.cancel()
         })
     }
 
-    static func route(_ request: HTTPRequest) -> (code: Int, body: Data) {
+    static func route(_ request: HTTPRequest) -> (code: Int, body: Data, contentType: String) {
+        // The web clipboard shell is public; the API endpoints below enforce the token.
+        if request.path == "/" {
+            return (200, Data(webClipboardHTML().utf8), "text/html")
+        }
         guard request.headers["x-skypaste-token"] == token else {
-            return (401, Data("{\"error\":\"unauthorized\"}".utf8))
+            return json(401, "{\"error\":\"unauthorized\"}")
         }
         switch request.path {
         case "/paste":
@@ -224,8 +274,12 @@ public enum LanClipboardSync {
         case "/pull":
             return handlePull(request)
         default:
-            return (404, Data("{\"error\":\"not found\"}".utf8))
+            return json(404, "{\"error\":\"not found\"}")
         }
+    }
+
+    private static func json(_ code: Int, _ body: String) -> (code: Int, body: Data, contentType: String) {
+        (code, Data(body.utf8), "application/json")
     }
 
     struct PastePayload: Codable {
@@ -236,18 +290,18 @@ public enum LanClipboardSync {
         var createdAt: Date?
     }
 
-    static func handlePaste(_ request: HTTPRequest) -> (code: Int, body: Data) {
+    static func handlePaste(_ request: HTTPRequest) -> (code: Int, body: Data, contentType: String) {
         guard attachedStore != nil else {
-            return (500, Data("{\"error\":\"no store\"}".utf8))
+            return (500, Data("{\"error\":\"no store\"}".utf8), "application/json")
         }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         guard let payload = try? decoder.decode(PastePayload.self, from: request.body) else {
-            return (400, Data("{\"error\":\"bad payload\"}".utf8))
+            return (400, Data("{\"error\":\"bad payload\"}".utf8), "application/json")
         }
         let sender = payload.device?.isEmpty == false ? payload.device! : "unknown"
         guard let store = attachedStore else {
-            return (500, Data("{\"error\":\"no store\"}".utf8))
+            return (500, Data("{\"error\":\"no store\"}".utf8), "application/json")
         }
 
         DispatchQueue.main.async {
@@ -272,7 +326,7 @@ public enum LanClipboardSync {
                         source: .cloudKit))
             }
         }
-        return (200, Data("{\"ok\":true}".utf8))
+        return (200, Data("{\"ok\":true}".utf8), "application/json")
     }
 
     struct PullItem: Codable {
@@ -281,9 +335,9 @@ public enum LanClipboardSync {
         var device: String
     }
 
-    static func handlePull(_ request: HTTPRequest) -> (code: Int, body: Data) {
+    static func handlePull(_ request: HTTPRequest) -> (code: Int, body: Data, contentType: String) {
         guard let store = attachedStore else {
-            return (500, Data("[]".utf8))
+            return (500, Data("[]".utf8), "application/json")
         }
         var since = Date.distantPast
         if let sinceText = request.query["since"], let seconds = Double(sinceText) {
@@ -304,7 +358,7 @@ public enum LanClipboardSync {
                 body = readBlock()
             }
         }
-        return (200, body)
+        return (200, body, "application/json")
     }
 
     private static func encodePullItems(store: ClipboardStore, since: Date, encoder: JSONEncoder) -> Data {
@@ -477,5 +531,104 @@ public enum LanClipboardSync {
             PastePayload(text: text, imageBase64: nil, name: nil, device: deviceName, createdAt: Date()))
         request.timeoutInterval = 5
         URLSession.shared.dataTask(with: request).resume()
+    }
+
+    // MARK: - Web clipboard page (zero-install phone access)
+
+    /// Self-contained web clipboard page: token via ?t= (persisted to
+    /// localStorage), send-from-phone-clipboard and copy-back UI. No installs.
+    static func webClipboardHTML() -> String {
+        let title = "\u{2022} \(deviceName)"
+        let sendTo = "\u{53d1}\u{9001}\u{5230}\u{8fd9}\u{53f0}\u{7535}\u{8111} Send to this computer"
+        let recent = "\u{7535}\u{8111}\u{7aef}\u{6700}\u{8fd1}\u{5185}\u{5bb9} Recent from this computer"
+        return """
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SkyPaste \(title)</title>
+<style>
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+body { font-family: -apple-system, "PingFang SC", sans-serif; margin: 0; background: #f5f6fa; color: #141414; }
+header { background: linear-gradient(135deg, #146bf0aa, #146bf022); padding: 18px 16px; }
+header h1 { margin: 0; font-size: 18px; }
+header p { margin: 4px 0 0; font-size: 12px; opacity: .75; }
+main { padding: 14px; max-width: 560px; margin: 0 auto; }
+section { background: #fff; border-radius: 14px; padding: 14px; margin-bottom: 14px; box-shadow: 0 1px 4px #0001; }
+textarea { width: 100%; min-height: 96px; border: 1px solid #d8dbe4; border-radius: 10px; padding: 10px; font-size: 15px; resize: vertical; }
+button { background: #146bf0; color: #fff; border: 0; border-radius: 20px; padding: 10px 18px; font-size: 15px; font-weight: 600; }
+button.ghost { background: #eef2fb; color: #146bf0; }
+.row { display: flex; gap: 10px; margin-top: 10px; }
+.row button { flex: 1; }
+ul { list-style: none; margin: 0; padding: 0; }
+li { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid #f0f1f5; }
+li span { flex: 1; font-size: 14px; word-break: break-all; }
+li button { padding: 6px 14px; font-size: 13px; }
+.empty { color: #8a8a8e; font-size: 13px; text-align: center; padding: 14px 0; }
+#msg { text-align: center; font-size: 13px; color: #1f9e8c; min-height: 18px; margin: 0 0 8px; }
+</style>
+</head>
+<body>
+<header><h1>SkyPaste \(title)</h1><p>\u{5c40}\u{57df}\u{7f51}\u{76f4}\u{4f20} \u{b7} \u{6570}\u{636e}\u{4e0d}\u{51fa}\u{5185}\u{7f51} \u{b7} LAN direct, no cloud</p></header>
+<main>
+<p id="msg"></p>
+<section>
+<p><b>\(sendTo)</b></p>
+<textarea id="text" placeholder="\u{7c98}\u{8d34}\u{6216}\u{8f93}\u{5165}\u{5185}\u{5bb9}\u{2026}"></textarea>
+<div class="row">
+<button class="ghost" onclick="readClip()">\u{8bfb}\u{53d6}\u{624b}\u{673a}\u{526a}\u{8d34}\u{677f}</button>
+<button onclick="sendText()">\u{53d1}\u{9001}</button>
+</div>
+</section>
+<section>
+<p><b>\(recent)</b> <button class="ghost" style="padding:6px 14px;font-size:13px;float:right" onclick="pull()">\u{5237}\u{65b0}</button></p>
+<ul id="list"></ul>
+<div class="empty" id="empty">\u{6682}\u{65e0}\u{5185}\u{5bb9}</div>
+</section>
+<script>
+const params = new URLSearchParams(location.search);
+let token = params.get('t') || localStorage.getItem('sp_token') || '';
+if (params.get('t')) { localStorage.setItem('sp_token', token); history.replaceState(null, '', location.pathname); }
+function msg(t) { const m = document.getElementById('msg'); m.textContent = t; setTimeout(() => m.textContent = '', 2500); }
+async function api(path, opts) { return fetch(path, Object.assign({ headers: { 'X-SkyPaste-Token': token } }, opts)); }
+async function readClip() {
+  try { document.getElementById('text').value = await navigator.clipboard.readText(); }
+  catch (e) { msg('read blocked, paste manually'); }
+}
+async function sendText() {
+  const text = document.getElementById('text').value;
+  if (!text.trim()) { msg('empty'); return; }
+  const r = await api('/paste', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: text, device: '\u{624b}\u{673a}\u{7f51}\u{9875}' }) });
+  if (r.ok) { msg('✓ sent'); document.getElementById('text').value = ''; pull(); }
+  else msg('failed ' + r.status);
+}
+async function copyItem(text) {
+  try { await navigator.clipboard.writeText(text); msg('✓ copied'); }
+  catch (e) { msg('copy blocked'); }
+}
+async function pull() {
+  const r = await api('/pull?since=0');
+  if (!r.ok) return;
+  const items = await r.json();
+  const list = document.getElementById('list');
+  list.innerHTML = '';
+  document.getElementById('empty').style.display = items.length ? 'none' : 'block';
+  items.slice(0, 20).forEach(it => {
+    const li = document.createElement('li');
+    const s = document.createElement('span');
+    s.textContent = it.text.length > 120 ? it.text.slice(0, 120) + '…' : it.text;
+    const b = document.createElement('button');
+    b.className = 'ghost'; b.textContent = '\u{590d}\u{5236}';
+    b.onclick = () => copyItem(it.text);
+    li.appendChild(s); li.appendChild(b); list.appendChild(li);
+  });
+}
+pull();
+</script>
+</body>
+</html>
+"""
     }
 }

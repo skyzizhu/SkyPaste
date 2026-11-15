@@ -262,6 +262,27 @@ struct SettingsView: View {
                     }
 
                     hint(L10n.tr("settings.lan_sync_hint2"))
+
+                    if let url = LanClipboardSync.pairingURL,
+                       let qr = LanClipboardSync.qrImage(for: url.absoluteString) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Image(nsImage: qr)
+                                .interpolation(.none)
+                                .resizable()
+                                .frame(width: 132, height: 132)
+                                .accessibilityLabel(L10n.tr("settings.lan_sync_qr"))
+                            Text(L10n.tr("settings.lan_sync_qr_hint"))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
+                            Text(url.absoluteString)
+                                .font(.caption2)
+                                .fontDesign(.monospaced)
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
+                        }
+                        .padding(.top, 4)
+                    }
                 }
                 .padding(.leading, 18)
             }

@@ -263,6 +263,8 @@
   <data name="stats.apps.note" xml:space="preserve"><value>Only identifiable Mac apps are included. Percentages use app-attributed copies; previously deleted history cannot be recovered.</value></data>
   <data name="settings.lan_sync_token" xml:space="preserve"><value>Pairing token</value></data>
   <data name="settings.lan_sync_token_hint" xml:space="preserve"><value>Send clipboard from your phone with the X-SkyPaste-Token header. See README for iOS Shortcuts and Android steps.</value></data>
+  <data name="settings.lan_sync_qr" xml:space="preserve"><value>Web clipboard QR code</value></data>
+  <data name="settings.lan_sync_qr_hint" xml:space="preserve"><value>Scan with your phone camera to open the web clipboard (no app needed).</value></data>
   <data name="settings.lan_sync_device_name" xml:space="preserve"><value>Device name</value></data>
   <data name="settings.lan_sync_port" xml:space="preserve"><value>Port</value></data>
   <data name="sync.received_from" xml:space="preserve"><value>Received from %@</value></data>

@@ -268,3 +268,7 @@
 "settings.lan_sync_token_hint" = "Windows용 SkyPaste가 이 토큰으로 이 Mac과 LAN에서 페어링합니다.";
 
 "settings.lan_sync_hint2" = "같은 LAN의 이 Mac과 Windows PC 간에 클립보드 텍스트를 동기화합니다.";
+
+"settings.lan_sync_qr" = "웹 클립보드 QR 코드";
+
+"settings.lan_sync_qr_hint" = "휴대폰 카메라로 스캔하면 웹 클립보드가 열립니다(앱 불필요).";

@@ -268,3 +268,7 @@
 "settings.lan_sync_token_hint" = "Windows 版 SkyPaste はこのトークンでこの Mac と LAN 経由でペアリングします。";
 
 "settings.lan_sync_hint2" = "同じ LAN 内のこの Mac と Windows PC 間でクリップボードのテキストを同期します。";
+
+"settings.lan_sync_qr" = "Web クリップボード QR コード";
+
+"settings.lan_sync_qr_hint" = "スマホのカメラで読み取ると Web クリップボードが開きます（アプリ不要）。";
