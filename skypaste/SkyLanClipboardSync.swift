@@ -576,7 +576,7 @@ li button { padding: 6px 14px; font-size: 13px; }
 <p id="msg"></p>
 <section id="tokenBox" style="display:none">
 <p><b>首次使用 / First visit</b></p>
-<p style="font-size:13px;color:#8a8a8e">输入电脑端显示的配对令牌 Enter the pairing token shown on the desktop.</p>
+<p style="font-size:13px;color:#8a8a8e">令牌无效。请重新扫描电脑端设置里的二维码打开本页（推荐，无需输入）；或在下方输入电脑端显示的配对令牌。Token invalid — re-scan the QR in desktop Preferences (recommended), or enter the token below.</p>
 <input id="tokenInput" style="width:100%;padding:10px;border:1px solid #d8dbe4;border-radius:10px;font-size:15px" placeholder="Pairing token">
 <div class="row"><button onclick="saveToken()">保存 Save</button></div>
 </section>
@@ -603,17 +603,14 @@ function showTokenBox(prefill) {
   document.getElementById('tokenInput').value = prefill || '';
   document.getElementById('tokenBox').style.display = 'block';
 }
-function saveToken() {
-  token = document.getElementById('tokenInput').value.trim();
-  if (!token) return;
-  localStorage.setItem('sp_token', token);
-  document.getElementById('tokenBox').style.display = 'none';
-  pull();
+function sanitizeToken(v) {
+  // Strip whitespace and zero-width chars from copy/pasted tokens.
+  return (v || '').replace(/\\s+/g, '').replace(/[\\u200b\\u200c\\u200d\\ufeff]/g, '');
 }
 async function api(path, opts) {
   const r = await fetch(path, Object.assign({ headers: { 'X-SkyPaste-Token': token } }, opts));
   if (r.status === 401) {
-    // Keep the stored token (likely just stale); let the user correct it in place.
+    // Keep the stored token for reference; rescan is the zero-typing path.
     showTokenBox(token);
     throw new Error('unauthorized');
   }
@@ -624,7 +621,7 @@ async function readClip() {
   catch (e) { msg('read blocked, paste manually'); }
 }
 async function sendText() {
-  const boxToken = document.getElementById('tokenInput').value.trim();
+  const boxToken = sanitizeToken(document.getElementById('tokenInput').value);
   if (boxToken && boxToken !== token) { token = boxToken; localStorage.setItem('sp_token', token); }
   const text = document.getElementById('text').value;
   if (!text.trim()) { msg('empty'); return; }
@@ -640,7 +637,7 @@ async function copyItem(text) {
   catch (e) { msg('copy blocked'); }
 }
 async function pull() {
-  const boxToken = document.getElementById('tokenInput').value.trim();
+  const boxToken = sanitizeToken(document.getElementById('tokenInput').value);
   if (boxToken && boxToken !== token) { token = boxToken; localStorage.setItem('sp_token', token); }
   let r;
   try { r = await api('/pull?since=0'); }
