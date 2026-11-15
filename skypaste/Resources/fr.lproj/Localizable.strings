@@ -276,3 +276,5 @@
 "settings.lan_sync_qr_generated" = "QR généré à %@";
 
 "settings.lan_sync_ip_changed_toast" = "L'IP LAN a changé vers %@ — re-scannez le QR d'appairage";
+
+"clipboard.source.lan" = "Synchronisation LAN";

@@ -40,13 +40,14 @@ enum ClipboardSource: Int, Equatable {
     case local = 0
     case universalClipboard = 1
     case cloudKit = 2
+    case lanDevice = 3
 
     var isUniversalClipboard: Bool {
         self == .universalClipboard
     }
 
     var isDeviceSynced: Bool {
-        self == .universalClipboard || self == .cloudKit
+        self == .universalClipboard || self == .cloudKit || self == .lanDevice
     }
 
     var deviceIconSystemName: String? {
@@ -57,6 +58,8 @@ enum ClipboardSource: Int, Equatable {
             return "iphone.gen3"
         case .cloudKit:
             return "icloud"
+        case .lanDevice:
+            return "wifi"
         }
     }
 
@@ -68,6 +71,8 @@ enum ClipboardSource: Int, Equatable {
             return L10n.tr("clipboard.source.universal")
         case .cloudKit:
             return L10n.tr("clipboard.source.icloud")
+        case .lanDevice:
+            return L10n.tr("clipboard.source.lan")
         }
     }
 
@@ -79,6 +84,8 @@ enum ClipboardSource: Int, Equatable {
             return ["phone", "iphone", "universal", "universal clipboard", "手机", "iphone 剪贴板", "通用剪贴板"]
         case .cloudKit:
             return ["icloud", "cloud", "sync", "云", "云同步", "icloud sync"]
+        case .lanDevice:
+            return ["lan", "device", "手机", "设备", "局域网", "同步"]
         }
     }
 }

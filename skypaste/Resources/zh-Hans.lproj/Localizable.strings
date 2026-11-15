@@ -276,3 +276,5 @@
 "settings.lan_sync_qr_generated" = "二维码生成于 %@";
 
 "settings.lan_sync_ip_changed_toast" = "局域网 IP 已变更为 %@，请重新扫码配对";
+
+"clipboard.source.lan" = "局域网同步";

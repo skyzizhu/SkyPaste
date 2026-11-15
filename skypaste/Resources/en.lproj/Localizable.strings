@@ -276,3 +276,5 @@
 "settings.lan_sync_qr_generated" = "QR generated at %@";
 
 "settings.lan_sync_ip_changed_toast" = "LAN IP changed to %@ — re-scan the pairing QR";
+
+"clipboard.source.lan" = "LAN Sync";

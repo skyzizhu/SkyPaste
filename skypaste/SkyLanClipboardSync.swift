@@ -367,7 +367,7 @@ public enum LanClipboardSync {
                     ClipboardItem(
                         content: .text(text),
                         fingerprint: "txt:" + text,
-                        source: .cloudKit)
+                        source: .lanDevice)
                         .withSourceApp(ClipboardSourceApp(bundleID: "lan:\(sender)", name: sender)))
             } else if let imageBase64 = payload.imageBase64,
                       let data = Data(base64Encoded: imageBase64), !data.isEmpty {
@@ -380,7 +380,7 @@ public enum LanClipboardSync {
                     ClipboardItem(
                         content: .image(data: data, name: name, originalByteCount: data.count, previewOnly: false),
                         fingerprint: fingerprint,
-                        source: .cloudKit))
+                        source: .lanDevice))
             }
         }
         return (200, Data("{\"ok\":true}".utf8), "application/json")
@@ -562,7 +562,7 @@ public enum LanClipboardSync {
                             ClipboardItem(
                                 content: .text(item.text),
                                 fingerprint: "txt:" + item.text,
-                                source: .cloudKit)
+                                source: .lanDevice)
                                 .withSourceApp(ClipboardSourceApp(bundleID: "lan:\(peer.name)", name: item.device)))
                         newest = max(newest, item.createdAt)
                     }

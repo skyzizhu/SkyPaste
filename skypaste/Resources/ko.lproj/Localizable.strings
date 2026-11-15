@@ -276,3 +276,5 @@
 "settings.lan_sync_qr_generated" = "QR 코드 생성 시각: %@";
 
 "settings.lan_sync_ip_changed_toast" = "LAN IP가 %@(으)로 변경되었습니다. QR을 다시 스캔하세요";
+
+"clipboard.source.lan" = "LAN 동기화";

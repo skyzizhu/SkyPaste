@@ -276,3 +276,5 @@
 "settings.lan_sync_qr_generated" = "二維碼生成於 %@";
 
 "settings.lan_sync_ip_changed_toast" = "區域網路 IP 已變更為 %@，請重新掃描配對 QR";
+
+"clipboard.source.lan" = "區域網路同步";
