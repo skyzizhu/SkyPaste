@@ -1,12 +1,12 @@
-# SkyPaste - macOS 剪贴板管理器，支持历史记录、搜索、同步、文件和图片
+# SkyPaste — macOS 与 Windows 双平台剪贴板管理器
 
 <p align="center">
-  <img src="skypaste/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png" alt="SkyPaste macOS 剪贴板管理器图标" width="120">
+  <img src="skypaste/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png" alt="SkyPaste 应用图标" width="120">
 </p>
 
 <p align="center">
-  <strong>轻量、高效、好用的 macOS 剪贴板历史管理工具。</strong><br>
-  保存、搜索、预览、分类管理并同步文本、链接、图片、文件、目录、代码和邮箱地址。
+  <strong>轻量的 Mac / Windows 剪贴板历史管理器。</strong><br>
+  保存、搜索、预览、分类管理你复制的文本、链接、图片、文件、目录、代码与邮箱地址，并支持局域网跨设备同步。
 </p>
 
 <p align="center">
@@ -14,10 +14,41 @@
 </p>
 
 <p align="center">
-  <a href="https://apps.apple.com/us/app/skypaste-clipboard-manager/id6760884520?mt=12">在 Mac App Store 下载</a>
+  <a href="https://apps.apple.com/us/app/skypaste-clipboard-manager/id6760884520?mt=12">Mac App Store</a> ·
+  <a href="https://github.com/skyzizhu/SkyPaste/releases/latest">Windows 下载（x64 / x86 / 安装器）</a>
 </p>
 
-SkyPaste 是一款专为 macOS 打造的剪贴板管理器，适合每天高频复制粘贴的用户。它可以记录剪贴板历史，快速搜索历史内容，按类型清晰分类，通过菜单栏快速访问，并支持通过 iCloud 同步 SkyPaste 剪贴板内容。
+## 下载
+
+| 平台 | 安装方式 | 说明 |
+|---|---|---|
+| macOS 13+ | [Mac App Store](https://apps.apple.com/us/app/skypaste-clipboard-manager/id6760884520?mt=12) 或 Releases 中的 `SkyPaste-macOS.zip` | 上架版本 |
+| Windows 10/11（64 位） | Releases 中的 `SkyPaste-windows-portable.zip`（便携）或 `SkyPaste-Setup-*.exe`（安装器） | 推荐 |
+| Windows 10（32 位） | Releases 中的 `SkyPaste-windows-x86-portable.zip` | 老机器兼容 |
+
+## Windows 版功能速览
+
+剪贴板历史（文本/图片/文件/文件夹/URL/邮箱/代码）、9 个可重排筛选器、搜索语法 + 拼音首字母搜索、全局热键（默认 Ctrl+Shift+V）、粘贴回原应用、托盘弹出层、图片标注导出、文件详情、统计洞察、批量操作、隐私过滤、深浅主题、6 语言界面，以及与 Mac / 手机互通的**局域网同步**。
+
+→ 完整说明与构建方法见 [SkyPasteWindows/README.md](SkyPasteWindows/README.md)。
+
+## 同步方式
+
+- **Mac ↔ Mac**：iCloud（CloudKit）文本同步；可接收 iPhone 通用剪贴板
+- **Mac ↔ Windows ↔ 手机**：可选**局域网同步**（令牌保护的本地 HTTP + UDP 发现，数据不出内网）；手机端通过 iOS 快捷指令 / Android HTTP 推送，配对教程见 [Windows README](SkyPasteWindows/README.md)
+
+## 仓库结构
+
+```
+skypaste/            macOS 应用（Swift / SwiftUI，App Store 上架）
+SkyPasteWindows/     Windows 应用（WPF + .NET 8），详见其 README
+docs/                隐私政策、发布清单、截图
+website/             官网
+```
+
+---
+
+# SkyPaste macOS 版详细说明（原有内容）
 
 ## 搜索关键词
 

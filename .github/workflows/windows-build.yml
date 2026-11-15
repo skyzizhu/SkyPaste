@@ -56,11 +56,7 @@ jobs:
         if: github.event_name == 'release'
         shell: pwsh
         run: |
-          # ChineseSimplified.isl is an unofficial translation not shipped with
-          # Inno Setup — vendor it next to the script and reference it relatively.
-          Invoke-WebRequest `
-            -Uri "https://raw.githubusercontent.com/jrsoftware/issrc/main/Files/Languages/Unofficial/ChineseSimplified.isl" `
-            -OutFile installer\ChineseSimplified.isl
+          # ChineseSimplified.isl is vendored next to the script (repo file).
           $iscc = (Get-ChildItem "C:\Program Files*\Inno Setup*" -Filter ISCC.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
           if (-not $iscc) {
             $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
