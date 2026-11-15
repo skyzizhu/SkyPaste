@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="clipboard.empty_text" xml:space="preserve"><value>(空のテキスト)</value></data>
+  <data name="clipboard.image_fallback_name" xml:space="preserve"><value>画像</value></data>
+  <data name="clipboard.file_single" xml:space="preserve"><value>ファイル: %@</value></data>
+  <data name="clipboard.folder_single" xml:space="preserve"><value>フォルダ: %@</value></data>
+  <data name="clipboard.file_count" xml:space="preserve"><value>%d 個のファイル</value></data>
+  <data name="clipboard.folder_count" xml:space="preserve"><value>%d 個のフォルダ</value></data>
+  <data name="clipboard.subtitle.text" xml:space="preserve"><value>テキスト • %d 文字</value></data>
+  <data name="clipboard.subtitle.image" xml:space="preserve"><value>画像 • %d KB</value></data>
+  <data name="clipboard.subtitle.image_file" xml:space="preserve"><value>画像ファイル</value></data>
+  <data name="clipboard.subtitle.image_file_format" xml:space="preserve"><value>画像ファイル • %@</value></data>
+  <data name="clipboard.subtitle.image_file_count" xml:space="preserve"><value>%d 個の画像ファイル</value></data>
+  <data name="clipboard.subtitle.file" xml:space="preserve"><value>ファイル</value></data>
+  <data name="clipboard.subtitle.file_path" xml:space="preserve"><value>ファイル • %@</value></data>
+  <data name="clipboard.subtitle.folder" xml:space="preserve"><value>フォルダ</value></data>
+  <data name="clipboard.subtitle.folder_path" xml:space="preserve"><value>フォルダ • %@</value></data>
+  <data name="clipboard.subtitle.file_count" xml:space="preserve"><value>%d 個のファイル</value></data>
+  <data name="clipboard.subtitle.folder_count" xml:space="preserve"><value>%d 個のフォルダ</value></data>
+  <data name="clipboard.source.device" xml:space="preserve"><value>デバイス同期</value></data>
+  <data name="clipboard.source.icloud" xml:space="preserve"><value>iCloud 同期</value></data>
+  <data name="section.favorites" xml:space="preserve"><value>お気に入り</value></data>
+  <data name="section.today" xml:space="preserve"><value>今日</value></data>
+  <data name="section.yesterday" xml:space="preserve"><value>昨日</value></data>
+  <data name="settings.appearance" xml:space="preserve"><value>テーマ</value></data>
+  <data name="settings.general" xml:space="preserve"><value>一般設定</value></data>
+  <data name="settings.library" xml:space="preserve"><value>ライブラリ</value></data>
+  <data name="settings.support" xml:space="preserve"><value>サポートとおすすめ</value></data>
+  <data name="settings.appearance_hint" xml:space="preserve"><value>既定ではシステムに従い、必要に応じてライトまたはダークに固定できます。</value></data>
+  <data name="settings.hotkey" xml:space="preserve"><value>ホットキー</value></data>
+  <data name="settings.language" xml:space="preserve"><value>言語</value></data>
+  <data name="settings.language_hint" xml:space="preserve"><value>「システム」にすると macOS の言語に従います。固定のアプリ言語も選べます。</value></data>
+  <data name="settings.key" xml:space="preserve"><value>キー</value></data>
+  <data name="settings.ctrl" xml:space="preserve"><value>Command</value></data>
+  <data name="settings.shift" xml:space="preserve"><value>Shift</value></data>
+  <data name="settings.alt" xml:space="preserve"><value>Option</value></data>
+  <data name="settings.control" xml:space="preserve"><value>Control</value></data>
+  <data name="settings.current" xml:space="preserve"><value>現在: %@</value></data>
+  <data name="settings.version_format" xml:space="preserve"><value>バージョン %@（%@）</value></data>
+  <data name="settings.history" xml:space="preserve"><value>履歴</value></data>
+  <data name="settings.max_records" xml:space="preserve"><value>最大件数: %d</value></data>
+  <data name="settings.history_hint" xml:space="preserve"><value>新しい上限はすぐに適用され、必要に応じてローカル履歴を削減します。</value></data>
+  <data name="settings.startup" xml:space="preserve"><value>起動</value></data>
+  <data name="settings.launch_at_login" xml:space="preserve"><value>ログイン時に起動</value></data>
+  <data name="settings.launch_at_login_hint" xml:space="preserve"><value>Windows にサインインしたときに自動的に起動します。</value></data>
+  <data name="settings.clipboard" xml:space="preserve"><value>クリップボード</value></data>
+  <data name="settings.sync" xml:space="preserve"><value>同期とプライバシー</value></data>
+  <data name="settings.lan_sync" xml:space="preserve"><value>ユニバーサルクリップボードを受信</value></data>
+  <data name="settings.lan_sync_hint" xml:space="preserve"><value>LAN 内に小さな同期サービスを公開し、スマホや他の PC からクリップボードの内容を送信できます。</value></data>
+  <data name="settings.lan_sync_upload" xml:space="preserve"><value>この Mac のテキストをアップロード</value></data>
+  <data name="settings.lan_sync_receive" xml:space="preserve"><value>iCloud の内容を受信</value></data>
+  <data name="settings.lan_sync_hint2" xml:space="preserve"><value>有効にすると、SkyPaste はこの Mac でコピーしたテキストをプライベート iCloud データベースへ同期し、ほかのデバイスで保存された SkyPaste のクリップボード項目も取得します。</value></data>
+  <data name="settings.lan_sync_rules_hint" xml:space="preserve"><value>この PC でコピーしたテキストの送信、デバイスからの受信、またはその両方を制御します。</value></data>
+  <data name="settings.lan_sync_status_disabled" xml:space="preserve"><value>LAN 同期はオフです。</value></data>
+  <data name="settings.lan_sync_status_unavailable" xml:space="preserve"><value>LAN 同期を開始できませんでした。ポート設定を確認してください。</value></data>
+  <data name="settings.lan_sync_status_syncing" xml:space="preserve"><value>LAN 経由で同期中…</value></data>
+  <data name="settings.lan_sync_status_synced" xml:space="preserve"><value>LAN 同期はオンです。</value></data>
+  <data name="settings.lan_sync_status_error" xml:space="preserve"><value>同期に失敗しました: %@</value></data>
+  <data name="settings.auto_paste" xml:space="preserve"><value>選択時に自動コピー</value></data>
+  <data name="settings.auto_paste_hint" xml:space="preserve"><value>有効にすると、リスト内の項目をクリックしたときに自動でクリップボードへコピーします。</value></data>
+  <data name="settings.privacy_filter" xml:space="preserve"><value>プライバシー内容のフィルタリング</value></data>
+  <data name="settings.privacy_filter_hint" xml:space="preserve"><value>有効にすると、SkyPaste はパスワード、認証コード、カード番号、キー / トークンのような機密テキストをできるだけ除外します。</value></data>
+  <data name="settings.ignore_apps" xml:space="preserve"><value>除外アプリ</value></data>
+  <data name="settings.ignore_apps_hint" xml:space="preserve"><value>アプリ名または bundle ID をカンマか改行で区切って入力します。</value></data>
+  <data name="settings.ignore_apps_example" xml:space="preserve"><value>例: Finder, Terminal, com.1password.1password。</value></data>
+  <data name="settings.ignore_apps_suggestions" xml:space="preserve"><value>最近</value></data>
+  <data name="settings.rate_app" xml:space="preserve"><value>SkyPasteを評価</value></data>
+  <data name="settings.rate_app_subtitle" xml:space="preserve"><value>SkyPaste を気に入っていただけたら、App Store で評価とレビューをお願いします。</value></data>
+  <data name="settings.rate_app_action" xml:space="preserve"><value>App Storeで評価</value></data>
+  <data name="app.title" xml:space="preserve"><value>SkyPaste</value></data>
+  <data name="app.debug_title" xml:space="preserve"><value>SkyPaste デバッグ</value></data>
+  <data name="app.menu_title" xml:space="preserve"><value>SkyPaste</value></data>
+  <data name="menu.clipboard" xml:space="preserve"><value>クリップボード</value></data>
+  <data name="menu.clipboard_manager" xml:space="preserve"><value>Clipboard Manager</value></data>
+  <data name="menu.double_click_to_copy" xml:space="preserve"><value>ダブルクリックでコピー</value></data>
+  <data name="menu.right_click_to_copy" xml:space="preserve"><value>Clipboard Manager</value></data>
+  <data name="menu.command_c_copy" xml:space="preserve"><value>ctrl+c コピー</value></data>
+  <data name="menu.copy" xml:space="preserve"><value>コピー</value></data>
+  <data name="menu.open_item" xml:space="preserve"><value>開く</value></data>
+  <data name="menu.open_file" xml:space="preserve"><value>ファイルを開く</value></data>
+  <data name="menu.open_folder" xml:space="preserve"><value>フォルダを開く</value></data>
+  <data name="menu.open_containing_folder" xml:space="preserve"><value>格納フォルダを開く</value></data>
+  <data name="menu.reveal_in_explorer" xml:space="preserve"><value>エクスプローラーで表示</value></data>
+  <data name="menu.copy_path" xml:space="preserve"><value>パスをコピー</value></data>
+  <data name="menu.copy_link" xml:space="preserve"><value>リンクをコピー</value></data>
+  <data name="menu.share" xml:space="preserve"><value>共有</value></data>
+  <data name="menu.translate" xml:space="preserve"><value>翻訳</value></data>
+  <data name="menu.save_as" xml:space="preserve"><value>別名で保存...</value></data>
+  <data name="menu.open_in_browser" xml:space="preserve"><value>ブラウザで開く</value></data>
+  <data name="menu.open_email" xml:space="preserve"><value>メールを送信</value></data>
+  <data name="menu.favorite" xml:space="preserve"><value>お気に入りに追加</value></data>
+  <data name="menu.unfavorite" xml:space="preserve"><value>お気に入りから削除</value></data>
+  <data name="menu.copy_selected" xml:space="preserve"><value>選択項目をコピー</value></data>
+  <data name="menu.open_panel" xml:space="preserve"><value>パネルを開く</value></data>
+  <data name="menu.debug" xml:space="preserve"><value>デバッグ</value></data>
+  <data name="menu.search" xml:space="preserve"><value>検索</value></data>
+  <data name="menu.preferences" xml:space="preserve"><value>設定</value></data>
+  <data name="menu.quit" xml:space="preserve"><value>終了</value></data>
+  <data name="menu.copy_success" xml:space="preserve"><value>コピーしました</value></data>
+  <data name="menu.delete_day_title" xml:space="preserve"><value>この日の記録をすべて削除しますか？</value></data>
+  <data name="menu.delete" xml:space="preserve"><value>削除</value></data>
+  <data name="menu.ok" xml:space="preserve"><value>OK</value></data>
+  <data name="menu.cancel" xml:space="preserve"><value>キャンセル</value></data>
+  <data name="menu.delete_day_message" xml:space="preserve"><value>%@ のクリップボード履歴をすべて削除します。</value></data>
+  <data name="panel.search_placeholder" xml:space="preserve"><value>クリップボードを検索</value></data>
+  <data name="panel.search_empty_title" xml:space="preserve"><value>一致する項目がありません</value></data>
+  <data name="panel.search_empty_message" xml:space="preserve"><value>別のキーワードを試すか、検索をクリアしてすべての履歴を表示してください。</value></data>
+  <data name="panel.search_empty_message_scoped" xml:space="preserve"><value>%1$@ に一致する項目がありません。別のキーワードを試すか、カテゴリを切り替えてください。</value></data>
+  <data name="panel.empty_title" xml:space="preserve"><value>クリップボード履歴はまだありません</value></data>
+  <data name="panel.empty_message" xml:space="preserve"><value>テキスト、画像、ファイルをコピーすると、ここに表示されます。</value></data>
+  <data name="panel.empty_message_scoped" xml:space="preserve"><value>%1$@ にはまだ項目がありません。このカテゴリの内容をコピーすると、ここに表示されます。</value></data>
+  <data name="panel.clear_search" xml:space="preserve"><value>検索をクリア</value></data>
+  <data name="panel.shortcut_hint" xml:space="preserve"><value>Enter：貼り付け  ·  ↑/↓：移動  ·  Esc：閉じる  ·  Ctrl+1...9：クイックコピー</value></data>
+  <data name="panel.shortcut_hint_copy_only" xml:space="preserve"><value>Enter：コピー  ·  ↑/↓：移動  ·  Esc：閉じる  ·  Ctrl+1...9：クイックコピー</value></data>
+  <data name="panel.paste_selected" xml:space="preserve"><value>選択項目を貼り付け</value></data>
+  <data name="panel.batch_select" xml:space="preserve"><value>一括選択</value></data>
+  <data name="panel.batch_done" xml:space="preserve"><value>完了</value></data>
+  <data name="panel.batch_select_all" xml:space="preserve"><value>すべて選択</value></data>
+  <data name="panel.batch_clear_selection" xml:space="preserve"><value>選択を解除</value></data>
+  <data name="panel.batch_favorite_selected" xml:space="preserve"><value>選択項目をお気に入り</value></data>
+  <data name="panel.batch_unfavorite_selected" xml:space="preserve"><value>お気に入りを解除</value></data>
+  <data name="panel.batch_delete_selected" xml:space="preserve"><value>選択項目を削除</value></data>
+  <data name="panel.batch_favorite_success" xml:space="preserve"><value>%d 項目をお気に入りに追加しました</value></data>
+  <data name="panel.batch_unfavorite_success" xml:space="preserve"><value>%d 項目のお気に入りを解除しました</value></data>
+  <data name="panel.batch_delete_success" xml:space="preserve"><value>%d 項目を削除しました</value></data>
+  <data name="filter.all" xml:space="preserve"><value>すべて</value></data>
+  <data name="filter.text" xml:space="preserve"><value>テキスト</value></data>
+  <data name="filter.image" xml:space="preserve"><value>画像</value></data>
+  <data name="filter.file" xml:space="preserve"><value>ファイル</value></data>
+  <data name="filter.folder" xml:space="preserve"><value>フォルダ</value></data>
+  <data name="filter.code" xml:space="preserve"><value>コード</value></data>
+  <data name="filter.source_all" xml:space="preserve"><value>すべてのアプリ</value></data>
+  <data name="filter.source_device" xml:space="preserve"><value>スマートフォンの内容</value></data>
+  <data name="filter.source_label" xml:space="preserve"><value>アプリ</value></data>
+  <data name="filter.favorites" xml:space="preserve"><value>お気に入り</value></data>
+  <data name="filter.url" xml:space="preserve"><value>URL</value></data>
+  <data name="filter.email" xml:space="preserve"><value>メール</value></data>
+  <data name="filter.move_first" xml:space="preserve"><value>先頭に移動</value></data>
+  <data name="filter.move_last" xml:space="preserve"><value>最後尾に移動</value></data>
+  <data name="filter.reset_order" xml:space="preserve"><value>既定の順序に戻す</value></data>
+  <data name="debug.no_data" xml:space="preserve"><value>データなし</value></data>
+  <data name="debug.none" xml:space="preserve"><value>なし</value></data>
+  <data name="debug.text" xml:space="preserve"><value>テキスト</value></data>
+  <data name="debug.image" xml:space="preserve"><value>画像</value></data>
+  <data name="debug.file_urls" xml:space="preserve"><value>ファイル URL</value></data>
+  <data name="debug.name_prefix" xml:space="preserve"><value>名前: %@ • </value></data>
+  <data name="debug.title" xml:space="preserve"><value>クリップボードデバッグ</value></data>
+  <data name="debug.refresh" xml:space="preserve"><value>更新</value></data>
+  <data name="debug.change_count" xml:space="preserve"><value>changeCount: %d</value></data>
+  <data name="debug.decoded" xml:space="preserve"><value>decoded: %@</value></data>
+  <data name="debug.raw_types" xml:space="preserve"><value>raw types</value></data>
+  <data name="debug.preview" xml:space="preserve"><value>preview</value></data>
+  <data name="debug.empty" xml:space="preserve"><value>(空)</value></data>
+  <data name="hotkey.ctrl" xml:space="preserve"><value>Cmd</value></data>
+  <data name="hotkey.shift" xml:space="preserve"><value>Shift</value></data>
+  <data name="hotkey.alt" xml:space="preserve"><value>Option</value></data>
+  <data name="hotkey.control" xml:space="preserve"><value>Control</value></data>
+  <data name="hotkey.keycode" xml:space="preserve"><value>キーコード %u</value></data>
+  <data name="appearance.system" xml:space="preserve"><value>システムに従う</value></data>
+  <data name="appearance.light" xml:space="preserve"><value>ライトモード</value></data>
+  <data name="appearance.dark" xml:space="preserve"><value>ダークモード</value></data>
+  <data name="language.system" xml:space="preserve"><value>システム</value></data>
+  <data name="language.en" xml:space="preserve"><value>英語</value></data>
+  <data name="language.zh-Hans" xml:space="preserve"><value>簡体字中国語</value></data>
+  <data name="language.zh-Hant" xml:space="preserve"><value>繁体字中国語</value></data>
+  <data name="language.ja" xml:space="preserve"><value>日本語</value></data>
+  <data name="language.ko" xml:space="preserve"><value>韓国語</value></data>
+  <data name="language.fr" xml:space="preserve"><value>フランス語</value></data>
+  <data name="preview.open" xml:space="preserve"><value>画像をプレビュー</value></data>
+  <data name="preview.open_image" xml:space="preserve"><value>画像を開く</value></data>
+  <data name="preview.drag_hint" xml:space="preserve"><value>画像をドラッグ</value></data>
+  <data name="preview.drag_zoomed_hint" xml:space="preserve"><value>Option キーを押して画像をドラッグ</value></data>
+  <data name="preview.annotate" xml:space="preserve"><value>注釈</value></data>
+  <data name="preview.annotation_done" xml:space="preserve"><value>描画を終了</value></data>
+  <data name="preview.annotation_hint" xml:space="preserve"><value>画像に線を描く</value></data>
+  <data name="preview.annotation_drag_hint" xml:space="preserve"><value>ドラッグして描画</value></data>
+  <data name="preview.annotation_undo" xml:space="preserve"><value>元に戻す</value></data>
+  <data name="preview.annotation_clear" xml:space="preserve"><value>消去</value></data>
+  <data name="preview.annotation_red" xml:space="preserve"><value>赤</value></data>
+  <data name="preview.annotation_yellow" xml:space="preserve"><value>黄</value></data>
+  <data name="preview.annotation_blue" xml:space="preserve"><value>青</value></data>
+  <data name="preview.annotation_black" xml:space="preserve"><value>黒</value></data>
+  <data name="preview.annotation_green" xml:space="preserve"><value>緑</value></data>
+  <data name="preview.annotation_width" xml:space="preserve"><value>線の太さ</value></data>
+  <data name="preview.annotation_export_error_title" xml:space="preserve"><value>注釈を書き出せません</value></data>
+  <data name="preview.annotation_export_error_message" xml:space="preserve"><value>注釈付き画像を作成できませんでした。もう一度お試しください。</value></data>
+  <data name="preview.annotation_preparing" xml:space="preserve"><value>画像を準備中…</value></data>
+  <data name="preview.title" xml:space="preserve"><value>画像プレビュー</value></data>
+  <data name="preview.text_open" xml:space="preserve"><value>テキストをプレビュー</value></data>
+  <data name="preview.text_title" xml:space="preserve"><value>テキストプレビュー</value></data>
+  <data name="preview.url_title" xml:space="preserve"><value>URLプレビュー</value></data>
+  <data name="preview.email_title" xml:space="preserve"><value>メールプレビュー</value></data>
+  <data name="preview.code_title" xml:space="preserve"><value>コードプレビュー</value></data>
+  <data name="preview.file_system_title" xml:space="preserve"><value>項目の詳細</value></data>
+  <data name="preview.file_system_show_image" xml:space="preserve"><value>画像をプレビュー</value></data>
+  <data name="preview.file_system_show_info" xml:space="preserve"><value>ファイル情報</value></data>
+  <data name="preview.file_system_loading" xml:space="preserve"><value>ファイル情報を読み込み中…</value></data>
+  <data name="preview.file_system_not_found" xml:space="preserve"><value>一部の項目が見つかりません</value></data>
+  <data name="preview.file_system_not_found_message" xml:space="preserve"><value>これらのパスは移動または削除された可能性があります。</value></data>
+  <data name="preview.file_system_section_info" xml:space="preserve"><value>詳細</value></data>
+  <data name="preview.file_system_section_contents" xml:space="preserve"><value>内容</value></data>
+  <data name="preview.file_system_empty_directory" xml:space="preserve"><value>このディレクトリは空です。</value></data>
+  <data name="preview.file_system_label_name" xml:space="preserve"><value>名前</value></data>
+  <data name="preview.file_system_label_type" xml:space="preserve"><value>種類</value></data>
+  <data name="preview.file_system_label_extension" xml:space="preserve"><value>拡張子</value></data>
+  <data name="preview.file_system_label_size" xml:space="preserve"><value>サイズ</value></data>
+  <data name="preview.file_system_label_modified" xml:space="preserve"><value>更新日時</value></data>
+  <data name="preview.file_system_label_path" xml:space="preserve"><value>パス</value></data>
+  <data name="preview.file_system_label_items" xml:space="preserve"><value>項目数</value></data>
+  <data name="preview.file_system_label_files" xml:space="preserve"><value>ファイル数</value></data>
+  <data name="preview.file_system_label_folders" xml:space="preserve"><value>フォルダ数</value></data>
+  <data name="preview.file_system_type_file" xml:space="preserve"><value>ファイル</value></data>
+  <data name="preview.file_system_type_folder" xml:space="preserve"><value>ディレクトリ</value></data>
+  <data name="preview.file_system_type_mixed" xml:space="preserve"><value>混在</value></data>
+  <data name="preview.file_system_multiple_locations" xml:space="preserve"><value>複数の場所</value></data>
+  <data name="preview.file_system_unavailable" xml:space="preserve"><value>利用不可</value></data>
+  <data name="preview.file_system_item_count" xml:space="preserve"><value>%d 項目</value></data>
+  <data name="preview.file_system_file_count" xml:space="preserve"><value>%d ファイル</value></data>
+  <data name="preview.file_system_folder_count" xml:space="preserve"><value>%d フォルダ</value></data>
+  <data name="preview.unavailable" xml:space="preserve"><value>プレビューできません</value></data>
+  <data name="preview.fit" xml:space="preserve"><value>全体表示</value></data>
+  <data name="preview.unavailable_message" xml:space="preserve"><value>SkyPaste はこの画像のプレビューを読み込めませんでした。</value></data>
+  <data name="preview.source_label" xml:space="preserve"><value>ソース:</value></data>
+  <data name="preview.source_app" xml:space="preserve"><value>%@</value></data>
+  <data name="preview.source_device" xml:space="preserve"><value>%@</value></data>
+  <data name="preview.source_local" xml:space="preserve"><value>このMac</value></data>
+  <data name="open.missing_file_title" xml:space="preserve"><value>ファイルが見つかりません</value></data>
+  <data name="open.missing_folder_title" xml:space="preserve"><value>フォルダが見つかりません</value></data>
+  <data name="open.missing_item_message" xml:space="preserve"><value>SkyPaste はこのパスを開けませんでした: %@</value></data>
+  <data name="drag.missing_file_title" xml:space="preserve"><value>ファイルが見つかりません</value></data>
+  <data name="drag.missing_folder_title" xml:space="preserve"><value>フォルダが見つかりません</value></data>
+  <data name="drag.missing_item_message" xml:space="preserve"><value>このパスは存在しないためドラッグできません: %@</value></data>
+  <data name="drag.row_hint" xml:space="preserve"><value>ドラッグして保存</value></data>
+  <data name="save_as.title" xml:space="preserve"><value>別名で保存</value></data>
+  <data name="save_as.action" xml:space="preserve"><value>保存</value></data>
+  <data name="save_as.choose_folder" xml:space="preserve"><value>選択</value></data>
+  <data name="save_as.error_title" xml:space="preserve"><value>保存に失敗しました</value></data>
+  <data name="notice.database_recovered" xml:space="preserve"><value>ローカル履歴データベースを自動復旧し、破損ファイルはバックアップされました。</value></data>
+  <data name="settings.recommended_app" xml:space="preserve"><value>おすすめアプリ</value></data>
+  <data name="yourtools.title" xml:space="preserve"><value>Xtools</value></data>
+  <data name="yourtools.subtitle" xml:space="preserve"><value>音声・動画、ファイル、翻訳をまとめて扱えるAI処理ツールアプリ。</value></data>
+  <data name="yourtools.open" xml:space="preserve"><value>App Storeで開く</value></data>
+  <data name="wenpai.title" xml:space="preserve"><value>WenPai</value></data>
+  <data name="wenpai.subtitle" xml:space="preserve"><value>WeChat記事のレイアウトツール · テキストをワンクリックで美しく</value></data>
+  <data name="wenpai.open" xml:space="preserve"><value>サイトを開く</value></data>
+  <data name="stats.title" xml:space="preserve"><value>クリップボード統計</value></data>
+  <data name="stats.subtitle" xml:space="preserve"><value>コピーの傾向をひと目で確認。</value></data>
+  <data name="stats.period.today" xml:space="preserve"><value>今日</value></data>
+  <data name="stats.period.week" xml:space="preserve"><value>過去7日</value></data>
+  <data name="stats.period.month" xml:space="preserve"><value>過去30日</value></data>
+  <data name="stats.period.halfYear" xml:space="preserve"><value>過去6か月</value></data>
+  <data name="stats.period.year" xml:space="preserve"><value>過去1年</value></data>
+  <data name="stats.total" xml:space="preserve"><value>記録したコピー</value></data>
+  <data name="stats.top_category" xml:space="preserve"><value>最多の種類</value></data>
+  <data name="stats.no_data" xml:space="preserve"><value>データがありません</value></data>
+  <data name="stats.loading" xml:space="preserve"><value>統計を読み込み中…</value></data>
+  <data name="stats.load_failed" xml:space="preserve"><value>統計を読み込めませんでした。</value></data>
+  <data name="stats.trend" xml:space="preserve"><value>コピーの推移</value></data>
+  <data name="stats.breakdown" xml:space="preserve"><value>種類別</value></data>
+  <data name="stats.note" xml:space="preserve"><value>履歴を削除しても記録済みの統計は消えません。連続する同一内容はまとめられる場合があり、画像ファイルはファイルとして集計します。過去の削除済み記録は復元できません。</value></data>
+  <data name="stats.apps.title" xml:space="preserve"><value>コピー元アプリ別</value></data>
+  <data name="stats.apps.empty" xml:space="preserve"><value>コピー元アプリのデータはまだありません</value></data>
+  <data name="stats.apps.note" xml:space="preserve"><value>識別可能な Mac アプリのみ対象です。割合はアプリを特定できた件数を基準にし、過去に削除された履歴は復元できません。</value></data>
+  <data name="settings.lan_sync_device_name" xml:space="preserve"><value>デバイス名</value></data>
+  <data name="settings.lan_sync_port" xml:space="preserve"><value>ポート</value></data>
+  <data name="settings.lan_sync_token" xml:space="preserve"><value>ペアリングトークン</value></data>
+  <data name="settings.lan_sync_token_hint" xml:space="preserve"><value>スマホから送信する場合は X-SkyPaste-Token ヘッダーを付けてください。手順は README を参照。</value></data>
+  <data name="sync.received_from" xml:space="preserve"><value>%@ から受信しました</value></data>
+  <data name="about.title" xml:space="preserve"><value>SkyPaste について</value></data>
+  <data name="about.subtitle" xml:space="preserve"><value>MIT ライセンス · Windows 10/11 向け</value></data>
+  <data name="about.open_license" xml:space="preserve"><value>ライセンスを表示</value></data>
+</root>

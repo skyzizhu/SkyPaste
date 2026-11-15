@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="clipboard.empty_text" xml:space="preserve"><value>(Texte vide)</value></data>
+  <data name="clipboard.image_fallback_name" xml:space="preserve"><value>Image</value></data>
+  <data name="clipboard.file_single" xml:space="preserve"><value>Fichier : %@</value></data>
+  <data name="clipboard.folder_single" xml:space="preserve"><value>Dossier : %@</value></data>
+  <data name="clipboard.file_count" xml:space="preserve"><value>%d fichiers</value></data>
+  <data name="clipboard.folder_count" xml:space="preserve"><value>%d dossiers</value></data>
+  <data name="clipboard.subtitle.text" xml:space="preserve"><value>Texte • %d caractères</value></data>
+  <data name="clipboard.subtitle.image" xml:space="preserve"><value>Image • %d KB</value></data>
+  <data name="clipboard.subtitle.image_file" xml:space="preserve"><value>Fichier image</value></data>
+  <data name="clipboard.subtitle.image_file_format" xml:space="preserve"><value>Fichier image • %@</value></data>
+  <data name="clipboard.subtitle.image_file_count" xml:space="preserve"><value>%d fichiers image</value></data>
+  <data name="clipboard.subtitle.file" xml:space="preserve"><value>Fichier</value></data>
+  <data name="clipboard.subtitle.file_path" xml:space="preserve"><value>Fichier • %@</value></data>
+  <data name="clipboard.subtitle.folder" xml:space="preserve"><value>Dossier</value></data>
+  <data name="clipboard.subtitle.folder_path" xml:space="preserve"><value>Dossier • %@</value></data>
+  <data name="clipboard.subtitle.file_count" xml:space="preserve"><value>%d fichiers</value></data>
+  <data name="clipboard.subtitle.folder_count" xml:space="preserve"><value>%d dossiers</value></data>
+  <data name="clipboard.source.device" xml:space="preserve"><value>Appareil</value></data>
+  <data name="clipboard.source.icloud" xml:space="preserve"><value>Synchronisation iCloud</value></data>
+  <data name="section.favorites" xml:space="preserve"><value>Favoris</value></data>
+  <data name="section.today" xml:space="preserve"><value>Aujourd'hui</value></data>
+  <data name="section.yesterday" xml:space="preserve"><value>Hier</value></data>
+  <data name="settings.appearance" xml:space="preserve"><value>Thème</value></data>
+  <data name="settings.general" xml:space="preserve"><value>Réglages généraux</value></data>
+  <data name="settings.library" xml:space="preserve"><value>Bibliothèque</value></data>
+  <data name="settings.support" xml:space="preserve"><value>Support et recommandations</value></data>
+  <data name="settings.appearance_hint" xml:space="preserve"><value>Suit le système par défaut, avec la possibilité de forcer le mode clair ou sombre.</value></data>
+  <data name="settings.hotkey" xml:space="preserve"><value>Raccourci</value></data>
+  <data name="settings.language" xml:space="preserve"><value>Langue</value></data>
+  <data name="settings.language_hint" xml:space="preserve"><value>Choisissez Système pour suivre macOS, ou définissez une langue propre à l'app.</value></data>
+  <data name="settings.key" xml:space="preserve"><value>Touche</value></data>
+  <data name="settings.ctrl" xml:space="preserve"><value>Command</value></data>
+  <data name="settings.shift" xml:space="preserve"><value>Shift</value></data>
+  <data name="settings.alt" xml:space="preserve"><value>Option</value></data>
+  <data name="settings.control" xml:space="preserve"><value>Control</value></data>
+  <data name="settings.current" xml:space="preserve"><value>Actuel : %@</value></data>
+  <data name="settings.version_format" xml:space="preserve"><value>Version %@ (%@)</value></data>
+  <data name="settings.history" xml:space="preserve"><value>Historique</value></data>
+  <data name="settings.max_records" xml:space="preserve"><value>Nombre max : %d</value></data>
+  <data name="settings.history_hint" xml:space="preserve"><value>La nouvelle limite s'applique immédiatement et réduit l'historique local si nécessaire.</value></data>
+  <data name="settings.startup" xml:space="preserve"><value>Démarrage</value></data>
+  <data name="settings.launch_at_login" xml:space="preserve"><value>Lancer à la connexion</value></data>
+  <data name="settings.launch_at_login_hint" xml:space="preserve"><value>Se lance automatiquement à l'ouverture de session Windows.</value></data>
+  <data name="settings.clipboard" xml:space="preserve"><value>Presse-papiers</value></data>
+  <data name="settings.sync" xml:space="preserve"><value>Synchronisation et confidentialité</value></data>
+  <data name="settings.lan_sync" xml:space="preserve"><value>Recevoir le Presse-papiers universel</value></data>
+  <data name="settings.lan_sync_hint" xml:space="preserve"><value>Expose un petit service local pour que votre téléphone ou d'autres PC puissent envoyer du contenu vers SkyPaste.</value></data>
+  <data name="settings.lan_sync_upload" xml:space="preserve"><value>Envoyer le texte local</value></data>
+  <data name="settings.lan_sync_receive" xml:space="preserve"><value>Recevoir le contenu iCloud</value></data>
+  <data name="settings.lan_sync_hint2" xml:space="preserve"><value>Lorsque cette option est activée, SkyPaste synchronise les textes copiés sur ce Mac vers votre base iCloud privée et récupère aussi les éléments SkyPaste enregistrés depuis vos autres appareils.</value></data>
+  <data name="settings.lan_sync_rules_hint" xml:space="preserve"><value>Contrôlez l'envoi du texte copié sur ce PC, la réception depuis des appareils, ou les deux.</value></data>
+  <data name="settings.lan_sync_status_disabled" xml:space="preserve"><value>La synchronisation LAN est désactivée.</value></data>
+  <data name="settings.lan_sync_status_unavailable" xml:space="preserve"><value>Impossible de démarrer la synchronisation LAN. Vérifiez le port.</value></data>
+  <data name="settings.lan_sync_status_syncing" xml:space="preserve"><value>Synchronisation via le LAN…</value></data>
+  <data name="settings.lan_sync_status_synced" xml:space="preserve"><value>La synchronisation LAN est activée.</value></data>
+  <data name="settings.lan_sync_status_error" xml:space="preserve"><value>Echec de la synchronisation : %@</value></data>
+  <data name="settings.auto_paste" xml:space="preserve"><value>Copie automatique à la sélection</value></data>
+  <data name="settings.auto_paste_hint" xml:space="preserve"><value>Lorsque cette option est activée, cliquer sur un élément de la liste le copie automatiquement dans le presse-papiers.</value></data>
+  <data name="settings.privacy_filter" xml:space="preserve"><value>Filtrage du contenu sensible</value></data>
+  <data name="settings.privacy_filter_hint" xml:space="preserve"><value>Lorsque cette option est activée, SkyPaste essaie d’ignorer les mots de passe, codes de vérification, numéros de carte bancaire et textes sensibles de type clé / jeton.</value></data>
+  <data name="settings.ignore_apps" xml:space="preserve"><value>Applications ignorées</value></data>
+  <data name="settings.ignore_apps_hint" xml:space="preserve"><value>Saisissez des noms d’application ou des bundle ID, séparés par des virgules ou des retours à la ligne.</value></data>
+  <data name="settings.ignore_apps_example" xml:space="preserve"><value>Exemple : Finder, Terminal, com.1password.1password.</value></data>
+  <data name="settings.ignore_apps_suggestions" xml:space="preserve"><value>Récent</value></data>
+  <data name="settings.rate_app" xml:space="preserve"><value>Noter SkyPaste</value></data>
+  <data name="settings.rate_app_subtitle" xml:space="preserve"><value>Si vous aimez SkyPaste, n’hésitez pas à le noter et à laisser un avis sur l’App Store.</value></data>
+  <data name="settings.rate_app_action" xml:space="preserve"><value>Noter sur l’App Store</value></data>
+  <data name="app.title" xml:space="preserve"><value>SkyPaste</value></data>
+  <data name="app.debug_title" xml:space="preserve"><value>Débogage SkyPaste</value></data>
+  <data name="app.menu_title" xml:space="preserve"><value>SkyPaste</value></data>
+  <data name="menu.clipboard" xml:space="preserve"><value>Presse-papiers</value></data>
+  <data name="menu.clipboard_manager" xml:space="preserve"><value>Clipboard Manager</value></data>
+  <data name="menu.double_click_to_copy" xml:space="preserve"><value>Double-cliquez pour copier</value></data>
+  <data name="menu.right_click_to_copy" xml:space="preserve"><value>Clipboard Manager</value></data>
+  <data name="menu.command_c_copy" xml:space="preserve"><value>copie ctrl+c</value></data>
+  <data name="menu.copy" xml:space="preserve"><value>Copier</value></data>
+  <data name="menu.open_item" xml:space="preserve"><value>Ouvrir</value></data>
+  <data name="menu.open_file" xml:space="preserve"><value>Ouvrir le fichier</value></data>
+  <data name="menu.open_folder" xml:space="preserve"><value>Ouvrir le dossier</value></data>
+  <data name="menu.open_containing_folder" xml:space="preserve"><value>Ouvrir le dossier parent</value></data>
+  <data name="menu.reveal_in_explorer" xml:space="preserve"><value>Afficher dans l'Explorateur</value></data>
+  <data name="menu.copy_path" xml:space="preserve"><value>Copier le chemin</value></data>
+  <data name="menu.copy_link" xml:space="preserve"><value>Copier le lien</value></data>
+  <data name="menu.share" xml:space="preserve"><value>Partager</value></data>
+  <data name="menu.translate" xml:space="preserve"><value>Traduire</value></data>
+  <data name="menu.save_as" xml:space="preserve"><value>Enregistrer sous...</value></data>
+  <data name="menu.open_in_browser" xml:space="preserve"><value>Ouvrir dans le navigateur</value></data>
+  <data name="menu.open_email" xml:space="preserve"><value>Envoyer un e-mail</value></data>
+  <data name="menu.favorite" xml:space="preserve"><value>Ajouter aux favoris</value></data>
+  <data name="menu.unfavorite" xml:space="preserve"><value>Retirer des favoris</value></data>
+  <data name="menu.copy_selected" xml:space="preserve"><value>Copier la sélection</value></data>
+  <data name="menu.open_panel" xml:space="preserve"><value>Ouvrir le panneau</value></data>
+  <data name="menu.debug" xml:space="preserve"><value>Débogage</value></data>
+  <data name="menu.search" xml:space="preserve"><value>Rechercher</value></data>
+  <data name="menu.preferences" xml:space="preserve"><value>Préférences</value></data>
+  <data name="menu.quit" xml:space="preserve"><value>Quitter</value></data>
+  <data name="menu.copy_success" xml:space="preserve"><value>Copié</value></data>
+  <data name="menu.delete_day_title" xml:space="preserve"><value>Supprimer tous les éléments de ce jour ?</value></data>
+  <data name="menu.delete" xml:space="preserve"><value>Supprimer</value></data>
+  <data name="menu.ok" xml:space="preserve"><value>OK</value></data>
+  <data name="menu.cancel" xml:space="preserve"><value>Annuler</value></data>
+  <data name="menu.delete_day_message" xml:space="preserve"><value>Cela supprimera tout l'historique du presse-papiers pour %@.</value></data>
+  <data name="panel.search_placeholder" xml:space="preserve"><value>Rechercher dans le presse-papiers</value></data>
+  <data name="panel.search_empty_title" xml:space="preserve"><value>Aucun element correspondant</value></data>
+  <data name="panel.search_empty_message" xml:space="preserve"><value>Essayez un autre mot-cle, ou effacez la recherche pour afficher tout l'historique.</value></data>
+  <data name="panel.search_empty_message_scoped" xml:space="preserve"><value>Aucun élément correspondant dans %1$@. Essayez un autre mot-clé ou changez de catégorie.</value></data>
+  <data name="panel.empty_title" xml:space="preserve"><value>Aucun historique du presse-papiers</value></data>
+  <data name="panel.empty_message" xml:space="preserve"><value>Copiez du texte, des images ou des fichiers et ils apparaitront ici.</value></data>
+  <data name="panel.empty_message_scoped" xml:space="preserve"><value>Il n’y a encore aucun élément dans %1$@. Copiez du contenu de cette catégorie et il apparaîtra ici.</value></data>
+  <data name="panel.clear_search" xml:space="preserve"><value>Effacer la recherche</value></data>
+  <data name="panel.shortcut_hint" xml:space="preserve"><value>Entrée : coller  ·  ↑/↓ : naviguer  ·  Échap : fermer  ·  Ctrl+1...9 : copie rapide</value></data>
+  <data name="panel.shortcut_hint_copy_only" xml:space="preserve"><value>Entrée : copier  ·  ↑/↓ : naviguer  ·  Échap : fermer  ·  Ctrl+1...9 : copie rapide</value></data>
+  <data name="panel.paste_selected" xml:space="preserve"><value>Coller la sélection</value></data>
+  <data name="panel.batch_select" xml:space="preserve"><value>Sélection multiple</value></data>
+  <data name="panel.batch_done" xml:space="preserve"><value>Terminer</value></data>
+  <data name="panel.batch_select_all" xml:space="preserve"><value>Tout sélectionner</value></data>
+  <data name="panel.batch_clear_selection" xml:space="preserve"><value>Effacer la sélection</value></data>
+  <data name="panel.batch_favorite_selected" xml:space="preserve"><value>Mettre en favori</value></data>
+  <data name="panel.batch_unfavorite_selected" xml:space="preserve"><value>Retirer des favoris</value></data>
+  <data name="panel.batch_delete_selected" xml:space="preserve"><value>Supprimer la sélection</value></data>
+  <data name="panel.batch_favorite_success" xml:space="preserve"><value>%d éléments ajoutés aux favoris</value></data>
+  <data name="panel.batch_unfavorite_success" xml:space="preserve"><value>%d éléments retirés des favoris</value></data>
+  <data name="panel.batch_delete_success" xml:space="preserve"><value>%d éléments supprimés</value></data>
+  <data name="filter.all" xml:space="preserve"><value>Tout</value></data>
+  <data name="filter.text" xml:space="preserve"><value>Texte</value></data>
+  <data name="filter.image" xml:space="preserve"><value>Image</value></data>
+  <data name="filter.file" xml:space="preserve"><value>Fichiers</value></data>
+  <data name="filter.folder" xml:space="preserve"><value>Dossiers</value></data>
+  <data name="filter.code" xml:space="preserve"><value>Code</value></data>
+  <data name="filter.source_all" xml:space="preserve"><value>Toutes les apps</value></data>
+  <data name="filter.source_device" xml:space="preserve"><value>Contenu du téléphone</value></data>
+  <data name="filter.source_label" xml:space="preserve"><value>Apps</value></data>
+  <data name="filter.favorites" xml:space="preserve"><value>Favoris</value></data>
+  <data name="filter.url" xml:space="preserve"><value>URL</value></data>
+  <data name="filter.email" xml:space="preserve"><value>E-mail</value></data>
+  <data name="filter.move_first" xml:space="preserve"><value>Déplacer au début</value></data>
+  <data name="filter.move_last" xml:space="preserve"><value>Déplacer à la fin</value></data>
+  <data name="filter.reset_order" xml:space="preserve"><value>Rétablir l'ordre par défaut</value></data>
+  <data name="debug.no_data" xml:space="preserve"><value>Aucune donnée</value></data>
+  <data name="debug.none" xml:space="preserve"><value>aucun</value></data>
+  <data name="debug.text" xml:space="preserve"><value>texte</value></data>
+  <data name="debug.image" xml:space="preserve"><value>image</value></data>
+  <data name="debug.file_urls" xml:space="preserve"><value>fileURLs</value></data>
+  <data name="debug.name_prefix" xml:space="preserve"><value>nom : %@ • </value></data>
+  <data name="debug.title" xml:space="preserve"><value>Débogage du presse-papiers</value></data>
+  <data name="debug.refresh" xml:space="preserve"><value>Actualiser</value></data>
+  <data name="debug.change_count" xml:space="preserve"><value>changeCount : %d</value></data>
+  <data name="debug.decoded" xml:space="preserve"><value>decoded : %@</value></data>
+  <data name="debug.raw_types" xml:space="preserve"><value>types bruts</value></data>
+  <data name="debug.preview" xml:space="preserve"><value>aperçu</value></data>
+  <data name="debug.empty" xml:space="preserve"><value>(vide)</value></data>
+  <data name="hotkey.ctrl" xml:space="preserve"><value>Cmd</value></data>
+  <data name="hotkey.shift" xml:space="preserve"><value>Shift</value></data>
+  <data name="hotkey.alt" xml:space="preserve"><value>Option</value></data>
+  <data name="hotkey.control" xml:space="preserve"><value>Control</value></data>
+  <data name="hotkey.keycode" xml:space="preserve"><value>Code touche %u</value></data>
+  <data name="appearance.system" xml:space="preserve"><value>Suivre le système</value></data>
+  <data name="appearance.light" xml:space="preserve"><value>Mode clair</value></data>
+  <data name="appearance.dark" xml:space="preserve"><value>Mode sombre</value></data>
+  <data name="language.system" xml:space="preserve"><value>Système</value></data>
+  <data name="language.en" xml:space="preserve"><value>Anglais</value></data>
+  <data name="language.zh-Hans" xml:space="preserve"><value>Chinois simplifié</value></data>
+  <data name="language.zh-Hant" xml:space="preserve"><value>Chinois traditionnel</value></data>
+  <data name="language.ja" xml:space="preserve"><value>Japonais</value></data>
+  <data name="language.ko" xml:space="preserve"><value>Coréen</value></data>
+  <data name="language.fr" xml:space="preserve"><value>Français</value></data>
+  <data name="preview.open" xml:space="preserve"><value>Aperçu de l’image</value></data>
+  <data name="preview.open_image" xml:space="preserve"><value>Ouvrir l’image</value></data>
+  <data name="preview.drag_hint" xml:space="preserve"><value>Glisser l’image</value></data>
+  <data name="preview.drag_zoomed_hint" xml:space="preserve"><value>Option + glisser l’image</value></data>
+  <data name="preview.annotate" xml:space="preserve"><value>Annoter</value></data>
+  <data name="preview.annotation_done" xml:space="preserve"><value>Terminer</value></data>
+  <data name="preview.annotation_hint" xml:space="preserve"><value>Tracer sur l’image</value></data>
+  <data name="preview.annotation_drag_hint" xml:space="preserve"><value>Glisser pour dessiner</value></data>
+  <data name="preview.annotation_undo" xml:space="preserve"><value>Annuler</value></data>
+  <data name="preview.annotation_clear" xml:space="preserve"><value>Effacer</value></data>
+  <data name="preview.annotation_red" xml:space="preserve"><value>Rouge</value></data>
+  <data name="preview.annotation_yellow" xml:space="preserve"><value>Jaune</value></data>
+  <data name="preview.annotation_blue" xml:space="preserve"><value>Bleu</value></data>
+  <data name="preview.annotation_black" xml:space="preserve"><value>Noir</value></data>
+  <data name="preview.annotation_green" xml:space="preserve"><value>Vert</value></data>
+  <data name="preview.annotation_width" xml:space="preserve"><value>Épaisseur du trait</value></data>
+  <data name="preview.annotation_export_error_title" xml:space="preserve"><value>Exportation impossible</value></data>
+  <data name="preview.annotation_export_error_message" xml:space="preserve"><value>Impossible de créer l’image annotée. Réessayez.</value></data>
+  <data name="preview.annotation_preparing" xml:space="preserve"><value>Préparation de l’image…</value></data>
+  <data name="preview.title" xml:space="preserve"><value>Aperçu de l’image</value></data>
+  <data name="preview.text_open" xml:space="preserve"><value>Aperçu du texte</value></data>
+  <data name="preview.text_title" xml:space="preserve"><value>Aperçu du texte</value></data>
+  <data name="preview.url_title" xml:space="preserve"><value>Aperçu de l’URL</value></data>
+  <data name="preview.email_title" xml:space="preserve"><value>Aperçu de l’e-mail</value></data>
+  <data name="preview.code_title" xml:space="preserve"><value>Aperçu du code</value></data>
+  <data name="preview.file_system_title" xml:space="preserve"><value>Détails de l’élément</value></data>
+  <data name="preview.file_system_show_image" xml:space="preserve"><value>Aperçu de l’image</value></data>
+  <data name="preview.file_system_show_info" xml:space="preserve"><value>Détails du fichier</value></data>
+  <data name="preview.file_system_loading" xml:space="preserve"><value>Chargement des détails du fichier…</value></data>
+  <data name="preview.file_system_not_found" xml:space="preserve"><value>Certains éléments sont introuvables</value></data>
+  <data name="preview.file_system_not_found_message" xml:space="preserve"><value>Ces chemins n’existent plus ou ont été déplacés.</value></data>
+  <data name="preview.file_system_section_info" xml:space="preserve"><value>Détails</value></data>
+  <data name="preview.file_system_section_contents" xml:space="preserve"><value>Contenu</value></data>
+  <data name="preview.file_system_empty_directory" xml:space="preserve"><value>Ce dossier est vide.</value></data>
+  <data name="preview.file_system_label_name" xml:space="preserve"><value>Nom</value></data>
+  <data name="preview.file_system_label_type" xml:space="preserve"><value>Type</value></data>
+  <data name="preview.file_system_label_extension" xml:space="preserve"><value>Extension</value></data>
+  <data name="preview.file_system_label_size" xml:space="preserve"><value>Taille</value></data>
+  <data name="preview.file_system_label_modified" xml:space="preserve"><value>Modifié le</value></data>
+  <data name="preview.file_system_label_path" xml:space="preserve"><value>Chemin</value></data>
+  <data name="preview.file_system_label_items" xml:space="preserve"><value>Éléments</value></data>
+  <data name="preview.file_system_label_files" xml:space="preserve"><value>Fichiers</value></data>
+  <data name="preview.file_system_label_folders" xml:space="preserve"><value>Dossiers</value></data>
+  <data name="preview.file_system_type_file" xml:space="preserve"><value>Fichier</value></data>
+  <data name="preview.file_system_type_folder" xml:space="preserve"><value>Dossier</value></data>
+  <data name="preview.file_system_type_mixed" xml:space="preserve"><value>Mixte</value></data>
+  <data name="preview.file_system_multiple_locations" xml:space="preserve"><value>Plusieurs emplacements</value></data>
+  <data name="preview.file_system_unavailable" xml:space="preserve"><value>Indisponible</value></data>
+  <data name="preview.file_system_item_count" xml:space="preserve"><value>%d éléments</value></data>
+  <data name="preview.file_system_file_count" xml:space="preserve"><value>%d fichiers</value></data>
+  <data name="preview.file_system_folder_count" xml:space="preserve"><value>%d dossiers</value></data>
+  <data name="preview.unavailable" xml:space="preserve"><value>Aperçu indisponible</value></data>
+  <data name="preview.fit" xml:space="preserve"><value>Ajuster</value></data>
+  <data name="preview.unavailable_message" xml:space="preserve"><value>SkyPaste n’a pas pu charger l’aperçu de cette image.</value></data>
+  <data name="preview.source_label" xml:space="preserve"><value>Source :</value></data>
+  <data name="preview.source_app" xml:space="preserve"><value>%@</value></data>
+  <data name="preview.source_device" xml:space="preserve"><value>%@</value></data>
+  <data name="preview.source_local" xml:space="preserve"><value>Ce Mac</value></data>
+  <data name="open.missing_file_title" xml:space="preserve"><value>Fichier introuvable</value></data>
+  <data name="open.missing_folder_title" xml:space="preserve"><value>Dossier introuvable</value></data>
+  <data name="open.missing_item_message" xml:space="preserve"><value>SkyPaste n’a pas pu ouvrir ce chemin : %@</value></data>
+  <data name="drag.missing_file_title" xml:space="preserve"><value>Fichier introuvable</value></data>
+  <data name="drag.missing_folder_title" xml:space="preserve"><value>Dossier introuvable</value></data>
+  <data name="drag.missing_item_message" xml:space="preserve"><value>SkyPaste ne peut pas faire glisser ce chemin car il n’existe plus : %@</value></data>
+  <data name="drag.row_hint" xml:space="preserve"><value>Glisser pour enregistrer</value></data>
+  <data name="save_as.title" xml:space="preserve"><value>Enregistrer sous</value></data>
+  <data name="save_as.action" xml:space="preserve"><value>Enregistrer</value></data>
+  <data name="save_as.choose_folder" xml:space="preserve"><value>Choisir</value></data>
+  <data name="save_as.error_title" xml:space="preserve"><value>Échec de l’enregistrement</value></data>
+  <data name="notice.database_recovered" xml:space="preserve"><value>La base d’historique locale a été réparée automatiquement et les fichiers endommagés ont été sauvegardés.</value></data>
+  <data name="settings.recommended_app" xml:space="preserve"><value>Application recommandée</value></data>
+  <data name="yourtools.title" xml:space="preserve"><value>Xtools</value></data>
+  <data name="yourtools.subtitle" xml:space="preserve"><value>Application IA tout-en-un pour traiter l’audio, la vidéo, les fichiers et la traduction.</value></data>
+  <data name="yourtools.open" xml:space="preserve"><value>Ouvrir dans l’App Store</value></data>
+  <data name="wenpai.title" xml:space="preserve"><value>WenPai</value></data>
+  <data name="wenpai.subtitle" xml:space="preserve"><value>Mise en forme d’articles WeChat · Embellissez le texte en un clic</value></data>
+  <data name="wenpai.open" xml:space="preserve"><value>Visiter le site</value></data>
+  <data name="stats.title" xml:space="preserve"><value>Statistiques du presse-papiers</value></data>
+  <data name="stats.subtitle" xml:space="preserve"><value>Visualisez vos habitudes de copie.</value></data>
+  <data name="stats.period.today" xml:space="preserve"><value>Aujourd'hui</value></data>
+  <data name="stats.period.week" xml:space="preserve"><value>7 jours</value></data>
+  <data name="stats.period.month" xml:space="preserve"><value>30 jours</value></data>
+  <data name="stats.period.halfYear" xml:space="preserve"><value>6 mois</value></data>
+  <data name="stats.period.year" xml:space="preserve"><value>1 an</value></data>
+  <data name="stats.total" xml:space="preserve"><value>Copies enregistrées</value></data>
+  <data name="stats.top_category" xml:space="preserve"><value>Type principal</value></data>
+  <data name="stats.no_data" xml:space="preserve"><value>Aucune donnée</value></data>
+  <data name="stats.loading" xml:space="preserve"><value>Chargement des statistiques…</value></data>
+  <data name="stats.load_failed" xml:space="preserve"><value>Impossible de charger les statistiques.</value></data>
+  <data name="stats.trend" xml:space="preserve"><value>Activité dans le temps</value></data>
+  <data name="stats.breakdown" xml:space="preserve"><value>Par type</value></data>
+  <data name="stats.note" xml:space="preserve"><value>Supprimer l'historique n'efface pas les statistiques. Les doublons consécutifs peuvent fusionner et les images copiées comme fichiers comptent comme fichiers. Les anciennes entrées supprimées ne peuvent pas être récupérées.</value></data>
+  <data name="stats.apps.title" xml:space="preserve"><value>Par application source</value></data>
+  <data name="stats.apps.empty" xml:space="preserve"><value>Aucune donnée d'application source</value></data>
+  <data name="stats.apps.note" xml:space="preserve"><value>Seules les apps Mac identifiables sont incluses. Les pourcentages portent sur les copies attribuées à une app ; l'historique déjà supprimé est irrécupérable.</value></data>
+  <data name="settings.lan_sync_device_name" xml:space="preserve"><value>Nom de l'appareil</value></data>
+  <data name="settings.lan_sync_port" xml:space="preserve"><value>Port</value></data>
+  <data name="settings.lan_sync_token" xml:space="preserve"><value>Jeton d'appairage</value></data>
+  <data name="settings.lan_sync_token_hint" xml:space="preserve"><value>Envoyez le presse-papiers depuis votre téléphone avec l'en-tête X-SkyPaste-Token. Voir le README pour les étapes.</value></data>
+  <data name="sync.received_from" xml:space="preserve"><value>Reçu de %@</value></data>
+  <data name="about.title" xml:space="preserve"><value>À propos de SkyPaste</value></data>
+  <data name="about.subtitle" xml:space="preserve"><value>Licence MIT · Conçu pour Windows 10 et 11</value></data>
+  <data name="about.open_license" xml:space="preserve"><value>Voir la licence</value></data>
+</root>

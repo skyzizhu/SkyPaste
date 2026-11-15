@@ -1,0 +1,103 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Color x:Key="AccentColor">#146BF0</Color>
+    <SolidColorBrush x:Key="AccentBrush" Color="#146BF0" />
+    <SolidColorBrush x:Key="AccentSoftBrush" Color="#29146BF0" />
+    <SolidColorBrush x:Key="AccentBorderBrush" Color="#52146BF0" />
+
+    <SolidColorBrush x:Key="Window.Background" Color="#1C1D21" />
+    <SolidColorBrush x:Key="Window.GradientTop" Color="#33146BF0" />
+    <SolidColorBrush x:Key="Window.GradientBottom" Color="#11222226" />
+    <SolidColorBrush x:Key="Card.Background" Color="#C21E1F24" />
+    <SolidColorBrush x:Key="Card.Border" Color="#1A000000" />
+    <SolidColorBrush x:Key="SectionCard.Background" Color="#FF26272D" />
+    <SolidColorBrush x:Key="Surface.Material" Color="#66303035" />
+    <SolidColorBrush x:Key="Divider" Color="#22FFFFFF" />
+
+    <SolidColorBrush x:Key="Text.Primary" Color="#F2F2F4" />
+    <SolidColorBrush x:Key="Text.Secondary" Color="#98989F" />
+    <SolidColorBrush x:Key="Text.OnAccent" Color="#FFFFFF" />
+
+    <SolidColorBrush x:Key="Chip.Unselected.Background" Color="#2E2F35" />
+    <SolidColorBrush x:Key="Chip.Unselected.Border" Color="#33FFFFFF" />
+    <SolidColorBrush x:Key="Chip.Selected.Background" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="Chip.Selected.Foreground" Color="#111111" />
+
+    <SolidColorBrush x:Key="Row.Hover" Color="#1AFFFFFF" />
+    <SolidColorBrush x:Key="Row.Selected.Background" Color="#38146BF0" />
+    <SolidColorBrush x:Key="Row.Selected.Border" Color="#52146BF0" />
+
+    <SolidColorBrush x:Key="SearchField.Background" Color="#99282930" />
+    <SolidColorBrush x:Key="SearchField.Border" Color="#33146BF0" />
+
+    <SolidColorBrush x:Key="Button.Secondary.Background" Color="#33FFFFFF" />
+    <SolidColorBrush x:Key="Button.Secondary.Border" Color="#33FFFFFF" />
+    <SolidColorBrush x:Key="Danger" Color="#FF5F55" />
+    <SolidColorBrush x:Key="Favorite" Color="#F5B825" />
+    <SolidColorBrush x:Key="Overlay.Scrim" Color="#4D000000" />
+    <SolidColorBrush x:Key="Dialog.Background" Color="#2A2B31" />
+
+    <SolidColorBrush x:Key="Toast.Background" Color="#E6F2F2F4" />
+    <SolidColorBrush x:Key="Toast.Foreground" Color="#111111" />
+
+    <SolidColorBrush x:Key="IconBlock.Background" Color="#24FFFFFF" />
+
+    <DropShadowEffect x:Key="Card.Shadow" BlurRadius="18" ShadowDepth="2" Opacity="0.35" Color="#000000" />
+
+    <Style x:Key="CapsuleButton" TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+        <Setter Property="Background" Value="{DynamicResource Button.Secondary.Background}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource Button.Secondary.Border}" />
+        <Setter Property="Foreground" Value="{DynamicResource Text.Primary}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Padding" Value="12,5" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" CornerRadius="14"
+                            Background="{TemplateBinding Background}"
+                            BorderBrush="{TemplateBinding BorderBrush}"
+                            BorderThickness="{TemplateBinding BorderThickness}"
+                            Padding="{TemplateBinding Padding}">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Opacity" Value="0.85" />
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="bd" Property="Opacity" Value="0.7" />
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="bd" Property="Opacity" Value="0.4" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
+    <Style x:Key="IconIconButton" TargetType="Button">
+        <Setter Property="Width" Value="24" />
+        <Setter Property="Height" Value="24" />
+        <Setter Property="Foreground" Value="{DynamicResource Text.Primary}" />
+        <Setter Property="Cursor" Value="Hand" />
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="Button">
+                    <Border x:Name="bd" CornerRadius="9" Background="Transparent">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource IconBlock.Background}" />
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+</ResourceDictionary>

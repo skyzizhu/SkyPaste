@@ -1,0 +1,42 @@
+name: windows-build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: SkyPasteWindows
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore SkyPaste.sln
+
+      - name: Build
+        run: dotnet build SkyPaste.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test tests/SkyPaste.Tests/SkyPaste.Tests.csproj -c Release --no-build --logger trx
+
+      - name: Publish (self-contained win-x64)
+        run: dotnet publish src/SkyPaste/SkyPaste.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SkyPaste-windows-${{ github.sha }}
+          path: SkyPasteWindows/publish/
+          if-no-files-found: error
