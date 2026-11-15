@@ -1,0 +1,49 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <LangVersion>latest</LangVersion>
+    <RootNamespace>SkyPaste</RootNamespace>
+    <AssemblyName>SkyPaste</AssemblyName>
+    <ApplicationIcon>Assets\icon.ico</ApplicationIcon>
+    <Version>0.1.0</Version>
+    <FileVersion>0.1.0</FileVersion>
+    <AssemblyVersion>0.1.0</AssemblyVersion>
+    <Product>SkyPaste</Product>
+    <Description>SkyPaste clipboard manager for Windows 10 and Windows 11.</Description>
+    <Company>SkyPaste</Company>
+    <SatelliteResourceLanguages>en;zh-Hans;zh-Hant;ja;ko;fr</SatelliteResourceLanguages>
+    <!-- Allow building this Windows-targeted project on macOS/Linux CI machines. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
+    <Deterministic>true</Deterministic>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- UseWindowsForms is only needed for NotifyIcon/FolderBrowserDialog; keep
+         its implicit usings out so WPF types stay unambiguous everywhere else. -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Text.Json" Version="8.0.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\SkyPaste.Core\SkyPaste.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="app.manifest">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+</Project>

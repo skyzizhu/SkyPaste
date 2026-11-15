@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="clipboard.empty_text" xml:space="preserve"><value>(빈 텍스트)</value></data>
+  <data name="clipboard.image_fallback_name" xml:space="preserve"><value>이미지</value></data>
+  <data name="clipboard.file_single" xml:space="preserve"><value>파일: %@</value></data>
+  <data name="clipboard.folder_single" xml:space="preserve"><value>폴더: %@</value></data>
+  <data name="clipboard.file_count" xml:space="preserve"><value>%d개 파일</value></data>
+  <data name="clipboard.folder_count" xml:space="preserve"><value>%d개 폴더</value></data>
+  <data name="clipboard.subtitle.text" xml:space="preserve"><value>텍스트 • %d자</value></data>
+  <data name="clipboard.subtitle.image" xml:space="preserve"><value>이미지 • %d KB</value></data>
+  <data name="clipboard.subtitle.image_file" xml:space="preserve"><value>이미지 파일</value></data>
+  <data name="clipboard.subtitle.image_file_format" xml:space="preserve"><value>이미지 파일 • %@</value></data>
+  <data name="clipboard.subtitle.image_file_count" xml:space="preserve"><value>%d개 이미지 파일</value></data>
+  <data name="clipboard.subtitle.file" xml:space="preserve"><value>파일</value></data>
+  <data name="clipboard.subtitle.file_path" xml:space="preserve"><value>파일 • %@</value></data>
+  <data name="clipboard.subtitle.folder" xml:space="preserve"><value>폴더</value></data>
+  <data name="clipboard.subtitle.folder_path" xml:space="preserve"><value>폴더 • %@</value></data>
+  <data name="clipboard.subtitle.file_count" xml:space="preserve"><value>%d개 파일</value></data>
+  <data name="clipboard.subtitle.folder_count" xml:space="preserve"><value>%d개 폴더</value></data>
+  <data name="clipboard.source.device" xml:space="preserve"><value>기기 동기화</value></data>
+  <data name="clipboard.source.icloud" xml:space="preserve"><value>iCloud 동기화</value></data>
+  <data name="section.favorites" xml:space="preserve"><value>즐겨찾기</value></data>
+  <data name="section.today" xml:space="preserve"><value>오늘</value></data>
+  <data name="section.yesterday" xml:space="preserve"><value>어제</value></data>
+  <data name="settings.appearance" xml:space="preserve"><value>테마</value></data>
+  <data name="settings.general" xml:space="preserve"><value>일반 설정</value></data>
+  <data name="settings.library" xml:space="preserve"><value>라이브러리</value></data>
+  <data name="settings.support" xml:space="preserve"><value>지원 및 추천</value></data>
+  <data name="settings.appearance_hint" xml:space="preserve"><value>기본값은 시스템 설정을 따르며, 필요하면 라이트 또는 다크 모드로 고정할 수 있습니다.</value></data>
+  <data name="settings.hotkey" xml:space="preserve"><value>단축키</value></data>
+  <data name="settings.language" xml:space="preserve"><value>언어</value></data>
+  <data name="settings.language_hint" xml:space="preserve"><value>시스템을 선택하면 macOS 언어를 따르고, 앱 전용 언어를 고를 수도 있습니다.</value></data>
+  <data name="settings.key" xml:space="preserve"><value>키</value></data>
+  <data name="settings.ctrl" xml:space="preserve"><value>Command</value></data>
+  <data name="settings.shift" xml:space="preserve"><value>Shift</value></data>
+  <data name="settings.alt" xml:space="preserve"><value>Option</value></data>
+  <data name="settings.control" xml:space="preserve"><value>Control</value></data>
+  <data name="settings.current" xml:space="preserve"><value>현재: %@</value></data>
+  <data name="settings.version_format" xml:space="preserve"><value>버전 %@ (%@)</value></data>
+  <data name="settings.history" xml:space="preserve"><value>기록</value></data>
+  <data name="settings.max_records" xml:space="preserve"><value>최대 항목 수: %d</value></data>
+  <data name="settings.history_hint" xml:space="preserve"><value>새 제한은 즉시 적용되며 필요 시 로컬 기록을 정리합니다.</value></data>
+  <data name="settings.startup" xml:space="preserve"><value>시작</value></data>
+  <data name="settings.launch_at_login" xml:space="preserve"><value>로그인 시 실행</value></data>
+  <data name="settings.launch_at_login_hint" xml:space="preserve"><value>Windows에 로그인하면 자동으로 시작됩니다.</value></data>
+  <data name="settings.clipboard" xml:space="preserve"><value>클립보드</value></data>
+  <data name="settings.sync" xml:space="preserve"><value>동기화 및 개인정보</value></data>
+  <data name="settings.lan_sync" xml:space="preserve"><value>LAN 동기화(Windows 및 휴대폰)</value></data>
+  <data name="settings.lan_sync_hint" xml:space="preserve"><value>LAN에서 작은 동기화 서비스를 열어 휴대폰이나 다른 PC에서 클립보드 내용을 보낼 수 있습니다.</value></data>
+  <data name="settings.lan_sync_upload" xml:space="preserve"><value>이 Mac의 텍스트 업로드</value></data>
+  <data name="settings.lan_sync_receive" xml:space="preserve"><value>iCloud 내용 받기</value></data>
+  <data name="settings.lan_sync_hint2" xml:space="preserve"><value>같은 LAN의 이 Mac과 Windows PC 간에 클립보드 텍스트를 동기화합니다.</value></data>
+  <data name="settings.lan_sync_rules_hint" xml:space="preserve"><value>이 PC에서 복사한 텍스트 업로드, 기기에서 수신 또는 둘 다를 제어합니다.</value></data>
+  <data name="settings.lan_sync_status_disabled" xml:space="preserve"><value>LAN 동기화가 꺼져 있습니다.</value></data>
+  <data name="settings.lan_sync_status_unavailable" xml:space="preserve"><value>LAN 동기화를 시작할 수 없습니다. 포트 설정을 확인하세요.</value></data>
+  <data name="settings.lan_sync_status_syncing" xml:space="preserve"><value>LAN을 통해 동기화 중…</value></data>
+  <data name="settings.lan_sync_status_synced" xml:space="preserve"><value>LAN 동기화가 켜져 있습니다.</value></data>
+  <data name="settings.lan_sync_status_error" xml:space="preserve"><value>동기화 실패: %@</value></data>
+  <data name="settings.auto_paste" xml:space="preserve"><value>선택 시 자동 복사</value></data>
+  <data name="settings.auto_paste_hint" xml:space="preserve"><value>켜면 목록의 항목을 클릭할 때 자동으로 클립보드에 복사됩니다.</value></data>
+  <data name="settings.privacy_filter" xml:space="preserve"><value>민감 콘텐츠 필터링</value></data>
+  <data name="settings.privacy_filter_hint" xml:space="preserve"><value>켜면 SkyPaste가 비밀번호, 인증 코드, 카드 번호, 키 / 토큰 형태의 민감한 텍스트를 가능한 한 무시합니다.</value></data>
+  <data name="settings.ignore_apps" xml:space="preserve"><value>무시할 앱</value></data>
+  <data name="settings.ignore_apps_hint" xml:space="preserve"><value>앱 이름이나 bundle ID를 쉼표 또는 줄바꿈으로 구분해 입력하세요.</value></data>
+  <data name="settings.ignore_apps_example" xml:space="preserve"><value>예: Finder, Terminal, com.1password.1password.</value></data>
+  <data name="settings.ignore_apps_suggestions" xml:space="preserve"><value>최근</value></data>
+  <data name="settings.rate_app" xml:space="preserve"><value>SkyPaste 평가</value></data>
+  <data name="settings.rate_app_subtitle" xml:space="preserve"><value>SkyPaste가 마음에 드셨다면 App Store에서 평점과 리뷰를 남겨 주세요.</value></data>
+  <data name="settings.rate_app_action" xml:space="preserve"><value>App Store에서 평가</value></data>
+  <data name="app.title" xml:space="preserve"><value>SkyPaste</value></data>
+  <data name="app.debug_title" xml:space="preserve"><value>SkyPaste 디버그</value></data>
+  <data name="app.menu_title" xml:space="preserve"><value>SkyPaste</value></data>
+  <data name="menu.clipboard" xml:space="preserve"><value>클립보드</value></data>
+  <data name="menu.clipboard_manager" xml:space="preserve"><value>Clipboard Manager</value></data>
+  <data name="menu.double_click_to_copy" xml:space="preserve"><value>더블클릭하여 복사</value></data>
+  <data name="menu.right_click_to_copy" xml:space="preserve"><value>Clipboard Manager</value></data>
+  <data name="menu.command_c_copy" xml:space="preserve"><value>ctrl+c 복사</value></data>
+  <data name="menu.copy" xml:space="preserve"><value>복사</value></data>
+  <data name="menu.open_item" xml:space="preserve"><value>열기</value></data>
+  <data name="menu.open_file" xml:space="preserve"><value>파일 열기</value></data>
+  <data name="menu.open_folder" xml:space="preserve"><value>폴더 열기</value></data>
+  <data name="menu.open_containing_folder" xml:space="preserve"><value>포함된 폴더 열기</value></data>
+  <data name="menu.reveal_in_explorer" xml:space="preserve"><value>탐색기에서 표시</value></data>
+  <data name="menu.copy_path" xml:space="preserve"><value>경로 복사</value></data>
+  <data name="menu.copy_link" xml:space="preserve"><value>링크 복사</value></data>
+  <data name="menu.share" xml:space="preserve"><value>공유</value></data>
+  <data name="menu.translate" xml:space="preserve"><value>번역</value></data>
+  <data name="menu.save_as" xml:space="preserve"><value>다른 이름으로 저장...</value></data>
+  <data name="menu.open_in_browser" xml:space="preserve"><value>브라우저에서 열기</value></data>
+  <data name="menu.open_email" xml:space="preserve"><value>이메일 보내기</value></data>
+  <data name="menu.favorite" xml:space="preserve"><value>즐겨찾기</value></data>
+  <data name="menu.unfavorite" xml:space="preserve"><value>즐겨찾기 해제</value></data>
+  <data name="menu.copy_selected" xml:space="preserve"><value>선택 항목 복사</value></data>
+  <data name="menu.open_panel" xml:space="preserve"><value>패널 열기</value></data>
+  <data name="menu.debug" xml:space="preserve"><value>디버그</value></data>
+  <data name="menu.search" xml:space="preserve"><value>검색</value></data>
+  <data name="menu.preferences" xml:space="preserve"><value>환경설정</value></data>
+  <data name="menu.quit" xml:space="preserve"><value>종료</value></data>
+  <data name="menu.copy_success" xml:space="preserve"><value>복사 완료</value></data>
+  <data name="menu.delete_day_title" xml:space="preserve"><value>이 날짜의 기록을 모두 삭제할까요?</value></data>
+  <data name="menu.delete" xml:space="preserve"><value>삭제</value></data>
+  <data name="menu.ok" xml:space="preserve"><value>확인</value></data>
+  <data name="menu.cancel" xml:space="preserve"><value>취소</value></data>
+  <data name="menu.delete_day_message" xml:space="preserve"><value>%@의 클립보드 기록을 모두 삭제합니다.</value></data>
+  <data name="panel.search_placeholder" xml:space="preserve"><value>클립보드 검색</value></data>
+  <data name="panel.search_empty_title" xml:space="preserve"><value>일치하는 항목이 없습니다</value></data>
+  <data name="panel.search_empty_message" xml:space="preserve"><value>다른 키워드를 시도하거나 검색을 지워 전체 클립보드 기록을 확인하세요.</value></data>
+  <data name="panel.search_empty_message_scoped" xml:space="preserve"><value>%1$@ 분류에서 일치하는 항목이 없습니다. 다른 키워드를 시도하거나 분류를 바꿔보세요.</value></data>
+  <data name="panel.empty_title" xml:space="preserve"><value>아직 클립보드 기록이 없습니다</value></data>
+  <data name="panel.empty_message" xml:space="preserve"><value>텍스트, 이미지 또는 파일을 복사하면 여기에 표시됩니다.</value></data>
+  <data name="panel.empty_message_scoped" xml:space="preserve"><value>%1$@ 분류에는 아직 항목이 없습니다. 이 분류의 내용을 복사하면 여기에 표시됩니다.</value></data>
+  <data name="panel.clear_search" xml:space="preserve"><value>검색 지우기</value></data>
+  <data name="panel.shortcut_hint" xml:space="preserve"><value>Enter: 붙여넣기  ·  ↑/↓: 탐색  ·  Esc: 닫기  ·  Ctrl+1...9: 빠른 복사</value></data>
+  <data name="panel.shortcut_hint_copy_only" xml:space="preserve"><value>Enter: 복사  ·  ↑/↓: 탐색  ·  Esc: 닫기  ·  Ctrl+1...9: 빠른 복사</value></data>
+  <data name="panel.paste_selected" xml:space="preserve"><value>선택 항목 붙여넣기</value></data>
+  <data name="panel.batch_select" xml:space="preserve"><value>일괄 선택</value></data>
+  <data name="panel.batch_done" xml:space="preserve"><value>완료</value></data>
+  <data name="panel.batch_select_all" xml:space="preserve"><value>전체 선택</value></data>
+  <data name="panel.batch_clear_selection" xml:space="preserve"><value>선택 해제</value></data>
+  <data name="panel.batch_favorite_selected" xml:space="preserve"><value>선택 항목 즐겨찾기</value></data>
+  <data name="panel.batch_unfavorite_selected" xml:space="preserve"><value>즐겨찾기 해제</value></data>
+  <data name="panel.batch_delete_selected" xml:space="preserve"><value>선택 항목 삭제</value></data>
+  <data name="panel.batch_favorite_success" xml:space="preserve"><value>%d개 항목을 즐겨찾기에 추가했습니다</value></data>
+  <data name="panel.batch_unfavorite_success" xml:space="preserve"><value>%d개 항목의 즐겨찾기를 해제했습니다</value></data>
+  <data name="panel.batch_delete_success" xml:space="preserve"><value>%d개 항목을 삭제했습니다</value></data>
+  <data name="filter.all" xml:space="preserve"><value>전체</value></data>
+  <data name="filter.text" xml:space="preserve"><value>텍스트</value></data>
+  <data name="filter.image" xml:space="preserve"><value>이미지</value></data>
+  <data name="filter.file" xml:space="preserve"><value>파일</value></data>
+  <data name="filter.folder" xml:space="preserve"><value>폴더</value></data>
+  <data name="filter.code" xml:space="preserve"><value>코드</value></data>
+  <data name="filter.source_all" xml:space="preserve"><value>모든 앱</value></data>
+  <data name="filter.source_device" xml:space="preserve"><value>휴대폰 콘텐츠</value></data>
+  <data name="filter.source_label" xml:space="preserve"><value>앱</value></data>
+  <data name="filter.favorites" xml:space="preserve"><value>즐겨찾기</value></data>
+  <data name="filter.url" xml:space="preserve"><value>URL</value></data>
+  <data name="filter.email" xml:space="preserve"><value>이메일</value></data>
+  <data name="filter.move_first" xml:space="preserve"><value>맨 앞으로 이동</value></data>
+  <data name="filter.move_last" xml:space="preserve"><value>맨 뒤로 이동</value></data>
+  <data name="filter.reset_order" xml:space="preserve"><value>기본 순서로 복원</value></data>
+  <data name="debug.no_data" xml:space="preserve"><value>데이터 없음</value></data>
+  <data name="debug.none" xml:space="preserve"><value>없음</value></data>
+  <data name="debug.text" xml:space="preserve"><value>텍스트</value></data>
+  <data name="debug.image" xml:space="preserve"><value>이미지</value></data>
+  <data name="debug.file_urls" xml:space="preserve"><value>파일 URL</value></data>
+  <data name="debug.name_prefix" xml:space="preserve"><value>이름: %@ • </value></data>
+  <data name="debug.title" xml:space="preserve"><value>클립보드 디버그</value></data>
+  <data name="debug.refresh" xml:space="preserve"><value>새로고침</value></data>
+  <data name="debug.change_count" xml:space="preserve"><value>changeCount: %d</value></data>
+  <data name="debug.decoded" xml:space="preserve"><value>decoded: %@</value></data>
+  <data name="debug.raw_types" xml:space="preserve"><value>raw types</value></data>
+  <data name="debug.preview" xml:space="preserve"><value>preview</value></data>
+  <data name="debug.empty" xml:space="preserve"><value>(비어 있음)</value></data>
+  <data name="hotkey.ctrl" xml:space="preserve"><value>Cmd</value></data>
+  <data name="hotkey.shift" xml:space="preserve"><value>Shift</value></data>
+  <data name="hotkey.alt" xml:space="preserve"><value>Option</value></data>
+  <data name="hotkey.control" xml:space="preserve"><value>Control</value></data>
+  <data name="hotkey.keycode" xml:space="preserve"><value>키코드 %u</value></data>
+  <data name="appearance.system" xml:space="preserve"><value>시스템 따르기</value></data>
+  <data name="appearance.light" xml:space="preserve"><value>라이트 모드</value></data>
+  <data name="appearance.dark" xml:space="preserve"><value>다크 모드</value></data>
+  <data name="language.system" xml:space="preserve"><value>시스템</value></data>
+  <data name="language.en" xml:space="preserve"><value>영어</value></data>
+  <data name="language.zh-Hans" xml:space="preserve"><value>중국어 간체</value></data>
+  <data name="language.zh-Hant" xml:space="preserve"><value>중국어 번체</value></data>
+  <data name="language.ja" xml:space="preserve"><value>일본어</value></data>
+  <data name="language.ko" xml:space="preserve"><value>한국어</value></data>
+  <data name="language.fr" xml:space="preserve"><value>프랑스어</value></data>
+  <data name="preview.open" xml:space="preserve"><value>이미지 미리보기</value></data>
+  <data name="preview.open_image" xml:space="preserve"><value>이미지 열기</value></data>
+  <data name="preview.drag_hint" xml:space="preserve"><value>이미지 드래그</value></data>
+  <data name="preview.drag_zoomed_hint" xml:space="preserve"><value>Option 키를 누른 채 이미지 드래그</value></data>
+  <data name="preview.annotate" xml:space="preserve"><value>주석</value></data>
+  <data name="preview.annotation_done" xml:space="preserve"><value>그리기 완료</value></data>
+  <data name="preview.annotation_hint" xml:space="preserve"><value>이미지에 선 그리기</value></data>
+  <data name="preview.annotation_drag_hint" xml:space="preserve"><value>드래그하여 그리기</value></data>
+  <data name="preview.annotation_undo" xml:space="preserve"><value>실행 취소</value></data>
+  <data name="preview.annotation_clear" xml:space="preserve"><value>지우기</value></data>
+  <data name="preview.annotation_red" xml:space="preserve"><value>빨강</value></data>
+  <data name="preview.annotation_yellow" xml:space="preserve"><value>노랑</value></data>
+  <data name="preview.annotation_blue" xml:space="preserve"><value>파랑</value></data>
+  <data name="preview.annotation_black" xml:space="preserve"><value>검정</value></data>
+  <data name="preview.annotation_green" xml:space="preserve"><value>초록</value></data>
+  <data name="preview.annotation_width" xml:space="preserve"><value>펜 굵기</value></data>
+  <data name="preview.annotation_export_error_title" xml:space="preserve"><value>주석을 내보낼 수 없음</value></data>
+  <data name="preview.annotation_export_error_message" xml:space="preserve"><value>주석이 포함된 이미지를 만들 수 없습니다. 다시 시도해 주세요.</value></data>
+  <data name="preview.annotation_preparing" xml:space="preserve"><value>이미지 준비 중…</value></data>
+  <data name="preview.title" xml:space="preserve"><value>이미지 미리보기</value></data>
+  <data name="preview.text_open" xml:space="preserve"><value>텍스트 미리보기</value></data>
+  <data name="preview.text_title" xml:space="preserve"><value>텍스트 미리보기</value></data>
+  <data name="preview.url_title" xml:space="preserve"><value>URL 미리보기</value></data>
+  <data name="preview.email_title" xml:space="preserve"><value>이메일 미리보기</value></data>
+  <data name="preview.code_title" xml:space="preserve"><value>코드 미리보기</value></data>
+  <data name="preview.file_system_title" xml:space="preserve"><value>항목 상세</value></data>
+  <data name="preview.file_system_show_image" xml:space="preserve"><value>이미지 미리보기</value></data>
+  <data name="preview.file_system_show_info" xml:space="preserve"><value>파일 정보</value></data>
+  <data name="preview.file_system_loading" xml:space="preserve"><value>파일 정보를 불러오는 중…</value></data>
+  <data name="preview.file_system_not_found" xml:space="preserve"><value>일부 항목을 찾을 수 없습니다</value></data>
+  <data name="preview.file_system_not_found_message" xml:space="preserve"><value>이 경로들은 이동되었거나 삭제되었을 수 있습니다.</value></data>
+  <data name="preview.file_system_section_info" xml:space="preserve"><value>상세 정보</value></data>
+  <data name="preview.file_system_section_contents" xml:space="preserve"><value>내용</value></data>
+  <data name="preview.file_system_empty_directory" xml:space="preserve"><value>이 디렉터리는 비어 있습니다.</value></data>
+  <data name="preview.file_system_label_name" xml:space="preserve"><value>이름</value></data>
+  <data name="preview.file_system_label_type" xml:space="preserve"><value>유형</value></data>
+  <data name="preview.file_system_label_extension" xml:space="preserve"><value>확장자</value></data>
+  <data name="preview.file_system_label_size" xml:space="preserve"><value>크기</value></data>
+  <data name="preview.file_system_label_modified" xml:space="preserve"><value>수정 시간</value></data>
+  <data name="preview.file_system_label_path" xml:space="preserve"><value>경로</value></data>
+  <data name="preview.file_system_label_items" xml:space="preserve"><value>항목 수</value></data>
+  <data name="preview.file_system_label_files" xml:space="preserve"><value>파일 수</value></data>
+  <data name="preview.file_system_label_folders" xml:space="preserve"><value>폴더 수</value></data>
+  <data name="preview.file_system_type_file" xml:space="preserve"><value>파일</value></data>
+  <data name="preview.file_system_type_folder" xml:space="preserve"><value>디렉터리</value></data>
+  <data name="preview.file_system_type_mixed" xml:space="preserve"><value>혼합</value></data>
+  <data name="preview.file_system_multiple_locations" xml:space="preserve"><value>여러 위치</value></data>
+  <data name="preview.file_system_unavailable" xml:space="preserve"><value>사용 불가</value></data>
+  <data name="preview.file_system_item_count" xml:space="preserve"><value>%d개 항목</value></data>
+  <data name="preview.file_system_file_count" xml:space="preserve"><value>%d개 파일</value></data>
+  <data name="preview.file_system_folder_count" xml:space="preserve"><value>%d개 폴더</value></data>
+  <data name="preview.unavailable" xml:space="preserve"><value>미리보기를 사용할 수 없음</value></data>
+  <data name="preview.fit" xml:space="preserve"><value>맞춤</value></data>
+  <data name="preview.unavailable_message" xml:space="preserve"><value>SkyPaste가 이 이미지 미리보기를 불러오지 못했습니다.</value></data>
+  <data name="preview.source_label" xml:space="preserve"><value>출처:</value></data>
+  <data name="preview.source_app" xml:space="preserve"><value>%@</value></data>
+  <data name="preview.source_device" xml:space="preserve"><value>%@</value></data>
+  <data name="preview.source_local" xml:space="preserve"><value>이 Mac</value></data>
+  <data name="open.missing_file_title" xml:space="preserve"><value>파일을 찾을 수 없음</value></data>
+  <data name="open.missing_folder_title" xml:space="preserve"><value>폴더를 찾을 수 없음</value></data>
+  <data name="open.missing_item_message" xml:space="preserve"><value>SkyPaste가 이 경로를 열 수 없습니다: %@</value></data>
+  <data name="drag.missing_file_title" xml:space="preserve"><value>파일을 찾을 수 없음</value></data>
+  <data name="drag.missing_folder_title" xml:space="preserve"><value>폴더를 찾을 수 없음</value></data>
+  <data name="drag.missing_item_message" xml:space="preserve"><value>이 경로가 더 이상 존재하지 않아 드래그할 수 없습니다: %@</value></data>
+  <data name="drag.row_hint" xml:space="preserve"><value>드래그하여 저장</value></data>
+  <data name="save_as.title" xml:space="preserve"><value>다른 이름으로 저장</value></data>
+  <data name="save_as.action" xml:space="preserve"><value>저장</value></data>
+  <data name="save_as.choose_folder" xml:space="preserve"><value>선택</value></data>
+  <data name="save_as.error_title" xml:space="preserve"><value>저장 실패</value></data>
+  <data name="notice.database_recovered" xml:space="preserve"><value>로컬 기록 데이터베이스를 자동으로 복구했고 손상된 파일은 백업했습니다.</value></data>
+  <data name="settings.recommended_app" xml:space="preserve"><value>추천 앱</value></data>
+  <data name="yourtools.title" xml:space="preserve"><value>Xtools</value></data>
+  <data name="yourtools.subtitle" xml:space="preserve"><value>오디오·비디오, 파일, 번역을 한곳에서 처리하는 AI 도구 앱.</value></data>
+  <data name="yourtools.open" xml:space="preserve"><value>App Store에서 열기</value></data>
+  <data name="wenpai.title" xml:space="preserve"><value>WenPai</value></data>
+  <data name="wenpai.subtitle" xml:space="preserve"><value>WeChat 게시글 편집 도구 · 일반 텍스트를 클릭 한 번으로 꾸미기</value></data>
+  <data name="wenpai.open" xml:space="preserve"><value>웹사이트 방문</value></data>
+  <data name="stats.title" xml:space="preserve"><value>클립보드 통계</value></data>
+  <data name="stats.subtitle" xml:space="preserve"><value>복사 습관을 한눈에 확인하세요.</value></data>
+  <data name="stats.period.today" xml:space="preserve"><value>오늘</value></data>
+  <data name="stats.period.week" xml:space="preserve"><value>최근 7일</value></data>
+  <data name="stats.period.month" xml:space="preserve"><value>최근 30일</value></data>
+  <data name="stats.period.halfYear" xml:space="preserve"><value>최근 6개월</value></data>
+  <data name="stats.period.year" xml:space="preserve"><value>최근 1년</value></data>
+  <data name="stats.total" xml:space="preserve"><value>기록된 복사</value></data>
+  <data name="stats.top_category" xml:space="preserve"><value>가장 많이 쓴 유형</value></data>
+  <data name="stats.no_data" xml:space="preserve"><value>아직 데이터 없음</value></data>
+  <data name="stats.loading" xml:space="preserve"><value>통계 불러오는 중…</value></data>
+  <data name="stats.load_failed" xml:space="preserve"><value>통계를 불러올 수 없습니다.</value></data>
+  <data name="stats.trend" xml:space="preserve"><value>복사 추이</value></data>
+  <data name="stats.breakdown" xml:space="preserve"><value>유형별</value></data>
+  <data name="stats.note" xml:space="preserve"><value>클립보드 기록을 삭제해도 저장된 통계는 지워지지 않습니다. 연속 중복은 합쳐질 수 있고 이미지 파일은 파일로 집계됩니다. 이전에 삭제된 기록은 복원할 수 없습니다.</value></data>
+  <data name="stats.apps.title" xml:space="preserve"><value>복사한 앱별</value></data>
+  <data name="stats.apps.empty" xml:space="preserve"><value>앱별 데이터가 아직 없습니다</value></data>
+  <data name="stats.apps.note" xml:space="preserve"><value>식별 가능한 Mac 앱만 집계합니다. 비율은 앱을 식별할 수 있는 건수를 기준으로 하며 이전에 삭제된 기록은 복원할 수 없습니다.</value></data>
+  <data name="settings.lan_sync_token" xml:space="preserve"><value>페어링 토큰</value></data>
+  <data name="settings.lan_sync_token_hint" xml:space="preserve"><value>휴대폰에서 보낼 때 X-SkyPaste-Token 헤더를 포함하세요. 자세한 단계는 README를 참고하세요.</value></data>
+  <data name="settings.lan_sync_device_name" xml:space="preserve"><value>장치 이름</value></data>
+  <data name="settings.lan_sync_port" xml:space="preserve"><value>포트</value></data>
+  <data name="sync.received_from" xml:space="preserve"><value>%@(으)로부터 수신함</value></data>
+  <data name="about.title" xml:space="preserve"><value>SkyPaste 정보</value></data>
+  <data name="about.subtitle" xml:space="preserve"><value>MIT 라이선스 · Windows 10/11용</value></data>
+  <data name="about.open_license" xml:space="preserve"><value>라이선스 보기</value></data>
+  <data name="paste.foreground_failed" xml:space="preserve"><value>복사했습니다. 이전 창으로 자동 전환하지 못했습니다. Ctrl+V로 붙여넣으세요.</value></data>
+  <data name="settings.lan_sync_firewall_hint" xml:space="preserve"><value>Windows 방화벽 권한을 묻는 창이 뜨면 &quot;허용&quot;을 선택하세요. 허용하지 않으면 휴대폰에서 이 PC로 보낼 수 없습니다.</value></data>
+  <data name="settings.panel_position" xml:space="preserve"><value>패널 위치</value></data>
+  <data name="panel_position.center" xml:space="preserve"><value>화면 중앙</value></data>
+  <data name="panel_position.cursor" xml:space="preserve"><value>커서 따라가기</value></data>
+  <data name="hotkey.register_failed" xml:space="preserve"><value>이 단축키는 다른 프로그램이 사용 중입니다. 다른 조합을 선택하세요.</value></data>
+  <data name="panel_position.remember" xml:space="preserve"><value>마지막 위치 기억</value></data>
+</root>

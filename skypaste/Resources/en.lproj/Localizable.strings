@@ -260,3 +260,11 @@
 "stats.apps.title" = "By source app";
 "stats.apps.empty" = "No source app data yet";
 "stats.apps.note" = "Only identifiable Mac apps are included. Percentages use app-attributed copies; previously deleted history cannot be recovered.";
+
+"settings.lan_sync" = "LAN Sync (Windows & Phones)";
+
+"settings.lan_sync_token" = "Pairing Token";
+
+"settings.lan_sync_token_hint" = "Windows SkyPaste uses this token to pair with this Mac over the local network.";
+
+"settings.lan_sync_hint2" = "Syncs clipboard text between this Mac and Windows PCs on the same network.";

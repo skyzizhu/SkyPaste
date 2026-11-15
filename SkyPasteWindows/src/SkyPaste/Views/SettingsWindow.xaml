@@ -1,0 +1,217 @@
+<Window x:Class="SkyPaste.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Preferences" WindowStyle="ToolWindow">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,0,4,0">
+        <StackPanel MaxWidth="600" HorizontalAlignment="Center" Margin="0,14,0,20">
+
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                <Border Width="44" Height="44" CornerRadius="10" Background="{DynamicResource AccentSoftBrush}">
+                    <TextBlock Text="S" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"
+                               HorizontalAlignment="Center" VerticalAlignment="Center" />
+                </Border>
+                <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="SkyPaste" FontSize="18" FontWeight="SemiBold"
+                               Foreground="{DynamicResource Text.Primary}" />
+                    <TextBlock x:Name="VersionText" FontSize="11" Margin="0,2,0,0"
+                               Foreground="{DynamicResource Text.Secondary}" />
+                </StackPanel>
+            </StackPanel>
+
+            <GroupBox x:Name="SectionGeneral" Header="General" Margin="0,10,0,0" Foreground="{DynamicResource Text.Primary}">
+                <StackPanel Margin="4,6,4,4">
+                    <Grid Margin="0,4">
+                        <TextBlock x:Name="AppearanceLabel" Text="Theme" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource Text.Primary}" />
+                        <ComboBox x:Name="AppearanceMode" Width="180" HorizontalAlignment="Right"
+                                  SelectionChanged="OnAppearanceChanged">
+                            <ComboBoxItem Content="Follow System" />
+                            <ComboBoxItem Content="Light Mode" />
+                            <ComboBoxItem Content="Dark Mode" />
+                        </ComboBox>
+                    </Grid>
+                    <Grid Margin="0,4">
+                        <TextBlock x:Name="LanguageLabel" Text="Language" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource Text.Primary}" />
+                        <ComboBox x:Name="LanguageMode" Width="180" HorizontalAlignment="Right"
+                                  SelectionChanged="OnLanguageChanged" />
+                    </Grid>
+                    <Grid Margin="0,4">
+                        <Grid>
+                            <TextBlock x:Name="PanelPositionLabel" Text="Panel position" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource Text.Primary}" />
+                            <ComboBox x:Name="PanelPosition" Width="200" HorizontalAlignment="Right"
+                                      SelectionChanged="OnPanelPositionChanged">
+                                <ComboBoxItem Content="Centered on screen" />
+                                <ComboBoxItem Content="Follow cursor" />
+                                <ComboBoxItem Content="Remember last position" />
+                            </ComboBox>
+                        </Grid>
+                        <StackPanel Margin="0,8,0,0">
+                            <TextBlock x:Name="LaunchAtLoginLabel" Text="Launch at login"
+                                       Foreground="{DynamicResource Text.Primary}" />
+                            <TextBlock x:Name="LaunchAtLoginHint" FontSize="10"
+                                       Foreground="{DynamicResource Text.Secondary}" />
+                        </StackPanel>
+                        <CheckBox x:Name="LaunchAtLoginToggle" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                  Checked="OnToggleChanged" Unchecked="OnToggleChanged" />
+                    </Grid>
+                    <Grid Margin="0,4">
+                        <StackPanel>
+                            <TextBlock x:Name="AutoPasteLabel" Text="Auto copy on selection"
+                                       Foreground="{DynamicResource Text.Primary}" />
+                            <TextBlock x:Name="AutoPasteHint" FontSize="10" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource Text.Secondary}" />
+                        </StackPanel>
+                        <CheckBox x:Name="AutoPasteToggle" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                  Checked="OnToggleChanged" Unchecked="OnToggleChanged" />
+                    </Grid>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox x:Name="SectionHotkey" Header="Hotkey" Margin="0,14,0,0" Foreground="{DynamicResource Text.Primary}">
+                <StackPanel Margin="4,6,4,4">
+                    <Grid Margin="0,4">
+                        <TextBlock x:Name="KeyLabel" Text="Key" VerticalAlignment="Center"
+                                   Foreground="{DynamicResource Text.Primary}" />
+                        <ComboBox x:Name="KeyMode" Width="100" HorizontalAlignment="Right"
+                                  SelectionChanged="OnKeyChanged" />
+                    </Grid>
+                    <UniformGrid Columns="4" Margin="0,8,0,0">
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox x:Name="CtrlToggle" Checked="OnToggleChanged" Unchecked="OnToggleChanged" />
+                            <TextBlock x:Name="CtrlToggleLabel" Text="Ctrl" Margin="6,0,0,0" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource Text.Primary}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox x:Name="ShiftToggle" Checked="OnToggleChanged" Unchecked="OnToggleChanged" />
+                            <TextBlock x:Name="ShiftToggleLabel" Text="Shift" Margin="6,0,0,0" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource Text.Primary}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox x:Name="AltToggle" Checked="OnToggleChanged" Unchecked="OnToggleChanged" />
+                            <TextBlock x:Name="AltToggleLabel" Text="Alt" Margin="6,0,0,0" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource Text.Primary}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <CheckBox x:Name="WinToggle" Checked="OnToggleChanged" Unchecked="OnToggleChanged" />
+                            <TextBlock x:Name="WinToggleLabel" Text="Win" Margin="6,0,0,0" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource Text.Primary}" />
+                        </StackPanel>
+                    </UniformGrid>
+                    <TextBlock x:Name="HotKeyDisplay" FontSize="11" Margin="0,8,0,0"
+                               Foreground="{DynamicResource AccentBrush}" />
+                    <TextBlock x:Name="HotKeyWarning" FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap"
+                               Foreground="{DynamicResource Danger}" />
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox x:Name="SectionSync" Header="Sync &amp; Privacy" Margin="0,14,0,0" Foreground="{DynamicResource Text.Primary}">
+                <StackPanel Margin="4,6,4,4">
+                    <Grid Margin="0,4">
+                        <StackPanel>
+                            <TextBlock x:Name="LanSyncLabel" Text="LAN Sync"
+                                       Foreground="{DynamicResource Text.Primary}" />
+                            <TextBlock x:Name="LanSyncHint" FontSize="10" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource Text.Secondary}" />
+                            <TextBlock x:Name="LanSyncStatus" FontSize="10" Margin="0,2,0,0"
+                                       Foreground="{DynamicResource AccentBrush}" />
+                        </StackPanel>
+                        <CheckBox x:Name="LanSyncToggle" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                  Checked="OnToggleChanged" Unchecked="OnToggleChanged" />
+                    </Grid>
+                    <StackPanel Margin="22,4,0,4">
+                        <Grid>
+                            <TextBlock x:Name="LanSyncUploadLabel" Text="Upload local text"
+                                       Foreground="{DynamicResource Text.Primary}" />
+                            <CheckBox x:Name="LanSyncUploadToggle" HorizontalAlignment="Right"
+                                      Checked="OnToggleChanged" Unchecked="OnToggleChanged" />
+                        </Grid>
+                        <Grid Margin="0,4,0,0">
+                            <TextBlock x:Name="LanSyncReceiveLabel" Text="Receive from devices"
+                                       Foreground="{DynamicResource Text.Primary}" />
+                            <CheckBox x:Name="LanSyncReceiveToggle" HorizontalAlignment="Right"
+                                      Checked="OnToggleChanged" Unchecked="OnToggleChanged" />
+                        </Grid>
+                        <Grid Margin="0,8,0,0">
+                            <TextBlock x:Name="DeviceNameLabel" Text="Device name" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource Text.Primary}" />
+                            <TextBox x:Name="DeviceNameBox" Width="200" HorizontalAlignment="Right"
+                                     TextChanged="OnDeviceNameChanged"
+                                     Background="{DynamicResource SearchField.Background}"
+                                     Foreground="{DynamicResource Text.Primary}" BorderThickness="1"
+                                     BorderBrush="{DynamicResource SearchField.Border}" />
+                        </Grid>
+                        <Grid Margin="0,4,0,0">
+                            <TextBlock x:Name="PortLabel" Text="Port" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource Text.Primary}" />
+                            <TextBox x:Name="PortBox" Width="200" HorizontalAlignment="Right"
+                                     TextChanged="OnPortChanged"
+                                     Background="{DynamicResource SearchField.Background}"
+                                     Foreground="{DynamicResource Text.Primary}" BorderThickness="1"
+                                     BorderBrush="{DynamicResource SearchField.Border}" />
+                        </Grid>
+                        <Grid Margin="0,8,0,0">
+                            <StackPanel>
+                                <TextBlock x:Name="TokenLabel" Text="Pairing token"
+                                           Foreground="{DynamicResource Text.Primary}" />
+                                <TextBlock x:Name="TokenHint" FontSize="10" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource Text.Secondary}" />
+                                <TextBox x:Name="TokenBox" IsReadOnly="True" Margin="0,6,0,0" FontFamily="Consolas, monospace"
+                                         Background="{DynamicResource SearchField.Background}"
+                                         Foreground="{DynamicResource Text.Primary}" BorderThickness="1"
+                                         BorderBrush="{DynamicResource SearchField.Border}" />
+                            </StackPanel>
+                        </Grid>
+                    </StackPanel>
+                    <Grid Margin="0,8,0,4">
+                        <StackPanel>
+                            <TextBlock x:Name="PrivacyFilterLabel" Text="Privacy content filtering"
+                                       Foreground="{DynamicResource Text.Primary}" />
+                            <TextBlock x:Name="PrivacyFilterHint" FontSize="10" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource Text.Secondary}" />
+                        </StackPanel>
+                        <CheckBox x:Name="PrivacyFilterToggle" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                  Checked="OnToggleChanged" Unchecked="OnToggleChanged" />
+                    </Grid>
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox x:Name="SectionLibrary" Header="Library" Margin="0,14,0,0" Foreground="{DynamicResource Text.Primary}">
+                <StackPanel Margin="4,6,4,4">
+                    <TextBlock x:Name="MaxRecordsValue" Text="Max records: 200"
+                               Foreground="{DynamicResource Text.Primary}" />
+                    <Slider x:Name="HistoryLimitSlider" Minimum="20" Maximum="1000" TickFrequency="20"
+                            IsSnapToTickEnabled="True" Margin="0,6,0,0" ValueChanged="OnHistoryLimitChanged" />
+                    <TextBlock x:Name="HistoryHint" FontSize="10" TextWrapping="Wrap"
+                               Foreground="{DynamicResource Text.Secondary}" Margin="0,4,0,0" />
+                    <TextBlock x:Name="IgnoreAppsLabel" Text="Ignore Apps" Margin="0,12,0,0"
+                               Foreground="{DynamicResource Text.Primary}" />
+                    <TextBlock x:Name="IgnoreAppsHint" FontSize="10" TextWrapping="Wrap"
+                               Foreground="{DynamicResource Text.Secondary}" />
+                    <TextBox x:Name="IgnoreAppsBox" Height="70" Margin="0,6,0,0" AcceptsReturn="True"
+                             TextWrapping="Wrap" TextChanged="OnIgnoreAppsChanged"
+                             Background="{DynamicResource SearchField.Background}"
+                             Foreground="{DynamicResource Text.Primary}" BorderThickness="1"
+                             BorderBrush="{DynamicResource SearchField.Border}" />
+                    <TextBlock x:Name="IgnoreAppsExample" FontSize="10" Margin="0,4,0,0"
+                               Foreground="{DynamicResource Text.Secondary}" />
+                    <TextBlock x:Name="RecentLabel" FontSize="10" Margin="0,8,0,4"
+                               Foreground="{DynamicResource Text.Secondary}" />
+                    <WrapPanel x:Name="RecentHost" />
+                </StackPanel>
+            </GroupBox>
+
+            <GroupBox x:Name="SectionAbout" Header="About" Margin="0,14,0,0" Foreground="{DynamicResource Text.Primary}">
+                <StackPanel Margin="4,6,4,4">
+                    <TextBlock x:Name="AboutSubtitle" FontSize="11" TextWrapping="Wrap"
+                               Foreground="{DynamicResource Text.Secondary}" />
+                    <Button Style="{DynamicResource CapsuleButton}" Margin="0,8,0,0" HorizontalAlignment="Left"
+                            Click="OnOpenLicense">
+                        <TextBlock x:Name="OpenLicenseLabel" Text="View License" />
+                    </Button>
+                </StackPanel>
+            </GroupBox>
+        </StackPanel>
+    </ScrollViewer>
+</Window>

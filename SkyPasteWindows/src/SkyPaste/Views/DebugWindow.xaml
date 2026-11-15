@@ -1,0 +1,39 @@
+<Window x:Class="SkyPaste.DebugWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Pasteboard Debug" WindowStyle="ToolWindow">
+    <Grid Margin="14,12,14,12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0">
+            <TextBlock x:Name="TitleLabel" Text="Pasteboard Debug" FontSize="16" FontWeight="SemiBold"
+                       Foreground="{DynamicResource Text.Primary}" />
+            <Button Style="{DynamicResource CapsuleButton}" HorizontalAlignment="Right" Click="OnRefresh">
+                <TextBlock x:Name="RefreshLabel" Text="Refresh" />
+            </Button>
+        </Grid>
+
+        <TextBlock x:Name="ChangeCountText" Grid.Row="1" FontSize="12" Margin="0,10,0,0"
+                   Foreground="{DynamicResource Text.Primary}" />
+        <TextBlock x:Name="DecodedText" Grid.Row="2" FontSize="12" Margin="0,6,0,0" TextWrapping="Wrap"
+                   Foreground="{DynamicResource Text.Primary}" />
+
+        <TextBlock x:Name="RawTypesHeader" Grid.Row="3" Text="raw types" FontSize="11" Margin="0,10,0,4"
+                   Foreground="{DynamicResource Text.Secondary}" />
+        <ListBox x:Name="RawTypes" Grid.Row="4" FontFamily="Consolas, monospace" FontSize="11"
+                 Background="{DynamicResource SectionCard.Background}"
+                 Foreground="{DynamicResource Text.Primary}" />
+
+        <TextBox x:Name="PreviewBox" Grid.Row="5" Height="100" Margin="0,10,0,0" IsReadOnly="True"
+                 FontFamily="Consolas, monospace" FontSize="11" TextWrapping="Wrap"
+                 Background="{DynamicResource SectionCard.Background}"
+                 Foreground="{DynamicResource Text.Primary}" />
+    </Grid>
+</Window>

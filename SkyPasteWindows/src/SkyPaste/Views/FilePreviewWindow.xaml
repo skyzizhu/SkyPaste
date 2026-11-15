@@ -1,0 +1,53 @@
+<Window x:Class="SkyPaste.FilePreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Item Details" WindowStyle="ToolWindow">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="14,12,14,0">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock x:Name="PreviewTitle" Text="Item Details" FontSize="16" FontWeight="SemiBold"
+                           Foreground="{DynamicResource Text.Primary}" VerticalAlignment="Center" />
+                <Button x:Name="ToggleImageMode" Style="{DynamicResource CapsuleButton}" Margin="12,0,0,0"
+                        Click="OnToggleImageMode" Visibility="Collapsed">
+                    <TextBlock x:Name="ToggleImageModeLabel" Text="Preview Image" />
+                </Button>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Style="{DynamicResource CapsuleButton}" Click="OnFavorite">
+                    <TextBlock x:Name="FavoriteLabel" Text="Favorite" />
+                </Button>
+                <Button Style="{DynamicResource CapsuleButton}" Click="OnCopy" Margin="8,0,0,0">
+                    <TextBlock x:Name="CopyLabel" Text="Copy" />
+                </Button>
+                <Button Style="{DynamicResource CapsuleButton}" Click="OnSaveAs" Margin="8,0,0,0">
+                    <TextBlock x:Name="SaveAsLabel" Text="Save As..." />
+                </Button>
+                <Button Style="{DynamicResource CapsuleButton}" Click="OnCopyPath" Margin="8,0,0,0">
+                    <TextBlock x:Name="CopyPathLabel" Text="Copy Path" />
+                </Button>
+                <Button Style="{DynamicResource CapsuleButton}" Click="OnReveal" Margin="8,0,0,0">
+                    <TextBlock x:Name="RevealLabel" Text="Reveal in Explorer" />
+                </Button>
+                <Button Style="{DynamicResource CapsuleButton}" Click="OnOpen" Margin="8,0,0,0">
+                    <TextBlock x:Name="OpenLabel" Text="Open" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <ScrollViewer x:Name="InfoScroll" Grid.Row="1" Margin="14,10,14,12" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="InfoHost" />
+        </ScrollViewer>
+
+        <Grid x:Name="ImageModeHost" Grid.Row="1" Margin="14,10,14,12" Visibility="Collapsed"
+              Background="{DynamicResource SectionCard.Background}">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto">
+                <Image x:Name="ImagePreview" Stretch="Uniform" MaxWidth="1600" MaxHeight="1200" Margin="16" />
+            </ScrollViewer>
+        </Grid>
+    </Grid>
+</Window>

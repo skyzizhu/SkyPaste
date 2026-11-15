@@ -260,3 +260,11 @@
 "stats.apps.title" = "Par application source";
 "stats.apps.empty" = "Aucune donnée d'application source";
 "stats.apps.note" = "Seules les apps Mac identifiables sont incluses. Les pourcentages portent sur les copies attribuées à une app ; l'historique déjà supprimé est irrécupérable.";
+
+"settings.lan_sync" = "Synchronisation LAN (Windows et téléphones)";
+
+"settings.lan_sync_token" = "Jeton d'appairage";
+
+"settings.lan_sync_token_hint" = "SkyPaste pour Windows utilise ce jeton pour s'appairer à ce Mac sur le réseau local.";
+
+"settings.lan_sync_hint2" = "Synchronise le texte du presse-papiers entre ce Mac et les PC Windows du même réseau.";

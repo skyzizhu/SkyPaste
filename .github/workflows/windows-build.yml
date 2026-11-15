@@ -1,0 +1,90 @@
+name: windows-build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: SkyPasteWindows
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore SkyPaste.sln
+
+      - name: Build
+        run: dotnet build SkyPaste.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test tests/SkyPaste.Tests/SkyPaste.Tests.csproj -c Release --no-build --logger trx
+
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          $tag = "${{ github.event.release.tag_name }}"
+          if (-not $tag) { $tag = "0.1.0-dev.$(${{ github.run_number }})" }
+          $version = $tag.TrimStart("v")
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Publish (self-contained win-x64)
+        run: dotnet publish src/SkyPaste/SkyPaste.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=${{ steps.version.outputs.version }} -o publish
+
+      - name: Zip portable exe (x64)
+        run: Compress-Archive -Path publish/* -DestinationPath SkyPaste-windows-portable.zip
+
+      - name: Publish x86 (32-bit portable)
+        run: dotnet publish src/SkyPaste/SkyPaste.csproj -c Release -r win-x86 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=${{ steps.version.outputs.version }} -o publish-x86
+
+      - name: Zip portable exe (x86)
+        run: Compress-Archive -Path publish-x86/* -DestinationPath SkyPaste-windows-x86-portable.zip
+
+      - name: Build installer (Inno Setup)
+        if: github.event_name == 'release'
+        shell: pwsh
+        run: |
+          $iscc = (Get-ChildItem "C:\Program Files*\Inno Setup*" -Filter ISCC.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1).FullName
+          if (-not $iscc) {
+            # choco-provided Inno Setup on the runner image
+            $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          }
+          if (-not (Test-Path $iscc)) {
+            choco install innosetup -y --no-progress
+            $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
+          }
+          & $iscc /DMyAppVersion=${{ steps.version.outputs.version }} installer\SkyPaste.iss
+
+      - name: Upload workflow artifact (every push)
+        uses: actions/upload-artifact@v4
+        with:
+          name: SkyPaste-windows-${{ github.sha }}
+          path: |
+            SkyPasteWindows/SkyPaste-windows-portable.zip
+            SkyPasteWindows/SkyPaste-windows-x86-portable.zip
+            SkyPasteWindows/output/
+          if-no-files-found: error
+
+      - name: Attach files to release (tag releases only)
+        if: github.event_name == 'release'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} `
+            SkyPasteWindows/SkyPaste-windows-portable.zip `
+            SkyPasteWindows/SkyPaste-windows-x86-portable.zip `
+            SkyPasteWindows/output/SkyPaste-Setup-*.exe `
+            --clobber

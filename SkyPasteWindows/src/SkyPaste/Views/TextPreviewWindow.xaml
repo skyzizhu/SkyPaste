@@ -1,0 +1,39 @@
+<Window x:Class="SkyPaste.TextPreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Text Preview" WindowStyle="ToolWindow">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid Grid.Row="0" Margin="14,12,14,0">
+            <TextBlock x:Name="PreviewTitle" Text="Text Preview" FontSize="16" FontWeight="SemiBold"
+                       Foreground="{DynamicResource Text.Primary}" VerticalAlignment="Center" />
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button x:Name="FavoriteButton" Style="{DynamicResource CapsuleButton}" Click="OnFavorite">
+                    <TextBlock x:Name="FavoriteLabel" Text="Favorite" />
+                </Button>
+                <Button x:Name="EmailButton" Style="{DynamicResource CapsuleButton}" Click="OnOpenEmail" Margin="8,0,0,0" Visibility="Collapsed">
+                    <TextBlock x:Name="EmailLabel" Text="Send Email" />
+                </Button>
+                <Button x:Name="BrowserButton" Style="{DynamicResource CapsuleButton}" Click="OnOpenBrowser" Margin="8,0,0,0" Visibility="Collapsed">
+                    <TextBlock x:Name="BrowserLabel" Text="Open in Browser" />
+                </Button>
+                <Button Style="{DynamicResource CapsuleButton}" Click="OnCopy" Margin="8,0,0,0">
+                    <TextBlock x:Name="CopyLabel" Text="Copy" />
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <ScrollViewer Grid.Row="1" Margin="14,10,14,12" VerticalScrollBarVisibility="Auto"
+                      Background="{DynamicResource SectionCard.Background}">
+            <Border Padding="16">
+                <TextBox x:Name="PreviewText" BorderThickness="0" Background="Transparent"
+                         IsReadOnly="True" TextWrapping="Wrap" FontSize="14"
+                         Foreground="{DynamicResource Text.Primary}" />
+            </Border>
+        </ScrollViewer>
+    </Grid>
+</Window>

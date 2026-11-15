@@ -40,6 +40,11 @@ final class AppCoordinator {
 
 @MainActor
 extension AppCoordinator {
+    /// Re-reads LAN sync settings and starts/stops the LAN service.
+    func applyLanSyncSetting() {
+        LanClipboardSync.applyCurrentSetting(store: store)
+    }
+
     func configureWindow() {
         let rootView = makePanelView()
         let hostingView = NSHostingView(rootView: rootView)

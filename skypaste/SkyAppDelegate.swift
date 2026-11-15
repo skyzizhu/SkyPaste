@@ -50,6 +50,7 @@ extension AppDelegate {
         }
         monitor?.start()
         coordinator.cloudSync.applyCurrentSetting()
+        coordinator.applyLanSyncSetting()
 
         applyHotKeyRegistration()
         observeSettingsChanges()
@@ -58,6 +59,7 @@ extension AppDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        LanClipboardSync.stop()
         monitor?.stop()
         coordinator.cloudSync.stop()
         hotKeyManager.unregister()
@@ -140,6 +142,7 @@ private extension AppDelegate {
         ) { [weak self] _ in
             Task { @MainActor in
                 self?.coordinator.cloudSync.applyCurrentSetting()
+                self?.coordinator.applyLanSyncSetting()
             }
         }
 

@@ -260,3 +260,11 @@
 "stats.apps.title" = "来源应用统计";
 "stats.apps.empty" = "暂无来源应用数据";
 "stats.apps.note" = "仅统计可识别的 Mac 应用；占比以有来源应用的记录为基数。之前已删除的历史无法补算。";
+
+"settings.lan_sync" = "局域网同步（Windows 与手机）";
+
+"settings.lan_sync_token" = "配对令牌";
+
+"settings.lan_sync_token_hint" = "Windows 端 SkyPaste 通过此令牌与这台 Mac 在局域网内配对。";
+
+"settings.lan_sync_hint2" = "在同一局域网内的这台 Mac 与 Windows 电脑之间同步剪贴板文本。";

@@ -260,3 +260,11 @@
 "stats.apps.title" = "복사한 앱별";
 "stats.apps.empty" = "앱별 데이터가 아직 없습니다";
 "stats.apps.note" = "식별 가능한 Mac 앱만 집계합니다. 비율은 앱을 식별할 수 있는 건수를 기준으로 하며 이전에 삭제된 기록은 복원할 수 없습니다.";
+
+"settings.lan_sync" = "LAN 동기화(Windows 및 휴대폰)";
+
+"settings.lan_sync_token" = "페어링 토큰";
+
+"settings.lan_sync_token_hint" = "Windows용 SkyPaste가 이 토큰으로 이 Mac과 LAN에서 페어링합니다.";
+
+"settings.lan_sync_hint2" = "같은 LAN의 이 Mac과 Windows PC 간에 클립보드 텍스트를 동기화합니다.";

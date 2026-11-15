@@ -1,0 +1,279 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <data name="clipboard.empty_text" xml:space="preserve"><value>(空白文字)</value></data>
+  <data name="clipboard.image_fallback_name" xml:space="preserve"><value>圖片</value></data>
+  <data name="clipboard.file_single" xml:space="preserve"><value>檔案：%@</value></data>
+  <data name="clipboard.folder_single" xml:space="preserve"><value>資料夾：%@</value></data>
+  <data name="clipboard.file_count" xml:space="preserve"><value>%d 個檔案</value></data>
+  <data name="clipboard.folder_count" xml:space="preserve"><value>%d 個資料夾</value></data>
+  <data name="clipboard.subtitle.text" xml:space="preserve"><value>文字 • %d 字元</value></data>
+  <data name="clipboard.subtitle.image" xml:space="preserve"><value>圖片 • %d KB</value></data>
+  <data name="clipboard.subtitle.image_file" xml:space="preserve"><value>圖片檔案</value></data>
+  <data name="clipboard.subtitle.image_file_format" xml:space="preserve"><value>圖片檔案 • %@</value></data>
+  <data name="clipboard.subtitle.image_file_count" xml:space="preserve"><value>%d 個圖片檔案</value></data>
+  <data name="clipboard.subtitle.file" xml:space="preserve"><value>檔案</value></data>
+  <data name="clipboard.subtitle.file_path" xml:space="preserve"><value>檔案 • %@</value></data>
+  <data name="clipboard.subtitle.folder" xml:space="preserve"><value>資料夾</value></data>
+  <data name="clipboard.subtitle.folder_path" xml:space="preserve"><value>資料夾 • %@</value></data>
+  <data name="clipboard.subtitle.file_count" xml:space="preserve"><value>%d 個檔案</value></data>
+  <data name="clipboard.subtitle.folder_count" xml:space="preserve"><value>%d 個資料夾</value></data>
+  <data name="clipboard.source.device" xml:space="preserve"><value>裝置同步</value></data>
+  <data name="clipboard.source.icloud" xml:space="preserve"><value>iCloud 同步</value></data>
+  <data name="section.favorites" xml:space="preserve"><value>收藏</value></data>
+  <data name="section.today" xml:space="preserve"><value>今天</value></data>
+  <data name="section.yesterday" xml:space="preserve"><value>昨天</value></data>
+  <data name="settings.appearance" xml:space="preserve"><value>主題</value></data>
+  <data name="settings.general" xml:space="preserve"><value>通用設定</value></data>
+  <data name="settings.library" xml:space="preserve"><value>資料庫</value></data>
+  <data name="settings.support" xml:space="preserve"><value>支援與推薦</value></data>
+  <data name="settings.appearance_hint" xml:space="preserve"><value>預設會跟隨系統，也可以固定使用淺色或深色模式。</value></data>
+  <data name="settings.hotkey" xml:space="preserve"><value>快捷鍵</value></data>
+  <data name="settings.language" xml:space="preserve"><value>語言</value></data>
+  <data name="settings.language_hint" xml:space="preserve"><value>選擇「跟隨系統」以使用 macOS 語言，或為應用程式指定固定語言。</value></data>
+  <data name="settings.key" xml:space="preserve"><value>按鍵</value></data>
+  <data name="settings.ctrl" xml:space="preserve"><value>Command</value></data>
+  <data name="settings.shift" xml:space="preserve"><value>Shift</value></data>
+  <data name="settings.alt" xml:space="preserve"><value>Option</value></data>
+  <data name="settings.control" xml:space="preserve"><value>Control</value></data>
+  <data name="settings.current" xml:space="preserve"><value>目前：%@</value></data>
+  <data name="settings.version_format" xml:space="preserve"><value>版本 %@（%@）</value></data>
+  <data name="settings.history" xml:space="preserve"><value>歷史紀錄</value></data>
+  <data name="settings.max_records" xml:space="preserve"><value>最大紀錄數：%d</value></data>
+  <data name="settings.history_hint" xml:space="preserve"><value>新限制會立即生效，必要時會裁剪本機歷史。</value></data>
+  <data name="settings.startup" xml:space="preserve"><value>啟動</value></data>
+  <data name="settings.launch_at_login" xml:space="preserve"><value>登入時啟動</value></data>
+  <data name="settings.launch_at_login_hint" xml:space="preserve"><value>登入 Windows 後自動啟動。</value></data>
+  <data name="settings.clipboard" xml:space="preserve"><value>剪貼簿</value></data>
+  <data name="settings.sync" xml:space="preserve"><value>同步與隱私</value></data>
+  <data name="settings.lan_sync" xml:space="preserve"><value>區域網路同步（Windows 與手機）</value></data>
+  <data name="settings.lan_sync_hint" xml:space="preserve"><value>在區域網路內開放小型同步服務，手機或其他電腦可將剪貼簿內容傳送到 SkyPaste。</value></data>
+  <data name="settings.lan_sync_upload" xml:space="preserve"><value>上傳本機文字</value></data>
+  <data name="settings.lan_sync_receive" xml:space="preserve"><value>接收 iCloud 內容</value></data>
+  <data name="settings.lan_sync_hint2" xml:space="preserve"><value>在同一區域網路內的這台 Mac 與 Windows 電腦之間同步剪貼簿文字。</value></data>
+  <data name="settings.lan_sync_rules_hint" xml:space="preserve"><value>控制 SkyPaste 是否上傳本機複製的文字、接收裝置內容，或兩者皆啟用。</value></data>
+  <data name="settings.lan_sync_status_disabled" xml:space="preserve"><value>區域網路同步未開啟。</value></data>
+  <data name="settings.lan_sync_status_unavailable" xml:space="preserve"><value>區域網路同步無法啟動，請檢查連接埠設定。</value></data>
+  <data name="settings.lan_sync_status_syncing" xml:space="preserve"><value>正在透過區域網路同步…</value></data>
+  <data name="settings.lan_sync_status_synced" xml:space="preserve"><value>區域網路同步已開啟。</value></data>
+  <data name="settings.lan_sync_status_error" xml:space="preserve"><value>同步失敗：%@</value></data>
+  <data name="settings.auto_paste" xml:space="preserve"><value>選取後自動複製</value></data>
+  <data name="settings.auto_paste_hint" xml:space="preserve"><value>啟用後，點選清單中的內容時會自動複製到剪貼簿。</value></data>
+  <data name="settings.privacy_filter" xml:space="preserve"><value>隱私內容過濾</value></data>
+  <data name="settings.privacy_filter_hint" xml:space="preserve"><value>啟用後，SkyPaste 會盡量忽略密碼、驗證碼、銀行卡號以及密鑰 / Token 等敏感文字內容。</value></data>
+  <data name="settings.ignore_apps" xml:space="preserve"><value>忽略應用程式</value></data>
+  <data name="settings.ignore_apps_hint" xml:space="preserve"><value>輸入應用程式名稱或 bundle ID，使用逗號或換行分隔。</value></data>
+  <data name="settings.ignore_apps_example" xml:space="preserve"><value>例如：Finder、Terminal、com.1password.1password。</value></data>
+  <data name="settings.ignore_apps_suggestions" xml:space="preserve"><value>最近</value></data>
+  <data name="settings.rate_app" xml:space="preserve"><value>評價應用程式</value></data>
+  <data name="settings.rate_app_subtitle" xml:space="preserve"><value>如果你喜歡 SkyPaste，歡迎在 App Store 中為它評分與評論。</value></data>
+  <data name="settings.rate_app_action" xml:space="preserve"><value>前往評分</value></data>
+  <data name="app.title" xml:space="preserve"><value>SkyPaste</value></data>
+  <data name="app.debug_title" xml:space="preserve"><value>SkyPaste 偵錯</value></data>
+  <data name="app.menu_title" xml:space="preserve"><value>SkyPaste</value></data>
+  <data name="menu.clipboard" xml:space="preserve"><value>剪貼簿</value></data>
+  <data name="menu.clipboard_manager" xml:space="preserve"><value>剪貼簿管理器</value></data>
+  <data name="menu.double_click_to_copy" xml:space="preserve"><value>雙擊即可複製</value></data>
+  <data name="menu.right_click_to_copy" xml:space="preserve"><value>剪貼簿管理器</value></data>
+  <data name="menu.command_c_copy" xml:space="preserve"><value>ctrl+c 複製</value></data>
+  <data name="menu.copy" xml:space="preserve"><value>複製</value></data>
+  <data name="menu.open_item" xml:space="preserve"><value>開啟</value></data>
+  <data name="menu.open_file" xml:space="preserve"><value>開啟檔案</value></data>
+  <data name="menu.open_folder" xml:space="preserve"><value>開啟資料夾</value></data>
+  <data name="menu.open_containing_folder" xml:space="preserve"><value>開啟所在資料夾</value></data>
+  <data name="menu.reveal_in_explorer" xml:space="preserve"><value>在檔案總管中顯示</value></data>
+  <data name="menu.copy_path" xml:space="preserve"><value>複製路徑</value></data>
+  <data name="menu.copy_link" xml:space="preserve"><value>複製連結</value></data>
+  <data name="menu.share" xml:space="preserve"><value>分享</value></data>
+  <data name="menu.translate" xml:space="preserve"><value>翻譯</value></data>
+  <data name="menu.save_as" xml:space="preserve"><value>另存為...</value></data>
+  <data name="menu.open_in_browser" xml:space="preserve"><value>以瀏覽器開啟</value></data>
+  <data name="menu.open_email" xml:space="preserve"><value>傳送郵件</value></data>
+  <data name="menu.favorite" xml:space="preserve"><value>收藏</value></data>
+  <data name="menu.unfavorite" xml:space="preserve"><value>取消收藏</value></data>
+  <data name="menu.copy_selected" xml:space="preserve"><value>複製所選項目</value></data>
+  <data name="menu.open_panel" xml:space="preserve"><value>開啟面板</value></data>
+  <data name="menu.debug" xml:space="preserve"><value>偵錯</value></data>
+  <data name="menu.search" xml:space="preserve"><value>搜尋</value></data>
+  <data name="menu.preferences" xml:space="preserve"><value>偏好設定</value></data>
+  <data name="menu.quit" xml:space="preserve"><value>結束</value></data>
+  <data name="menu.copy_success" xml:space="preserve"><value>複製成功</value></data>
+  <data name="menu.delete_day_title" xml:space="preserve"><value>刪除當天全部紀錄？</value></data>
+  <data name="menu.delete" xml:space="preserve"><value>刪除</value></data>
+  <data name="menu.ok" xml:space="preserve"><value>好</value></data>
+  <data name="menu.cancel" xml:space="preserve"><value>取消</value></data>
+  <data name="menu.delete_day_message" xml:space="preserve"><value>將刪除 %@ 的所有剪貼簿紀錄。</value></data>
+  <data name="panel.search_placeholder" xml:space="preserve"><value>搜尋剪貼簿</value></data>
+  <data name="panel.search_empty_title" xml:space="preserve"><value>找不到符合的內容</value></data>
+  <data name="panel.search_empty_message" xml:space="preserve"><value>試試其他關鍵字，或清除搜尋以查看全部剪貼簿內容。</value></data>
+  <data name="panel.search_empty_message_scoped" xml:space="preserve"><value>目前「%1$@」分類下沒有符合內容，試試其他關鍵字或切換分類。</value></data>
+  <data name="panel.empty_title" xml:space="preserve"><value>目前還沒有剪貼簿紀錄</value></data>
+  <data name="panel.empty_message" xml:space="preserve"><value>複製一些文字、圖片或檔案後，它們就會顯示在這裡。</value></data>
+  <data name="panel.empty_message_scoped" xml:space="preserve"><value>目前「%1$@」分類下還沒有內容，複製這一類內容後會顯示在這裡。</value></data>
+  <data name="panel.clear_search" xml:space="preserve"><value>清除搜尋</value></data>
+  <data name="panel.shortcut_hint" xml:space="preserve"><value>Enter：貼上  ·  ↑/↓：導航  ·  Esc：關閉  ·  Ctrl+1...9：快捷複製</value></data>
+  <data name="panel.shortcut_hint_copy_only" xml:space="preserve"><value>Enter：複製  ·  ↑/↓：導航  ·  Esc：關閉  ·  Ctrl+1...9：快捷複製</value></data>
+  <data name="panel.paste_selected" xml:space="preserve"><value>貼上所選項目</value></data>
+  <data name="panel.batch_select" xml:space="preserve"><value>批次選取</value></data>
+  <data name="panel.batch_done" xml:space="preserve"><value>完成</value></data>
+  <data name="panel.batch_select_all" xml:space="preserve"><value>全選</value></data>
+  <data name="panel.batch_clear_selection" xml:space="preserve"><value>清除選取</value></data>
+  <data name="panel.batch_favorite_selected" xml:space="preserve"><value>收藏選取</value></data>
+  <data name="panel.batch_unfavorite_selected" xml:space="preserve"><value>取消收藏</value></data>
+  <data name="panel.batch_delete_selected" xml:space="preserve"><value>刪除選取</value></data>
+  <data name="panel.batch_favorite_success" xml:space="preserve"><value>已收藏 %d 項</value></data>
+  <data name="panel.batch_unfavorite_success" xml:space="preserve"><value>已取消收藏 %d 項</value></data>
+  <data name="panel.batch_delete_success" xml:space="preserve"><value>已刪除 %d 項</value></data>
+  <data name="filter.all" xml:space="preserve"><value>全部</value></data>
+  <data name="filter.text" xml:space="preserve"><value>文字</value></data>
+  <data name="filter.image" xml:space="preserve"><value>圖片</value></data>
+  <data name="filter.file" xml:space="preserve"><value>檔案</value></data>
+  <data name="filter.folder" xml:space="preserve"><value>資料夾</value></data>
+  <data name="filter.code" xml:space="preserve"><value>程式碼</value></data>
+  <data name="filter.source_all" xml:space="preserve"><value>全部應用程式</value></data>
+  <data name="filter.source_device" xml:space="preserve"><value>手機端內容</value></data>
+  <data name="filter.source_label" xml:space="preserve"><value>應用程式</value></data>
+  <data name="filter.favorites" xml:space="preserve"><value>收藏</value></data>
+  <data name="filter.url" xml:space="preserve"><value>URL</value></data>
+  <data name="filter.email" xml:space="preserve"><value>電子郵件</value></data>
+  <data name="filter.move_first" xml:space="preserve"><value>移到最前</value></data>
+  <data name="filter.move_last" xml:space="preserve"><value>移到最後</value></data>
+  <data name="filter.reset_order" xml:space="preserve"><value>恢復預設順序</value></data>
+  <data name="debug.no_data" xml:space="preserve"><value>無資料</value></data>
+  <data name="debug.none" xml:space="preserve"><value>無</value></data>
+  <data name="debug.text" xml:space="preserve"><value>文字</value></data>
+  <data name="debug.image" xml:space="preserve"><value>圖片</value></data>
+  <data name="debug.file_urls" xml:space="preserve"><value>檔案 URL</value></data>
+  <data name="debug.name_prefix" xml:space="preserve"><value>名稱：%@ • </value></data>
+  <data name="debug.title" xml:space="preserve"><value>剪貼簿偵錯</value></data>
+  <data name="debug.refresh" xml:space="preserve"><value>重新整理</value></data>
+  <data name="debug.change_count" xml:space="preserve"><value>changeCount：%d</value></data>
+  <data name="debug.decoded" xml:space="preserve"><value>decoded：%@</value></data>
+  <data name="debug.raw_types" xml:space="preserve"><value>原始類型</value></data>
+  <data name="debug.preview" xml:space="preserve"><value>預覽</value></data>
+  <data name="debug.empty" xml:space="preserve"><value>(空)</value></data>
+  <data name="hotkey.ctrl" xml:space="preserve"><value>Cmd</value></data>
+  <data name="hotkey.shift" xml:space="preserve"><value>Shift</value></data>
+  <data name="hotkey.alt" xml:space="preserve"><value>Option</value></data>
+  <data name="hotkey.control" xml:space="preserve"><value>Control</value></data>
+  <data name="hotkey.keycode" xml:space="preserve"><value>鍵碼 %u</value></data>
+  <data name="appearance.system" xml:space="preserve"><value>跟隨系統</value></data>
+  <data name="appearance.light" xml:space="preserve"><value>淺色模式</value></data>
+  <data name="appearance.dark" xml:space="preserve"><value>深色模式</value></data>
+  <data name="language.system" xml:space="preserve"><value>跟隨系統</value></data>
+  <data name="language.en" xml:space="preserve"><value>英文</value></data>
+  <data name="language.zh-Hans" xml:space="preserve"><value>簡體中文</value></data>
+  <data name="language.zh-Hant" xml:space="preserve"><value>繁體中文</value></data>
+  <data name="language.ja" xml:space="preserve"><value>日文</value></data>
+  <data name="language.ko" xml:space="preserve"><value>韓文</value></data>
+  <data name="language.fr" xml:space="preserve"><value>法文</value></data>
+  <data name="preview.open" xml:space="preserve"><value>預覽圖片</value></data>
+  <data name="preview.open_image" xml:space="preserve"><value>開啟圖片</value></data>
+  <data name="preview.drag_hint" xml:space="preserve"><value>拖出圖片</value></data>
+  <data name="preview.drag_zoomed_hint" xml:space="preserve"><value>按住 Option 拖出圖片</value></data>
+  <data name="preview.annotate" xml:space="preserve"><value>標註</value></data>
+  <data name="preview.annotation_done" xml:space="preserve"><value>完成標註</value></data>
+  <data name="preview.annotation_hint" xml:space="preserve"><value>在圖片上畫線</value></data>
+  <data name="preview.annotation_drag_hint" xml:space="preserve"><value>拖曳以標註</value></data>
+  <data name="preview.annotation_undo" xml:space="preserve"><value>復原</value></data>
+  <data name="preview.annotation_clear" xml:space="preserve"><value>清除</value></data>
+  <data name="preview.annotation_red" xml:space="preserve"><value>紅色</value></data>
+  <data name="preview.annotation_yellow" xml:space="preserve"><value>黃色</value></data>
+  <data name="preview.annotation_blue" xml:space="preserve"><value>藍色</value></data>
+  <data name="preview.annotation_black" xml:space="preserve"><value>黑色</value></data>
+  <data name="preview.annotation_green" xml:space="preserve"><value>綠色</value></data>
+  <data name="preview.annotation_width" xml:space="preserve"><value>畫筆粗細</value></data>
+  <data name="preview.annotation_export_error_title" xml:space="preserve"><value>無法匯出標註</value></data>
+  <data name="preview.annotation_export_error_message" xml:space="preserve"><value>無法產生標註後的圖片，請再試一次。</value></data>
+  <data name="preview.annotation_preparing" xml:space="preserve"><value>正在準備圖片…</value></data>
+  <data name="preview.title" xml:space="preserve"><value>圖片預覽</value></data>
+  <data name="preview.text_open" xml:space="preserve"><value>預覽文字</value></data>
+  <data name="preview.text_title" xml:space="preserve"><value>文字預覽</value></data>
+  <data name="preview.url_title" xml:space="preserve"><value>URL 預覽</value></data>
+  <data name="preview.email_title" xml:space="preserve"><value>電子郵件預覽</value></data>
+  <data name="preview.code_title" xml:space="preserve"><value>程式碼預覽</value></data>
+  <data name="preview.file_system_title" xml:space="preserve"><value>詳細預覽</value></data>
+  <data name="preview.file_system_show_image" xml:space="preserve"><value>預覽圖片</value></data>
+  <data name="preview.file_system_show_info" xml:space="preserve"><value>檔案資訊</value></data>
+  <data name="preview.file_system_loading" xml:space="preserve"><value>正在載入檔案詳細資訊…</value></data>
+  <data name="preview.file_system_not_found" xml:space="preserve"><value>部分項目已找不到</value></data>
+  <data name="preview.file_system_not_found_message" xml:space="preserve"><value>這些路徑可能已被移動或刪除。</value></data>
+  <data name="preview.file_system_section_info" xml:space="preserve"><value>詳細資訊</value></data>
+  <data name="preview.file_system_section_contents" xml:space="preserve"><value>目錄內容</value></data>
+  <data name="preview.file_system_empty_directory" xml:space="preserve"><value>目前目錄為空。</value></data>
+  <data name="preview.file_system_label_name" xml:space="preserve"><value>名稱</value></data>
+  <data name="preview.file_system_label_type" xml:space="preserve"><value>類型</value></data>
+  <data name="preview.file_system_label_extension" xml:space="preserve"><value>副檔名</value></data>
+  <data name="preview.file_system_label_size" xml:space="preserve"><value>大小</value></data>
+  <data name="preview.file_system_label_modified" xml:space="preserve"><value>修改時間</value></data>
+  <data name="preview.file_system_label_path" xml:space="preserve"><value>路徑</value></data>
+  <data name="preview.file_system_label_items" xml:space="preserve"><value>項目數</value></data>
+  <data name="preview.file_system_label_files" xml:space="preserve"><value>檔案數</value></data>
+  <data name="preview.file_system_label_folders" xml:space="preserve"><value>子目錄數</value></data>
+  <data name="preview.file_system_type_file" xml:space="preserve"><value>檔案</value></data>
+  <data name="preview.file_system_type_folder" xml:space="preserve"><value>目錄</value></data>
+  <data name="preview.file_system_type_mixed" xml:space="preserve"><value>混合</value></data>
+  <data name="preview.file_system_multiple_locations" xml:space="preserve"><value>多個位置</value></data>
+  <data name="preview.file_system_unavailable" xml:space="preserve"><value>不可用</value></data>
+  <data name="preview.file_system_item_count" xml:space="preserve"><value>%d 項</value></data>
+  <data name="preview.file_system_file_count" xml:space="preserve"><value>%d 個檔案</value></data>
+  <data name="preview.file_system_folder_count" xml:space="preserve"><value>%d 個子目錄</value></data>
+  <data name="preview.unavailable" xml:space="preserve"><value>無法預覽</value></data>
+  <data name="preview.fit" xml:space="preserve"><value>適應</value></data>
+  <data name="preview.unavailable_message" xml:space="preserve"><value>SkyPaste 無法載入這張圖片的預覽。</value></data>
+  <data name="preview.source_label" xml:space="preserve"><value>來源：</value></data>
+  <data name="preview.source_app" xml:space="preserve"><value>%@</value></data>
+  <data name="preview.source_device" xml:space="preserve"><value>%@</value></data>
+  <data name="preview.source_local" xml:space="preserve"><value>本機</value></data>
+  <data name="open.missing_file_title" xml:space="preserve"><value>找不到該檔案</value></data>
+  <data name="open.missing_folder_title" xml:space="preserve"><value>找不到該資料夾</value></data>
+  <data name="open.missing_item_message" xml:space="preserve"><value>SkyPaste 無法開啟此路徑：%@</value></data>
+  <data name="drag.missing_file_title" xml:space="preserve"><value>找不到該檔案</value></data>
+  <data name="drag.missing_folder_title" xml:space="preserve"><value>找不到該資料夾</value></data>
+  <data name="drag.missing_item_message" xml:space="preserve"><value>該路徑不存在，無法拖曳：%@</value></data>
+  <data name="drag.row_hint" xml:space="preserve"><value>拖曳儲存</value></data>
+  <data name="save_as.title" xml:space="preserve"><value>另存為</value></data>
+  <data name="save_as.action" xml:space="preserve"><value>儲存</value></data>
+  <data name="save_as.choose_folder" xml:space="preserve"><value>選擇</value></data>
+  <data name="save_as.error_title" xml:space="preserve"><value>儲存失敗</value></data>
+  <data name="notice.database_recovered" xml:space="preserve"><value>本機歷史資料庫已自動恢復，損壞檔案已備份。</value></data>
+  <data name="settings.recommended_app" xml:space="preserve"><value>推薦應用程式</value></data>
+  <data name="yourtools.title" xml:space="preserve"><value>Xtools</value></data>
+  <data name="yourtools.subtitle" xml:space="preserve"><value>音影片、檔案、翻譯一體化 AI 處理工具應用。</value></data>
+  <data name="yourtools.open" xml:space="preserve"><value>前往 App Store</value></data>
+  <data name="wenpai.title" xml:space="preserve"><value>文排</value></data>
+  <data name="wenpai.subtitle" xml:space="preserve"><value>微信公眾號文章排版工具 · 純文字一鍵美化</value></data>
+  <data name="wenpai.open" xml:space="preserve"><value>前往網站</value></data>
+  <data name="stats.title" xml:space="preserve"><value>剪貼簿統計</value></data>
+  <data name="stats.subtitle" xml:space="preserve"><value>清楚了解你的複製習慣。</value></data>
+  <data name="stats.period.today" xml:space="preserve"><value>今天</value></data>
+  <data name="stats.period.week" xml:space="preserve"><value>近7天</value></data>
+  <data name="stats.period.month" xml:space="preserve"><value>近30天</value></data>
+  <data name="stats.period.halfYear" xml:space="preserve"><value>近半年</value></data>
+  <data name="stats.period.year" xml:space="preserve"><value>近一年</value></data>
+  <data name="stats.total" xml:space="preserve"><value>已記錄複製</value></data>
+  <data name="stats.top_category" xml:space="preserve"><value>最常用類型</value></data>
+  <data name="stats.no_data" xml:space="preserve"><value>暫無資料</value></data>
+  <data name="stats.loading" xml:space="preserve"><value>正在載入統計…</value></data>
+  <data name="stats.load_failed" xml:space="preserve"><value>統計資料載入失敗。</value></data>
+  <data name="stats.trend" xml:space="preserve"><value>複製趨勢</value></data>
+  <data name="stats.breakdown" xml:space="preserve"><value>類型分佈</value></data>
+  <data name="stats.note" xml:space="preserve"><value>刪除剪貼簿歷史不會清除已記錄的統計。連續重複內容可能合併；圖片檔案計入檔案。更早已刪除的記錄無法補算。</value></data>
+  <data name="stats.apps.title" xml:space="preserve"><value>來源應用統計</value></data>
+  <data name="stats.apps.empty" xml:space="preserve"><value>尚無來源應用資料</value></data>
+  <data name="stats.apps.note" xml:space="preserve"><value>僅統計可辨識的 Mac 應用；百分比以有來源應用的記錄為基數。之前已刪除的歷史無法補算。</value></data>
+  <data name="settings.lan_sync_token" xml:space="preserve"><value>配對權杖</value></data>
+  <data name="settings.lan_sync_token_hint" xml:space="preserve"><value>手機傳送剪貼簿時請攜帶 X-SkyPaste-Token 請求標頭。iOS 捷徑與 Android 設定步驟見 README。</value></data>
+  <data name="settings.lan_sync_device_name" xml:space="preserve"><value>裝置名稱</value></data>
+  <data name="settings.lan_sync_port" xml:space="preserve"><value>連接埠</value></data>
+  <data name="sync.received_from" xml:space="preserve"><value>已接收來自 %@ 的內容</value></data>
+  <data name="about.title" xml:space="preserve"><value>關於 SkyPaste</value></data>
+  <data name="about.subtitle" xml:space="preserve"><value>MIT 授權 · 為 Windows 10/11 打造</value></data>
+  <data name="about.open_license" xml:space="preserve"><value>查看授權</value></data>
+  <data name="paste.foreground_failed" xml:space="preserve"><value>已複製。無法自動切回之前的視窗，請手動按 Ctrl+V 貼上。</value></data>
+  <data name="settings.lan_sync_firewall_hint" xml:space="preserve"><value>如果 Windows 防火牆彈出權限詢問，請選擇「允許存取」，否則手機將無法傳送剪貼簿內容到這台電腦。</value></data>
+  <data name="settings.panel_position" xml:space="preserve"><value>面板位置</value></data>
+  <data name="panel_position.center" xml:space="preserve"><value>螢幕置中</value></data>
+  <data name="panel_position.cursor" xml:space="preserve"><value>跟隨游標</value></data>
+  <data name="hotkey.register_failed" xml:space="preserve"><value>該快捷鍵已被其他程式佔用，請更換組合。</value></data>
+  <data name="panel_position.remember" xml:space="preserve"><value>記住上次位置</value></data>
+</root>

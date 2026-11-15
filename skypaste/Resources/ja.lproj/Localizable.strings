@@ -260,3 +260,11 @@
 "stats.apps.title" = "コピー元アプリ別";
 "stats.apps.empty" = "コピー元アプリのデータはまだありません";
 "stats.apps.note" = "識別可能な Mac アプリのみ対象です。割合はアプリを特定できた件数を基準にし、過去に削除された履歴は復元できません。";
+
+"settings.lan_sync" = "LAN 同期（Windows とスマホ）";
+
+"settings.lan_sync_token" = "ペアリングトークン";
+
+"settings.lan_sync_token_hint" = "Windows 版 SkyPaste はこのトークンでこの Mac と LAN 経由でペアリングします。";
+
+"settings.lan_sync_hint2" = "同じ LAN 内のこの Mac と Windows PC 間でクリップボードのテキストを同期します。";
