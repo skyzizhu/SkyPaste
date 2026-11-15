@@ -2,7 +2,10 @@
 ; Build: iscc installer\SkyPaste.iss  (after dotnet publish to publish\)
 
 #define MyAppName "SkyPaste"
-#define MyAppVersion "0.1.0"
+; Version comes from CI via /DMyAppVersion=<tag>; local default below.
+#ifndef MyAppVersion
+  #define MyAppVersion "0.1.0"
+#endif
 #define MyAppPublisher "SkyPaste"
 #define MyAppExeName "SkyPaste.exe"
 
