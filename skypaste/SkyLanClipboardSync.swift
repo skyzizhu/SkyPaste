@@ -261,12 +261,32 @@ public enum LanClipboardSync {
         })
     }
 
+    /// Debug log for pairing issues (tmp file, overwritten by nothing else).
+    private static let logFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm:ss"
+        return f
+    }()
+
+    static func lanDebug(_ line: String) {
+        let stamped = "\(logFormatter.string(from: Date())) \(line)\n"
+        if let handle = FileHandle(forWritingAtPath: "/tmp/skypaste-lan-debug.log") {
+            handle.seekToEndOfFile()
+            handle.write(stamped.data(using: .utf8)!)
+            handle.closeFile()
+        } else {
+            try? stamped.write(to: URL(fileURLWithPath: "/tmp/skypaste-lan-debug.log"), atomically: true, encoding: .utf8)
+        }
+    }
+
     static func route(_ request: HTTPRequest) -> (code: Int, body: Data, contentType: String) {
         // The web clipboard shell is public; the API endpoints below enforce the token.
         if request.path == "/" {
             return (200, Data(webClipboardHTML().utf8), "text/html")
         }
-        guard request.headers["x-skypaste-token"] == token else {
+        let provided = request.headers["x-skypaste-token"] ?? "(none)"
+        lanDebug("REQ \(request.method) \(request.path) provided=\(provided) expectedPrefix=\(token.prefix(4))… len=\(token.count) match=\(provided == token)")
+        guard provided == token else {
             return json(401, "{\"error\":\"unauthorized\"}")
         }
         switch request.path {

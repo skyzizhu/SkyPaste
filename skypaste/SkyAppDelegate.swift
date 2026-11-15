@@ -41,6 +41,19 @@ extension AppDelegate {
         }
 
         NSApp.setActivationPolicy(.accessory)
+
+        // Single-instance guard: multiple instances would fight over the LAN
+        // sync port (intermittent 401s) and double-capture the pasteboard.
+        let bundleID = Bundle.main.bundleIdentifier ?? "com.huaibor.skypaste"
+        let duplicates = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID)
+            .filter { $0 != NSRunningApplication.current }
+        for duplicate in duplicates {
+            duplicate.terminate()
+        }
+        if !duplicates.isEmpty {
+            NSLog("SkyPaste terminated \(duplicates.count) duplicate instance(s)")
+        }
+
         coordinator.store.captureCurrentPasteboardIfNeeded()
 
         monitor = ClipboardMonitor { [weak coordinator] acceptsLocalContent in
