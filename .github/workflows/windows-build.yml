@@ -43,8 +43,14 @@ jobs:
       - name: Publish (self-contained win-x64)
         run: dotnet publish src/SkyPaste/SkyPaste.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=${{ steps.version.outputs.version }} -o publish
 
-      - name: Zip portable exe
+      - name: Zip portable exe (x64)
         run: Compress-Archive -Path publish/* -DestinationPath SkyPaste-windows-portable.zip
+
+      - name: Publish x86 (32-bit portable)
+        run: dotnet publish src/SkyPaste/SkyPaste.csproj -c Release -r win-x86 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=${{ steps.version.outputs.version }} -o publish-x86
+
+      - name: Zip portable exe (x86)
+        run: Compress-Archive -Path publish-x86/* -DestinationPath SkyPaste-windows-x86-portable.zip
 
       - name: Build installer (Inno Setup)
         if: github.event_name == 'release'
@@ -67,6 +73,7 @@ jobs:
           name: SkyPaste-windows-${{ github.sha }}
           path: |
             SkyPasteWindows/SkyPaste-windows-portable.zip
+            SkyPasteWindows/SkyPaste-windows-x86-portable.zip
             SkyPasteWindows/output/
           if-no-files-found: error
 
@@ -78,5 +85,6 @@ jobs:
         run: |
           gh release upload ${{ github.event.release.tag_name }} `
             SkyPasteWindows/SkyPaste-windows-portable.zip `
+            SkyPasteWindows/SkyPaste-windows-x86-portable.zip `
             SkyPasteWindows/output/SkyPaste-Setup-*.exe `
             --clobber

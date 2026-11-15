@@ -1,6 +1,6 @@
 # SkyPaste for Windows（Windows 10 / Windows 11，64 位）
 
-> 仅提供 64 位（x64）版本。Windows 11 全系为 64 位；Windows 10 时代之后的电脑几乎均为 64 位。32 位 Windows 不受支持。
+> 主推 **64 位（x64）** 版本（Windows 11 全系及绝大多数 Windows 10 电脑）。仍保留极老旧 32 位 Windows 10 用的便携 zip（无安装器）；Windows 11 无 32 位版本。
 
 SkyPaste 的 Windows 版本：剪贴板历史管理器，支持文本、链接、图片、文件、文件夹、代码、邮箱的保存、搜索、预览、收藏与局域网同步。与 macOS 版（本仓库上层目录）功能对应，架构独立。
 
