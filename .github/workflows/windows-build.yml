@@ -113,8 +113,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # NOTE: defaults.run.working-directory is SkyPasteWindows, so these
+          # paths are relative to it (no SkyPasteWindows/ prefix here).
           gh release upload ${{ github.event.release.tag_name }} `
-            SkyPasteWindows/SkyPaste-windows-portable.zip `
-            SkyPasteWindows/SkyPaste-windows-x86-portable.zip `
-            SkyPasteWindows/output/SkyPaste-Setup-*.exe `
+            SkyPaste-windows-portable.zip `
+            SkyPaste-windows-x86-portable.zip `
+            output/SkyPaste-Setup-*.exe `
             --clobber
