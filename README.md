@@ -1,11 +1,11 @@
-# SkyPaste - macOS Clipboard Manager with History, Search, Sync, Files and Images
+# SkyPaste — Clipboard Manager for macOS & Windows
 
 <p align="center">
-  <img src="skypaste/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png" alt="SkyPaste macOS clipboard manager app icon" width="120">
+  <img src="skypaste/Assets.xcassets/AppIcon.appiconset/icon_512x512@2x.png" alt="SkyPaste app icon" width="120">
 </p>
 
 <p align="center">
-  <strong>A lightweight clipboard history manager for macOS.</strong><br>
+  <strong>A lightweight clipboard history manager for Mac and Windows.</strong><br>
   Save, search, preview, organize, and sync copied text, links, images, files, folders, code, and email addresses.
 </p>
 
@@ -14,107 +14,90 @@
 </p>
 
 <p align="center">
-  <a href="https://apps.apple.com/us/app/skypaste-clipboard-manager/id6760884520?mt=12">Download on the Mac App Store</a>
+  <a href="https://apps.apple.com/us/app/skypaste-clipboard-manager/id6760884520?mt=12">Mac App Store</a> ·
+  <a href="https://github.com/skyzizhu/SkyPaste/releases/latest">Windows Releases (x64 / x86 / installer)</a>
 </p>
 
-SkyPaste is a simple and fast macOS clipboard manager built for people who copy and paste all day. It records clipboard history, keeps content searchable, groups items by type, supports menu bar quick access, and can sync SkyPaste clipboard content across devices with iCloud.
+SkyPaste records clipboard history, keeps content searchable, groups items by type, supports quick access from the menu bar (macOS) or system tray (Windows), and syncs clipboard text across devices over the local network — including **Mac ↔ Windows ↔ phone**.
 
-## Keywords
+## Downloads
 
-macOS clipboard manager, clipboard history, clipboard search, clipboard sync, iCloud clipboard, menu bar clipboard app, copy paste tool, paste manager, image clipboard, file clipboard, folder clipboard, URL history, email clipboard, productivity app for Mac.
+| Platform | Package | Notes |
+|---|---|---|
+| macOS | [Mac App Store](https://apps.apple.com/us/app/skypaste-clipboard-manager/id6760884520?mt=12) · [SkyPaste-macOS.zip](https://github.com/skyzizhu/SkyPaste/releases/latest) | macOS 13+ |
+| Windows 10/11 (64-bit) | `SkyPaste-windows-portable.zip` or `SkyPaste-Setup-*.exe` from [Releases](https://github.com/skyzizhu/SkyPaste/releases/latest) | Recommended |
+| Windows 10 (32-bit) | `SkyPaste-windows-x86-portable.zip` from [Releases](https://github.com/skyzizhu/SkyPaste/releases/latest) | Legacy portable |
 
-## What's New
+## Features (both platforms)
 
-- Added Clipboard Insights with copy trends, category breakdowns, and source-app statistics across five time ranges.
-- Added an interactive image preview to image-file details, with zoom, drag-out, and annotation tools.
-- Fixed selected-item copying and improved panel rendering after wake or display changes.
-- Added WenPai to the app recommendations in Preferences.
+- Clipboard history for text, links, images, files, folders, code, and email addresses, with source-app badges and day-based groups.
+- Filters: All / Text / Image / Files / Folders / Code / URL / Email / Favorites — reorderable, order persisted.
+- Powerful search: case-insensitive substring matching, `type:` / `source:` tokens, `fav`, `today`, `yesterday`, plus **pinyin-initial search** (`jtgj` → 截图工具) on Windows.
+- Quick access: menu-bar popover (macOS) / tray popover (Windows).
+- Global hotkey (default ⌘⇧V on macOS, Ctrl+Shift+V on Windows), paste-back to the previous app, quick-copy shortcuts.
+- Image preview with zoom, pan, pen annotation, and full-resolution PNG export.
+- File/folder details with contents listing and an image-file dual view.
+- Statistics: copy trends, category breakdown, and source-app stats across five time ranges.
+- Favorites that survive history trimming, batch operations, delete-day with confirmation.
+- Privacy content filtering (password managers, OTP codes, bank cards via Luhn, API tokens/JWT/private keys) and per-app ignore lists.
+- Appearance: follow system / light / dark. Six UI languages: English, 简体中文, 繁體中文, 日本語, 한국어, Français.
+- Local SQLite storage with automatic corruption recovery.
+
+### Sync
+
+- **macOS ↔ macOS**: iCloud (CloudKit) text sync, plus Universal Clipboard receive from iPhone.
+- **macOS ↔ Windows ↔ phone**: optional **LAN sync** (token-protected local HTTP + UDP discovery; nothing leaves your network). Phones push via iOS Shortcuts / Android HTTP — see the [Windows README](SkyPasteWindows/README.md) for step-by-step pairing.
 
 ## Screenshots
 
-### Menu Bar Clipboard History
+### Menu Bar Clipboard History (macOS)
 
 ![SkyPaste menu bar clipboard history](docs/screen/screen_2.png)
 
-### Main Clipboard Panel
+### Main Clipboard Panel (macOS)
 
 ![SkyPaste main clipboard panel](docs/screen/screen_3.png)
 
-### Preferences
+### Preferences (macOS)
 
 ![SkyPaste preferences](docs/screen/screen_4.png)
 
-### Overview
-
-![SkyPaste overview](docs/screen/screen_1.png)
-
-## Features
-
-- Clipboard history for text, links, images, files, folders, code, and email addresses.
-- Fast menu bar popover for quick clipboard access.
-- Full clipboard panel with search, filters, source app filtering, and day-based history groups.
-- Filters for All, Text, Image, Files, Folders, Code, URL, Email, and Favorites.
-- Email recognition with a dedicated Email category and Send Email action.
-- URL recognition with Open in Browser action.
-- File and folder recognition with preview, Save As, copy path, Finder reveal, and open actions.
-- Drag images, files, and folders out of the list into Finder and other apps.
-- Share text, links, images, files, and folders with the macOS system share sheet.
-- Image preview with zoom and pan support.
-- Image-file details can switch between file information and an interactive image preview.
-- Clipboard Insights shows copy trends, category distribution, and source-app counts.
-- Detail pages show the source app and provide copy, share, favorite, and type-specific actions.
-- Favorites that remain available even when regular history is trimmed.
-- Batch selection, batch delete, and batch favorite actions.
-- Source app badges for locally copied content.
-- iCloud sync for SkyPaste clipboard content across devices.
-- iPhone-to-Mac copied content sync when using the same Apple account.
-- Privacy content filtering option for sensitive clipboard text.
-- Ignore apps by app name or bundle ID.
-- Customizable global hotkey.
-- Keyboard shortcuts: `Cmd+C`, `Enter`, and `Cmd+1...9`.
-- Appearance modes: Follow System, Light Mode, and Dark Mode.
-- Multi-language UI: English, Simplified Chinese, Traditional Chinese, Japanese, Korean, and French.
-- Local SQLite persistence.
-- Image memory optimization with lazy thumbnails and on-demand full image restore.
-
 ## Local Storage
 
-SkyPaste stores clipboard history locally in SQLite:
+- macOS: `~/Library/Application Support/SkyPaste/history.sqlite`
+- Windows: `%APPDATA%\SkyPaste\history.sqlite`
 
-```text
-~/Library/Application Support/SkyPaste/history.sqlite
+Data stays local by default. iCloud and LAN sync are optional and off by default.
+
+## Building
+
+| Platform | Requirements | Command |
+|---|---|---|
+| macOS | Xcode 16+ | `open skypaste.xcodeproj` → Run |
+| Windows / cross-build | .NET 8 SDK | `cd SkyPasteWindows && dotnet build SkyPaste.sln && dotnet test tests/SkyPaste.Tests/SkyPaste.Tests.csproj` |
+
+Windows publish (self-contained single-file):
+
+```bash
+cd SkyPasteWindows
+dotnet publish src/SkyPaste/SkyPaste.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
 ```
 
-Data stays local by default. iCloud sync is optional and can be configured in Preferences.
+CI builds and tests every push on `windows-latest`; tag releases additionally produce an Inno Setup installer and attach all packages to the GitHub Release.
 
-## Open in Xcode
+## Repository Layout
 
-SkyPaste uses the Xcode project at `skypaste.xcodeproj`.
-
-```text
-open skypaste.xcodeproj
 ```
-
-Run with `Product -> Run`, or create a release build with `Product -> Archive`.
-
-For App Store submission, use Xcode Archive and App Store Connect.
-
-## Release and App Store Notes
-
-- Release checklist: [docs/RELEASING.md](docs/RELEASING.md)
-- App Store checklist: [docs/APP_STORE.md](docs/APP_STORE.md)
-- Metadata checklist: [docs/APP_STORE_CHECKLIST.md](docs/APP_STORE_CHECKLIST.md)
-- Privacy policy template: [docs/PRIVACY_POLICY.md](docs/PRIVACY_POLICY.md)
+skypaste/            macOS app (Swift/SwiftUI, App Store)
+SkyPasteWindows/     Windows app (WPF + .NET 8) — see its README for details
+docs/                privacy policy, release checklists, screenshots
+website/             landing page
+```
 
 ## Permissions
 
-To support paste back into the previous app, macOS may request Accessibility permission:
-
-```text
-System Settings -> Privacy & Security -> Accessibility
-```
-
-Enable the packaged SkyPaste app, or the terminal/Xcode app used to run it during development.
+- macOS: paste-back may request Accessibility; App Sandbox with iCloud + local network.
+- Windows: paste-back uses SendInput; LAN sync asks for firewall permission once (local networks only).
 
 ## License
 
