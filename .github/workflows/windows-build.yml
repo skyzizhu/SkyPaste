@@ -90,11 +90,13 @@ jobs:
           Write-Host "MainWindowTitle: '$title'"
           Stop-Process -Id $p.Id -Force
 
-      - name: Upload smoke screenshot
+      - name: Upload smoke screenshots
         uses: actions/upload-artifact@v4
         with:
           name: smoke-desktop-${{ github.sha }}
-          path: smoke-desktop.png
+          path: |
+            SkyPasteWindows/smoke-desktop.png
+            SkyPasteWindows/publish/smoke-app-window.png
           if-no-files-found: warn
 
       - name: Upload workflow artifact (every push)

@@ -104,6 +104,17 @@ public partial class App : Application
         if (e.Args.Contains("--uitesting", StringComparer.OrdinalIgnoreCase))
         {
             Coordinator.ShowPanel();
+            var smokeTimer = new System.Windows.Threading.DispatcherTimer
+            {
+                Interval = TimeSpan.FromSeconds(6),
+            };
+            smokeTimer.Tick += (_, _) =>
+            {
+                smokeTimer.Stop();
+                Coordinator.CaptureMainWindowScreenshot(
+                    System.IO.Path.Combine(AppContext.BaseDirectory, "smoke-app-window.png"));
+            };
+            smokeTimer.Start();
         }
     }
 

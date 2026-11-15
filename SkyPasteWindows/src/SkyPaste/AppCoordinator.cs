@@ -75,6 +75,35 @@ public sealed class AppCoordinator
     /// <summary>Called by windows right before they appear (mac captureFrontApp).</summary>
     public void CaptureForeground() => _previousForegroundWindow = PasteBackService.CaptureForeground();
 
+    /// <summary>Renders the visible main panel to a PNG (CI --uitesting screenshots).</summary>
+    public void CaptureMainWindowScreenshot(string path)
+    {
+        var window = _mainWindow;
+        if (window is null || !window.IsVisible)
+        {
+            return;
+        }
+        try
+        {
+            var width = (int)window.ActualWidth;
+            var height = (int)window.ActualHeight;
+            if (width <= 0 || height <= 0)
+            {
+                return;
+            }
+            var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap(
+                width, height, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+            bitmap.Render(window);
+            var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+            encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
+            using var stream = System.IO.File.Create(path);
+            encoder.Save(stream);
+        }
+        catch (Exception)
+        {
+        }
+    }
+
     // ---- copy / paste ---------------------------------------------------------
 
     /// <summary>Copy an item to the clipboard without closing anything.</summary>
