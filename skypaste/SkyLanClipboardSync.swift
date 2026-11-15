@@ -598,7 +598,10 @@ const params = new URLSearchParams(location.search);
 let token = params.get('t') || localStorage.getItem('sp_token') || '';
 if (params.get('t')) { localStorage.setItem('sp_token', token); history.replaceState(null, '', location.pathname); }
 function msg(t) { const m = document.getElementById('msg'); m.textContent = t; setTimeout(() => m.textContent = '', 2500); }
-function showTokenBox() { document.getElementById('tokenBox').style.display = 'block'; }
+function showTokenBox(prefill) {
+  document.getElementById('tokenInput').value = prefill || '';
+  document.getElementById('tokenBox').style.display = 'block';
+}
 function saveToken() {
   token = document.getElementById('tokenInput').value.trim();
   if (!token) return;
@@ -609,8 +612,8 @@ function saveToken() {
 async function api(path, opts) {
   const r = await fetch(path, Object.assign({ headers: { 'X-SkyPaste-Token': token } }, opts));
   if (r.status === 401) {
-    localStorage.removeItem('sp_token'); token = '';
-    showTokenBox();
+    // Keep the stored token (likely just stale); let the user correct it in place.
+    showTokenBox(token);
     throw new Error('unauthorized');
   }
   return r;
