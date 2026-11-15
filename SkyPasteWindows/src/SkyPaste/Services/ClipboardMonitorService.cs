@@ -26,6 +26,12 @@ public sealed class ClipboardMonitorService : IDisposable
     private uint _lastSequenceNumber;
     private DateTime _suppressUntilUtc;
     private bool _started;
+    private int _decodeRetries;
+    private DispatcherTimer? _decodeRetryTimer;
+
+    // Delayed-render apps (Excel, Photoshop...) place content lazily; retry reads.
+    private const int MaxDecodeRetries = 2;
+    private static readonly TimeSpan DecodeRetryDelay = TimeSpan.FromMilliseconds(300);
 
     /// <summary>Set while SkyPaste itself writes the clipboard so self-copies aren't captured.</summary>
     public void SuppressNextCapture() => _suppressUntilUtc = DateTime.UtcNow.AddMilliseconds(500);
@@ -127,12 +133,14 @@ public sealed class ClipboardMonitorService : IDisposable
         }
         catch (COMException)
         {
-            return; // clipboard momentarily locked by another app
+            item = null; // clipboard momentarily locked by another app
         }
         if (item is null)
         {
+            ScheduleDecodeRetry();
             return;
         }
+        _decodeRetries = 0;
 
         var owner = GetClipboardOwnerApp();
         if (owner is not null)
@@ -154,6 +162,24 @@ public sealed class ClipboardMonitorService : IDisposable
         {
             ClipboardCaptured?.Invoke(item);
         }
+    }
+
+    private void ScheduleDecodeRetry()
+    {
+        if (_decodeRetries >= MaxDecodeRetries)
+        {
+            _decodeRetries = 0;
+            return;
+        }
+        _decodeRetries += 1;
+        _decodeRetryTimer?.Stop();
+        _decodeRetryTimer = new DispatcherTimer { Interval = DecodeRetryDelay };
+        _decodeRetryTimer.Tick += (_, _) =>
+        {
+            _decodeRetryTimer?.Stop();
+            CaptureClipboard();
+        };
+        _decodeRetryTimer.Start();
     }
 
     private ClipboardSourceApp? GetClipboardOwnerApp()

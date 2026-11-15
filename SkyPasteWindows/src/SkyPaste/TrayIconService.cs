@@ -33,6 +33,16 @@ public sealed class TrayIconService : IDisposable
             }
         };
 
+        RebuildMenu();
+        SkyPaste.Core.Localization.L10n.LanguageChanged += RebuildMenu;
+    }
+
+    private void RebuildMenu()
+    {
+        if (_notifyIcon is null)
+        {
+            return;
+        }
         var menu = new System.Windows.Forms.ContextMenuStrip();
         menu.Items.Add(L10n.T("menu.open_panel"), null, (_, _) => _app.Coordinator.ShowPanel());
         menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
@@ -63,6 +73,7 @@ public sealed class TrayIconService : IDisposable
 
     public void Dispose()
     {
+        SkyPaste.Core.Localization.L10n.LanguageChanged -= RebuildMenu;
         if (_notifyIcon is not null)
         {
             _notifyIcon.Visible = false;

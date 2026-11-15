@@ -101,6 +101,48 @@ internal static class NativeMethods
 
     // ---- process query -----------------------------------------------------------
 
+    // ---- cursor / monitor / DPI ----------------------------------------------
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct POINT
+    {
+        public int X;
+        public int Y;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct RECT
+    {
+        public int Left;
+        public int Top;
+        public int Right;
+        public int Bottom;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct MONITORINFO
+    {
+        public int cbSize;
+        public RECT rcMonitor;
+        public RECT rcWork;
+        public uint dwFlags;
+    }
+
+    public const uint MONITOR_DEFAULTTONEAREST = 2;
+    public const int MDT_EFFECTIVE_DPI = 0;
+
+    [DllImport("user32.dll")]
+    public static extern bool GetCursorPos(out POINT point);
+
+    [DllImport("user32.dll")]
+    public static extern IntPtr MonitorFromPoint(POINT point, uint flags);
+
+    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
+    public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO info);
+
+    [DllImport("shcore.dll")]
+    public static extern int GetDpiForMonitor(IntPtr hMonitor, int type, out uint dpiX, out uint dpiY);
+
     [DllImport("kernel32.dll", SetLastError = true)]
     public static extern IntPtr OpenProcess(uint access, bool inherit, uint pid);
 

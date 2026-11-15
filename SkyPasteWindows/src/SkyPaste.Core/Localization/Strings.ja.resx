@@ -269,4 +269,10 @@
   <data name="about.title" xml:space="preserve"><value>SkyPaste について</value></data>
   <data name="about.subtitle" xml:space="preserve"><value>MIT ライセンス · Windows 10/11 向け</value></data>
   <data name="about.open_license" xml:space="preserve"><value>ライセンスを表示</value></data>
+  <data name="paste.foreground_failed" xml:space="preserve"><value>コピーしました。前のウィンドウに自動で切り替えできませんでした。Ctrl+V で貼り付けてください。</value></data>
+  <data name="settings.lan_sync_firewall_hint" xml:space="preserve"><value>Windows ファイアウォールの確認が表示されたら「許可」を選んでください。許可しないとスマホからこの PC に送信できません。</value></data>
+  <data name="settings.panel_position" xml:space="preserve"><value>パネル位置</value></data>
+  <data name="panel_position.center" xml:space="preserve"><value>画面中央</value></data>
+  <data name="panel_position.cursor" xml:space="preserve"><value>カーソルに追従</value></data>
+  <data name="panel_position.remember" xml:space="preserve"><value>前回の位置を記憶</value></data>
 </root>

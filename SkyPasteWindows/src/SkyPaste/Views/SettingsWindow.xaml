@@ -37,7 +37,17 @@
                                   SelectionChanged="OnLanguageChanged" />
                     </Grid>
                     <Grid Margin="0,4">
-                        <StackPanel>
+                        <Grid>
+                            <TextBlock x:Name="PanelPositionLabel" Text="Panel position" VerticalAlignment="Center"
+                                       Foreground="{DynamicResource Text.Primary}" />
+                            <ComboBox x:Name="PanelPosition" Width="200" HorizontalAlignment="Right"
+                                      SelectionChanged="OnPanelPositionChanged">
+                                <ComboBoxItem Content="Centered on screen" />
+                                <ComboBoxItem Content="Follow cursor" />
+                                <ComboBoxItem Content="Remember last position" />
+                            </ComboBox>
+                        </Grid>
+                        <StackPanel Margin="0,8,0,0">
                             <TextBlock x:Name="LaunchAtLoginLabel" Text="Launch at login"
                                        Foreground="{DynamicResource Text.Primary}" />
                             <TextBlock x:Name="LaunchAtLoginHint" FontSize="10"

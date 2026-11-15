@@ -269,4 +269,10 @@
   <data name="about.title" xml:space="preserve"><value>À propos de SkyPaste</value></data>
   <data name="about.subtitle" xml:space="preserve"><value>Licence MIT · Conçu pour Windows 10 et 11</value></data>
   <data name="about.open_license" xml:space="preserve"><value>Voir la licence</value></data>
+  <data name="paste.foreground_failed" xml:space="preserve"><value>Copié. Impossible de revenir automatiquement à la fenêtre précédente — collez avec Ctrl+V.</value></data>
+  <data name="settings.lan_sync_firewall_hint" xml:space="preserve"><value>Si le pare-feu Windows demande l'autorisation, choisissez « Autoriser » — sinon votre téléphone ne pourra pas envoyer de contenu vers ce PC.</value></data>
+  <data name="settings.panel_position" xml:space="preserve"><value>Position du panneau</value></data>
+  <data name="panel_position.center" xml:space="preserve"><value>Centré à l'écran</value></data>
+  <data name="panel_position.cursor" xml:space="preserve"><value>Suivre le curseur</value></data>
+  <data name="panel_position.remember" xml:space="preserve"><value>Mémoriser la dernière position</value></data>
 </root>

@@ -269,4 +269,10 @@
   <data name="about.title" xml:space="preserve"><value>About SkyPaste</value></data>
   <data name="about.subtitle" xml:space="preserve"><value>MIT license · Built for Windows 10 and 11</value></data>
   <data name="about.open_license" xml:space="preserve"><value>View License</value></data>
+  <data name="paste.foreground_failed" xml:space="preserve"><value>Copied. The previous window could not be focused automatically — press Ctrl+V to paste.</value></data>
+  <data name="settings.lan_sync_firewall_hint" xml:space="preserve"><value>If Windows Firewall asks for permission, choose &quot;Allow&quot; — otherwise your phone cannot send clipboard content to this PC.</value></data>
+  <data name="settings.panel_position" xml:space="preserve"><value>Panel position</value></data>
+  <data name="panel_position.center" xml:space="preserve"><value>Centered on screen</value></data>
+  <data name="panel_position.cursor" xml:space="preserve"><value>Follow cursor</value></data>
+  <data name="panel_position.remember" xml:space="preserve"><value>Remember last position</value></data>
 </root>

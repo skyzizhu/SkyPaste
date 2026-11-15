@@ -269,4 +269,10 @@
   <data name="about.title" xml:space="preserve"><value>关于 SkyPaste</value></data>
   <data name="about.subtitle" xml:space="preserve"><value>MIT 许可证 · 为 Windows 10/11 打造</value></data>
   <data name="about.open_license" xml:space="preserve"><value>查看许可证</value></data>
+  <data name="paste.foreground_failed" xml:space="preserve"><value>已复制。无法自动切回之前的窗口，请手动按 Ctrl+V 粘贴。</value></data>
+  <data name="settings.lan_sync_firewall_hint" xml:space="preserve"><value>如果 Windows 防火墙弹出权限询问，请选择「允许访问」，否则手机将无法推送剪贴板内容到这台电脑。</value></data>
+  <data name="settings.panel_position" xml:space="preserve"><value>面板位置</value></data>
+  <data name="panel_position.center" xml:space="preserve"><value>屏幕居中</value></data>
+  <data name="panel_position.cursor" xml:space="preserve"><value>跟随鼠标</value></data>
+  <data name="panel_position.remember" xml:space="preserve"><value>记住上次位置</value></data>
 </root>

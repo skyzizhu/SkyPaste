@@ -52,14 +52,7 @@ public partial class StatisticsWindow : Window
         ShowInTaskbar = false;
         Background = (Brush)FindResource("Window.Background");
 
-        TitleLabel.Text = L10n.T("stats.title");
-        SubtitleLabel.Text = L10n.T("stats.subtitle");
-        TrendHeader.Text = L10n.T("stats.trend");
-        BreakdownHeader.Text = L10n.T("stats.breakdown");
-        AppsHeader.Text = L10n.T("stats.apps.title");
-        NoteText.Text = L10n.T("stats.note");
-        TotalHeader.Text = L10n.T("stats.total");
-        TopCategoryHeader.Text = L10n.T("stats.top_category");
+        ApplyLocalization();
 
         PreviewKeyDown += (_, e) =>
         {
@@ -70,8 +63,32 @@ public partial class StatisticsWindow : Window
         };
 
         _app.Store.StatisticsChanged += OnStatisticsChanged;
+        L10n.LanguageChanged += ApplyLocalizationAndReload;
         Loaded += (_, _) => Reload();
-        Closed += (_, _) => _app.Store.StatisticsChanged -= OnStatisticsChanged;
+        Closed += (_, _) =>
+        {
+            _app.Store.StatisticsChanged -= OnStatisticsChanged;
+            L10n.LanguageChanged -= ApplyLocalizationAndReload;
+        };
+    }
+
+    private void ApplyLocalizationAndReload()
+    {
+        ApplyLocalization();
+        Reload();
+    }
+
+    private void ApplyLocalization()
+    {
+        Title = L10n.T("stats.title");
+        TitleLabel.Text = L10n.T("stats.title");
+        SubtitleLabel.Text = L10n.T("stats.subtitle");
+        TrendHeader.Text = L10n.T("stats.trend");
+        BreakdownHeader.Text = L10n.T("stats.breakdown");
+        AppsHeader.Text = L10n.T("stats.apps.title");
+        NoteText.Text = L10n.T("stats.note");
+        TotalHeader.Text = L10n.T("stats.total");
+        TopCategoryHeader.Text = L10n.T("stats.top_category");
     }
 
     private void OnStatisticsChanged()

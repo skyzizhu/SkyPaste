@@ -177,6 +177,20 @@ public sealed class AppSettingsService : INotifyPropertyChanged
         set => SetAndSave(ref _languageCode, NormalizeLanguage(value), nameof(LanguageCode), LanguageSettingsChanged);
     }
 
+    private string _panelPosition = "center";
+    public string PanelPosition
+    {
+        get => _panelPosition;
+        set => SetAndSave(ref _panelPosition, NormalizePanelPosition(value), nameof(PanelPosition));
+    }
+
+    private bool _lanSyncHintShown;
+    public bool LanSyncHintShown
+    {
+        get => _lanSyncHintShown;
+        set => SetAndSave(ref _lanSyncHintShown, value, nameof(LanSyncHintShown));
+    }
+
     private string _appearanceMode = "system";
     public string AppearanceMode
     {
@@ -224,6 +238,9 @@ public sealed class AppSettingsService : INotifyPropertyChanged
 
     private static string NormalizeAppearance(string value) =>
         value is "light" or "dark" ? value : "system";
+
+    private static string NormalizePanelPosition(string value) =>
+        value is "cursor" or "remember" ? value : "center";
 
     public AppAppearanceMode Appearance => AppearanceMode switch
     {
@@ -331,6 +348,8 @@ public sealed class AppSettingsService : INotifyPropertyChanged
             _deviceName = string.IsNullOrWhiteSpace(doc.DeviceName) ? Environment.MachineName : doc.DeviceName;
             _languageCode = NormalizeLanguage(doc.LanguageCode);
             _appearanceMode = NormalizeAppearance(doc.AppearanceMode);
+            _panelPosition = NormalizePanelPosition(doc.PanelPosition);
+            _lanSyncHintShown = doc.LanSyncHintShown;
             _filterOrder = (doc.FilterOrder ?? new List<string>()).ToList();
         }
         catch (Exception)
@@ -365,6 +384,8 @@ public sealed class AppSettingsService : INotifyPropertyChanged
                     DeviceName = _deviceName,
                     LanguageCode = _languageCode,
                     AppearanceMode = _appearanceMode,
+                    PanelPosition = _panelPosition,
+                    LanSyncHintShown = _lanSyncHintShown,
                     FilterOrder = _filterOrder,
                 };
                 using var stream = File.Create(FilePath);
@@ -397,6 +418,8 @@ public sealed class AppSettingsService : INotifyPropertyChanged
         public string? DeviceName { get; set; }
         public string LanguageCode { get; set; } = "system";
         public string AppearanceMode { get; set; } = "system";
+        public string PanelPosition { get; set; } = "center";
+        public bool LanSyncHintShown { get; set; }
         public List<string>? FilterOrder { get; set; }
     }
 }

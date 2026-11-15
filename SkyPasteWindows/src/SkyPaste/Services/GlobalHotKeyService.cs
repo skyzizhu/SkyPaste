@@ -122,19 +122,37 @@ public static class PasteBackService
 {
     public static IntPtr CaptureForeground() => NativeMethods.GetForegroundWindow();
 
-    public static void RestoreAndPaste(IntPtr previousWindow, int delayMs = 80)
+    /// <summary>
+    /// Restores the previous window and injects Ctrl+V. Returns false when the
+    /// foreground could not be restored (e.g. elevated target windows) — in that
+    /// case nothing is sent so the paste never lands in the wrong window.
+    /// Call from a background thread; sleeps while waiting for focus.
+    /// </summary>
+    public static bool RestoreAndPaste(IntPtr previousWindow, int delayMs = 80)
     {
+        var foregroundRestored = false;
         if (previousWindow != IntPtr.Zero)
         {
             if (NativeMethods.IsIconic(previousWindow))
             {
                 NativeMethods.ShowWindow(previousWindow, 9 /* SW_RESTORE */);
             }
-            NativeMethods.SetForegroundWindow(previousWindow);
+            for (var attempt = 0; attempt < 3 && !foregroundRestored; attempt++)
+            {
+                NativeMethods.SetForegroundWindow(previousWindow);
+                Thread.Sleep(60);
+                foregroundRestored = NativeMethods.GetForegroundWindow() == previousWindow;
+            }
+        }
+
+        if (!foregroundRestored)
+        {
+            return false;
         }
 
         Thread.Sleep(delayMs);
         SendCtrlV();
+        return true;
     }
 
     public static void SendCtrlV()

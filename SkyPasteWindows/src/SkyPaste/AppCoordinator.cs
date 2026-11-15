@@ -105,7 +105,20 @@ public sealed class AppCoordinator
         {
         }
         ClosePanel();
-        PasteBackService.RestoreAndPaste(_previousForegroundWindow);
+
+        // Focus + SendInput can block briefly and must not freeze the UI thread;
+        // elevated target windows may refuse SetForegroundWindow -> degrade to
+        // "copied only" with a hint instead of pasting into the wrong window.
+        var previousWindow = _previousForegroundWindow;
+        Task.Run(() =>
+        {
+            var pasted = PasteBackService.RestoreAndPaste(previousWindow);
+            if (!pasted)
+            {
+                _app.Dispatcher.BeginInvoke(() =>
+                    _app.Toast.Show(L10n.T("paste.foreground_failed")));
+            }
+        });
     }
 
     // ---- tray popover ----------------------------------------------------------

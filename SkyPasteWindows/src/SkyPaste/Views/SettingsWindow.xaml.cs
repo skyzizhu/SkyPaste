@@ -20,7 +20,6 @@ public partial class SettingsWindow : Window
     {
         InitializeComponent();
         _app = app;
-        Title = L10n.T("menu.preferences");
         Width = 660;
         Height = 700;
         MinWidth = 600;
@@ -29,6 +28,34 @@ public partial class SettingsWindow : Window
         ShowInTaskbar = false;
         Background = (Brush)FindResource("Window.Background");
 
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == Key.Escape)
+            {
+                Close();
+            }
+        };
+
+        BuildLanguageOptions();
+        BuildKeyOptions();
+        ApplyLocalization();
+
+        _app.LanSync.StatusChanged += UpdateLanSyncStatus;
+        L10n.LanguageChanged += ApplyLocalization;
+        Closed += (_, _) =>
+        {
+            _app.LanSync.StatusChanged -= UpdateLanSyncStatus;
+            L10n.LanguageChanged -= ApplyLocalization;
+        };
+
+        LoadSettings();
+        BuildRecentAppChips();
+    }
+
+    /// <summary>All static texts; re-applied when the app language changes.</summary>
+    private void ApplyLocalization()
+    {
+        Title = L10n.T("menu.preferences");
         SectionGeneral.Header = L10n.T("settings.general");
         SectionHotkey.Header = L10n.T("settings.hotkey");
         SectionSync.Header = L10n.T("settings.sync");
@@ -41,6 +68,7 @@ public partial class SettingsWindow : Window
         LaunchAtLoginHint.Text = L10n.T("settings.launch_at_login_hint");
         AutoPasteLabel.Text = L10n.T("settings.auto_paste");
         AutoPasteHint.Text = L10n.T("settings.auto_paste_hint");
+        PanelPositionLabel.Text = L10n.T("settings.panel_position");
 
         KeyLabel.Text = L10n.T("settings.key");
         CtrlToggleLabel.Text = L10n.T("settings.ctrl");
@@ -68,25 +96,30 @@ public partial class SettingsWindow : Window
         AboutSubtitle.Text = L10n.T("about.subtitle");
         OpenLicenseLabel.Text = L10n.T("about.open_license");
 
-        PreviewKeyDown += (_, e) =>
-        {
-            if (e.Key == Key.Escape)
-            {
-                Close();
-            }
-        };
+        SetComboItemsText(AppearanceMode,
+            "appearance.system", "appearance.light", "appearance.dark");
+        SetComboItemsText(LanguageMode,
+            "language.system", "language.en", "language.zh-Hans", "language.zh-Hant", "language.ja", "language.ko", "language.fr");
+        SetComboItemsText(PanelPosition,
+            "panel_position.center", "panel_position.cursor", "panel_position.remember");
 
         var version = typeof(App).Assembly.GetName().Version;
         VersionText.Text = L10n.Format("settings.version_format",
             version?.ToString() ?? "0.1.0", "Windows 10/11");
+        MaxRecordsValue.Text = L10n.Format("settings.max_records", _app.Settings.HistoryLimit);
+        UpdateHotKeyDisplay();
+        UpdateLanSyncStatus();
+    }
 
-        _app.LanSync.StatusChanged += UpdateLanSyncStatus;
-        Closed += (_, _) => _app.LanSync.StatusChanged -= UpdateLanSyncStatus;
-
-        LoadSettings();
-        BuildLanguageOptions();
-        BuildKeyOptions();
-        BuildRecentAppChips();
+    private static void SetComboItemsText(System.Windows.Controls.ComboBox combo, params string[] keys)
+    {
+        for (var i = 0; i < keys.Length && i < combo.Items.Count; i++)
+        {
+            if (combo.Items[i] is System.Windows.Controls.ComboBoxItem item)
+            {
+                item.Content = L10n.T(keys[i]);
+            }
+        }
     }
 
     private void LoadSettings()
@@ -107,6 +140,12 @@ public partial class SettingsWindow : Window
             "ja" => 4,
             "ko" => 5,
             "fr" => 6,
+            _ => 0,
+        };
+        PanelPosition.SelectedIndex = settings.PanelPosition switch
+        {
+            "cursor" => 1,
+            "remember" => 2,
             _ => 0,
         };
         LaunchAtLoginToggle.IsChecked = settings.LaunchAtLogin;
@@ -196,6 +235,20 @@ public partial class SettingsWindow : Window
         };
     }
 
+    private void OnPanelPositionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_loading)
+        {
+            return;
+        }
+        _app.Settings.PanelPosition = PanelPosition.SelectedIndex switch
+        {
+            1 => "cursor",
+            2 => "remember",
+            _ => "center",
+        };
+    }
+
     private void OnLanguageChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_loading)
@@ -231,6 +284,13 @@ public partial class SettingsWindow : Window
         }
         else if (sender == LanSyncToggle)
         {
+            if (LanSyncToggle.IsChecked == true && !_app.Settings.LanSyncHintShown)
+            {
+                // Show before applying so the firewall prompt appears right after the user reads it.
+                MessageBox.Show(this, L10n.T("settings.lan_sync_firewall_hint"),
+                    L10n.T("settings.lan_sync"), MessageBoxButton.OK, MessageBoxImage.Information);
+                _app.Settings.LanSyncHintShown = true;
+            }
             settings.LanSyncEnabled = LanSyncToggle.IsChecked == true;
         }
         else if (sender == LanSyncUploadToggle)
