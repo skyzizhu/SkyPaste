@@ -3,6 +3,8 @@
 
     <!-- Palette mirrors the macOS app (accent #146BF0, category colors from SkyClipboardStatisticsCharts) -->
     <Color x:Key="AccentColor">#146BF0</Color>
+    <FontFamily x:Key="GlyphFont">Segoe MDL2 Assets</FontFamily>
+
     <SolidColorBrush x:Key="AccentBrush" Color="#146BF0" />
     <SolidColorBrush x:Key="AccentSoftBrush" Color="#29146BF0" />
     <SolidColorBrush x:Key="AccentBorderBrush" Color="#2E146BF0" />

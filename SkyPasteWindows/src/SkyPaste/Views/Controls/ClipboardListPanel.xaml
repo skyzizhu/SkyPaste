@@ -61,7 +61,7 @@
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="&#xE71E;" FontSize="12"
+                <TextBlock Grid.Column="0" Text="&#xE71E;" FontSize="12" FontFamily="{DynamicResource GlyphFont}"
                            Foreground="{DynamicResource Text.Secondary}" VerticalAlignment="Center" />
                 <TextBox x:Name="SearchBox" Grid.Column="1" Margin="8,0,0,0" BorderThickness="0"
                          Background="Transparent" Foreground="{DynamicResource Text.Primary}"
@@ -69,7 +69,7 @@
                          TextChanged="OnSearchTextChanged" KeyDown="OnSearchBoxKeyDown" />
                 <Button x:Name="SearchClear" Grid.Column="2" Style="{DynamicResource IconIconButton}"
                         Click="OnSearchClearClick" Visibility="Collapsed">
-                    <TextBlock Text="&#xE894;" FontSize="11" Foreground="{DynamicResource Text.Secondary}" />
+                    <TextBlock Text="&#xE894;" FontSize="11" FontFamily="{DynamicResource GlyphFont}" Foreground="{DynamicResource Text.Secondary}" />
                 </Button>
             </Grid>
         </Border>
@@ -87,7 +87,7 @@
             <Button x:Name="SourceMenuButton" Grid.Column="1" Margin="8,0,0,0"
                     Style="{DynamicResource CapsuleButton}" Click="OnSourceMenuClick">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock x:Name="SourceMenuGlyph" Text="&#xE8A9;" FontSize="11" />
+                    <TextBlock x:Name="SourceMenuGlyph" Text="&#xE8A9;" FontSize="11" FontFamily="{DynamicResource GlyphFont}" />
                     <TextBlock x:Name="SourceMenuLabel" Margin="5,0,0,0" Text="Apps" FontSize="11" />
                 </StackPanel>
             </Button>

@@ -2,6 +2,8 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
     <Color x:Key="AccentColor">#146BF0</Color>
+    <FontFamily x:Key="GlyphFont">Segoe MDL2 Assets</FontFamily>
+
     <SolidColorBrush x:Key="AccentBrush" Color="#146BF0" />
     <SolidColorBrush x:Key="AccentSoftBrush" Color="#29146BF0" />
     <SolidColorBrush x:Key="AccentBorderBrush" Color="#52146BF0" />

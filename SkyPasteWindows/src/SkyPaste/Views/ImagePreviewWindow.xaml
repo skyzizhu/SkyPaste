@@ -88,9 +88,9 @@
                 <TextBlock x:Name="ZoomText" Text="Fit" FontSize="11" FontWeight="SemiBold"
                            Foreground="{DynamicResource Text.Primary}" VerticalAlignment="Center"
                            Margin="0,0,10,0" />
-                <Button Style="{DynamicResource IconIconButton}" Click="OnZoomOut" Content="&#xE738;" />
-                <Button Style="{DynamicResource IconIconButton}" Click="OnZoomReset" Content="&#xE7A7;" />
-                <Button Style="{DynamicResource IconIconButton}" Click="OnZoomIn" Content="&#xE710;" />
+                <Button Style="{DynamicResource IconIconButton}" Click="OnZoomOut" Content="&#xE738;" FontFamily="{DynamicResource GlyphFont}" />
+                <Button Style="{DynamicResource IconIconButton}" Click="OnZoomReset" Content="&#xE7A7;" FontFamily="{DynamicResource GlyphFont}" />
+                <Button Style="{DynamicResource IconIconButton}" Click="OnZoomIn" Content="&#xE710;" FontFamily="{DynamicResource GlyphFont}" />
             </StackPanel>
         </Grid>
 

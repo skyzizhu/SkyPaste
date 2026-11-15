@@ -35,6 +35,9 @@ public partial class ClipboardListPanel : UserControl
     private DispatcherTimer? _pendingPrimaryAction;
     private bool _suppressSearchCallback;
 
+    private static System.Windows.Media.FontFamily GlyphFont =>
+        (System.Windows.Media.FontFamily)System.Windows.Application.Current.TryFindResource("GlyphFont");
+
     private List<RowModel> _flatRows = new();
     private readonly Dictionary<Guid, Border> _rowBorders = new();
     private int _rebuildGeneration;
@@ -256,7 +259,7 @@ public partial class ClipboardListPanel : UserControl
             {
                 Style = (Style)FindResource("IconIconButton"),
                 HorizontalAlignment = HorizontalAlignment.Right,
-                Content = new TextBlock { Text = "\uE74D", FontSize = 11 },
+                Content = new TextBlock { Text = "\uE74D", FontSize = 11, FontFamily = GlyphFont },
                 ToolTip = L10n.T("menu.delete"),
             };
             var day = items.Count > 0 ? items[0].CreatedAt.ToLocalTime().Date : DateTime.Today;
@@ -314,7 +317,7 @@ public partial class ClipboardListPanel : UserControl
             {
                 Style = (Style)FindResource("IconIconButton"),
                 HorizontalAlignment = HorizontalAlignment.Right,
-                Content = new TextBlock { Text = "\uE74D", FontSize = 11 },
+                Content = new TextBlock { Text = "\uE74D", FontSize = 11, FontFamily = GlyphFont },
                 ToolTip = L10n.T("menu.delete"),
             };
             deleteDay.Click += (_, _) => ShowDeleteDayConfirm(items);
@@ -377,6 +380,7 @@ public partial class ClipboardListPanel : UserControl
             {
                 Text = "\uE8B9",
                 FontSize = 14,
+                FontFamily = GlyphFont,
                 Foreground = (Brush)FindResource("Text.Secondary"),
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center,
@@ -398,6 +402,7 @@ public partial class ClipboardListPanel : UserControl
                 {
                     Text = row.IconGlyph,
                     FontSize = 9,
+                    FontFamily = GlyphFont,
                     Foreground = row.IconBrush,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center,
@@ -461,6 +466,7 @@ public partial class ClipboardListPanel : UserControl
                 Name = "BatchGlyph",
                 Text = _batchSelection.Contains(item.Id) ? "\uE73E" : "\uE739",
                 FontSize = 13,
+                FontFamily = GlyphFont,
                 Foreground = _batchSelection.Contains(item.Id)
                     ? (Brush)FindResource("AccentBrush")
                     : (Brush)FindResource("Text.Secondary"),
@@ -472,6 +478,7 @@ public partial class ClipboardListPanel : UserControl
             {
                 Text = "\uE735",
                 FontSize = 11,
+                FontFamily = GlyphFont,
                 Foreground = (Brush)FindResource("Favorite"),
             });
         }
@@ -709,6 +716,7 @@ public partial class ClipboardListPanel : UserControl
                     {
                         Text = searching ? "\uE71E" : "\uE7B8",
                         FontSize = 28,
+                        FontFamily = GlyphFont,
                         Foreground = (Brush)FindResource("Text.Secondary"),
                         HorizontalAlignment = HorizontalAlignment.Center,
                     },
@@ -880,6 +888,7 @@ public partial class ClipboardListPanel : UserControl
                     {
                         Text = filter.IconGlyph(),
                         FontSize = 10,
+                        FontFamily = GlyphFont,
                         VerticalAlignment = VerticalAlignment.Center,
                     },
                     new TextBlock
@@ -1066,7 +1075,7 @@ public partial class ClipboardListPanel : UserControl
         var item = new MenuItem
         {
             Header = header,
-            Icon = new TextBlock { Text = glyph, FontSize = 11 },
+            Icon = new TextBlock { Text = glyph, FontSize = 11, FontFamily = GlyphFont },
             IsChecked = _sourceSelection.Equals(selection),
         };
         item.Click += (_, _) =>
@@ -1355,7 +1364,7 @@ public partial class ClipboardListPanel : UserControl
         var item = new MenuItem
         {
             Header = header,
-            Icon = new TextBlock { Text = glyph, FontSize = 11 },
+            Icon = new TextBlock { Text = glyph, FontSize = 11, FontFamily = GlyphFont },
             Foreground = danger ? new SolidColorBrush(Color.FromRgb(0xE0, 0x45, 0x3A)) : null,
         };
         item.Click += (_, _) => onClick();
