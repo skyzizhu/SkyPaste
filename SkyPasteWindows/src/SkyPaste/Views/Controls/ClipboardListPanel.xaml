@@ -33,19 +33,19 @@
             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                 <Button x:Name="SearchToggle" Style="{DynamicResource IconIconButton}"
                         Click="OnSearchToggleClick">
-                    <TextBlock x:Name="SearchToggleGlyph" Text="&#xE71E;" FontSize="12" />
+                    <TextBlock x:Name="SearchToggleGlyph" Text="&#xE71E;" FontSize="12" FontFamily="{DynamicResource GlyphFont}" />
                 </Button>
                 <Button x:Name="BatchToggle" Style="{DynamicResource IconIconButton}"
                         Click="OnBatchToggleClick" Margin="6,0,0,0">
-                    <TextBlock Text="&#xE762;" FontSize="12" />
+                    <TextBlock Text="&#xE762;" FontSize="12" FontFamily="{DynamicResource GlyphFont}" />
                 </Button>
                 <Button x:Name="StatsToggle" Style="{DynamicResource IconIconButton}"
                         Click="OnStatsClick" Margin="6,0,0,0">
-                    <TextBlock Text="&#xE9D2;" FontSize="12" />
+                    <TextBlock Text="&#xE9D2;" FontSize="12" FontFamily="{DynamicResource GlyphFont}" />
                 </Button>
                 <Button x:Name="CloseToggle" Style="{DynamicResource IconIconButton}"
                         Click="OnCloseClick" Margin="6,0,0,0">
-                    <TextBlock Text="&#xE711;" FontSize="12" />
+                    <TextBlock Text="&#xE711;" FontSize="12" FontFamily="{DynamicResource GlyphFont}" />
                 </Button>
             </StackPanel>
         </Grid>
