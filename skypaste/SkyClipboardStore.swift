@@ -142,7 +142,10 @@ final class ClipboardStore: ObservableObject {
         case .item(let decodedItem):
             var decodedItem = decodedItem
             if decodedItem.source == .local, !acceptsLocalContent {
-                guard items.first?.fingerprint != decodedItem.fingerprint else { return }
+                // Skip if this content is already in history anywhere: the pasteboard
+            // still holds older copies, and re-adding would bump them to the top
+            // with a wrong source tag (observed with web/LAN pushes displacing them).
+            guard !items.contains(where: { $0.fingerprint == decodedItem.fingerprint }) else { return }
                 // Universal Clipboard can arrive without a pasteboard changeCount bump or a stable remote marker.
                 decodedItem = decodedItem.withSource(.universalClipboard)
             }
