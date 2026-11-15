@@ -164,7 +164,8 @@ public sealed class LanSyncService : IDisposable
         var token = request.Header("X-SkyPaste-Token");
         if (!string.Equals(token, _settings.LanSyncToken, StringComparison.Ordinal))
         {
-            return (401, "{\"error\":\"unauthorized\"}");
+            var safe = (request.Header("X-SkyPaste-Token") ?? "(none)").Replace("\\", "");
+            return (401, "{\"error\":\"unauthorized\",\"provided\":\"" + safe + "\",\"expectedLen\":" + _settings.LanSyncToken.Length + "}");
         }
 
         if (request.Path.TrimEnd('/') == "/" && request.Method == "GET")

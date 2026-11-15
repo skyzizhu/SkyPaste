@@ -269,14 +269,8 @@ public enum LanClipboardSync {
     }()
 
     static func lanDebug(_ line: String) {
-        let stamped = "\(logFormatter.string(from: Date())) \(line)\n"
-        if let handle = FileHandle(forWritingAtPath: "/tmp/skypaste-lan-debug.log") {
-            handle.seekToEndOfFile()
-            handle.write(stamped.data(using: .utf8)!)
-            handle.closeFile()
-        } else {
-            try? stamped.write(to: URL(fileURLWithPath: "/tmp/skypaste-lan-debug.log"), atomically: true, encoding: .utf8)
-        }
+        // NSLog works inside the App Sandbox and lands in the unified log.
+        NSLog("SkyPasteLAN %@", line)
     }
 
     static func route(_ request: HTTPRequest) -> (code: Int, body: Data, contentType: String) {
@@ -285,9 +279,12 @@ public enum LanClipboardSync {
             return (200, Data(webClipboardHTML().utf8), "text/html")
         }
         let provided = request.headers["x-skypaste-token"] ?? "(none)"
-        lanDebug("REQ \(request.method) \(request.path) provided=\(provided) expectedPrefix=\(token.prefix(4))… len=\(token.count) match=\(provided == token)")
+        lanDebug("REQ \(request.method) \(request.path) provided=\(provided) len=\(token.count) match=\(provided == token)")
         guard provided == token else {
-            return json(401, "{\"error\":\"unauthorized\"}")
+            // Debug aid: echo what the client actually sent so pairing issues
+            // (invisible characters, stale tokens) are visible on the phone.
+            let safe = provided.replacingOccurrences(of: "\\", with: "")
+            return json(401, "{\"error\":\"unauthorized\",\"provided\":\"\(safe)\",\"expectedLen\":\(token.count)}")
         }
         switch request.path {
         case "/paste":
@@ -630,8 +627,10 @@ function sanitizeToken(v) {
 async function api(path, opts) {
   const r = await fetch(path, Object.assign({ headers: { 'X-SkyPaste-Token': token } }, opts));
   if (r.status === 401) {
-    // Keep the stored token for reference; rescan is the zero-typing path.
-    showTokenBox(token);
+    let provided = '';
+    try { const j = await r.json(); provided = j.provided || ''; } catch (e2) {}
+    showTokenBox(provided);
+    msg('server received: " + provided + "');
     throw new Error('unauthorized');
   }
   return r;

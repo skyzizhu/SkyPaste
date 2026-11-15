@@ -96,8 +96,10 @@ function saveToken() {
 async function api(path, opts) {
   const r = await fetch(path, Object.assign({ headers: { 'X-SkyPaste-Token': token } }, opts));
   if (r.status === 401) {
-    // Keep the stored token for reference; rescan is the zero-typing path.
-    showTokenBox(token);
+    let provided = '';
+    try { const j = await r.json(); provided = j.provided || ''; } catch (e2) {}
+    showTokenBox(provided);
+    msg('server received: " + provided + "');
     throw new Error('unauthorized');
   }
   return r;
