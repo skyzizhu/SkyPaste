@@ -30,7 +30,7 @@ Name: "chinesesimplified"; MessagesFile: "ChineseSimplified.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "autostart"; Description: "{cm:LaunchAtLoginTask}"; GroupDescription: "{cm:AdditionalIcons}"
+Name: "autostart"; Description: "Launch SkyPaste at sign-in / 登录时自动启动"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
 Source: "..\publish\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion
@@ -50,6 +50,3 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; \
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; \
     Flags: nowait postinstall skipifsilent
 
-[CustomMessages]
-LaunchAtLoginTask=Launch SkyPaste when I sign in
-LaunchAtLoginTask.chinesesimplified=登录 Windows 时自动启动 SkyPaste
