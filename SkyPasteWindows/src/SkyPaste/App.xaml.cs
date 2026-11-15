@@ -74,6 +74,13 @@ public partial class App : Application
 
         HotKeys.Pressed += Coordinator.TogglePanel;
         HotKeys.Initialize();
+        HotKeys.RegistrationChanged += () =>
+        {
+            if (!HotKeys.IsRegistered)
+            {
+                Toast.Show(L10n.T("hotkey.register_failed"));
+            }
+        };
         Monitor.Start();
         LanSync.ApplyCurrentSetting();
         Settings.LanSyncSettingsChanged += () => LanSync.ApplyCurrentSetting();

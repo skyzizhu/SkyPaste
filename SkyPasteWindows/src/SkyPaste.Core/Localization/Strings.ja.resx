@@ -45,11 +45,11 @@
   <data name="settings.launch_at_login_hint" xml:space="preserve"><value>Windows にサインインしたときに自動的に起動します。</value></data>
   <data name="settings.clipboard" xml:space="preserve"><value>クリップボード</value></data>
   <data name="settings.sync" xml:space="preserve"><value>同期とプライバシー</value></data>
-  <data name="settings.lan_sync" xml:space="preserve"><value>ユニバーサルクリップボードを受信</value></data>
+  <data name="settings.lan_sync" xml:space="preserve"><value>LAN 同期（Windows とスマホ）</value></data>
   <data name="settings.lan_sync_hint" xml:space="preserve"><value>LAN 内に小さな同期サービスを公開し、スマホや他の PC からクリップボードの内容を送信できます。</value></data>
   <data name="settings.lan_sync_upload" xml:space="preserve"><value>この Mac のテキストをアップロード</value></data>
   <data name="settings.lan_sync_receive" xml:space="preserve"><value>iCloud の内容を受信</value></data>
-  <data name="settings.lan_sync_hint2" xml:space="preserve"><value>有効にすると、SkyPaste はこの Mac でコピーしたテキストをプライベート iCloud データベースへ同期し、ほかのデバイスで保存された SkyPaste のクリップボード項目も取得します。</value></data>
+  <data name="settings.lan_sync_hint2" xml:space="preserve"><value>同じ LAN 内のこの Mac と Windows PC 間でクリップボードのテキストを同期します。</value></data>
   <data name="settings.lan_sync_rules_hint" xml:space="preserve"><value>この PC でコピーしたテキストの送信、デバイスからの受信、またはその両方を制御します。</value></data>
   <data name="settings.lan_sync_status_disabled" xml:space="preserve"><value>LAN 同期はオフです。</value></data>
   <data name="settings.lan_sync_status_unavailable" xml:space="preserve"><value>LAN 同期を開始できませんでした。ポート設定を確認してください。</value></data>
@@ -261,10 +261,10 @@
   <data name="stats.apps.title" xml:space="preserve"><value>コピー元アプリ別</value></data>
   <data name="stats.apps.empty" xml:space="preserve"><value>コピー元アプリのデータはまだありません</value></data>
   <data name="stats.apps.note" xml:space="preserve"><value>識別可能な Mac アプリのみ対象です。割合はアプリを特定できた件数を基準にし、過去に削除された履歴は復元できません。</value></data>
-  <data name="settings.lan_sync_device_name" xml:space="preserve"><value>デバイス名</value></data>
-  <data name="settings.lan_sync_port" xml:space="preserve"><value>ポート</value></data>
   <data name="settings.lan_sync_token" xml:space="preserve"><value>ペアリングトークン</value></data>
   <data name="settings.lan_sync_token_hint" xml:space="preserve"><value>スマホから送信する場合は X-SkyPaste-Token ヘッダーを付けてください。手順は README を参照。</value></data>
+  <data name="settings.lan_sync_device_name" xml:space="preserve"><value>デバイス名</value></data>
+  <data name="settings.lan_sync_port" xml:space="preserve"><value>ポート</value></data>
   <data name="sync.received_from" xml:space="preserve"><value>%@ から受信しました</value></data>
   <data name="about.title" xml:space="preserve"><value>SkyPaste について</value></data>
   <data name="about.subtitle" xml:space="preserve"><value>MIT ライセンス · Windows 10/11 向け</value></data>
@@ -274,5 +274,6 @@
   <data name="settings.panel_position" xml:space="preserve"><value>パネル位置</value></data>
   <data name="panel_position.center" xml:space="preserve"><value>画面中央</value></data>
   <data name="panel_position.cursor" xml:space="preserve"><value>カーソルに追従</value></data>
+  <data name="hotkey.register_failed" xml:space="preserve"><value>このショートカットは他のアプリで使用中です。別の組み合わせを選んでください。</value></data>
   <data name="panel_position.remember" xml:space="preserve"><value>前回の位置を記憶</value></data>
 </root>

@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using System.Runtime.InteropServices;
 using System.IO;
 using System.Windows;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using SkyPaste.Core.Core;
 using SkyPaste.Core.Models;
@@ -186,6 +187,18 @@ public static class ClipboardWriter
                 catch (COMException)
                 {
                 }
+                // CF_DIB for legacy apps (Paint, some Office paths) that ignore PNG/Bitmap formats.
+                var dib = ConvertToDib(bitmap);
+                if (dib is not null)
+                {
+                    try
+                    {
+                        dataObject.SetData(DataFormats.Dib, dib);
+                    }
+                    catch (COMException)
+                    {
+                    }
+                }
                 System.Windows.Clipboard.SetDataObject(dataObject, copy: true);
                 break;
             }
@@ -207,6 +220,42 @@ public static class ClipboardWriter
                 System.Windows.Clipboard.SetDataObject(dataObject, copy: true);
                 break;
             }
+        }
+    }
+
+    /// <summary>Encodes a bitmap as a top-down 32bpp CF_DIB stream (BITMAPINFOHEADER + pixels).</summary>
+    public static MemoryStream? ConvertToDib(BitmapSource source)
+    {
+        try
+        {
+            var converted = new FormatConvertedBitmap(source, PixelFormats.Bgra32, null, 0);
+            var width = converted.PixelWidth;
+            var height = converted.PixelHeight;
+            var stride = width * 4;
+            var pixels = new byte[stride * height];
+            converted.CopyPixels(pixels, stride, 0);
+
+            const int headerSize = 40;
+            var stream = new MemoryStream(headerSize + pixels.Length);
+            using var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, leaveOpen: true);
+            writer.Write((uint)headerSize);        // biSize
+            writer.Write(width);                   // biWidth
+            writer.Write(-height);                 // biHeight (negative = top-down)
+            writer.Write((short)1);                // biPlanes
+            writer.Write((short)32);               // biBitCount
+            writer.Write(0u);                      // biCompression = BI_RGB
+            writer.Write((uint)pixels.Length);     // biSizeImage
+            writer.Write(0);                       // biXPelsPerMeter
+            writer.Write(0);                       // biYPelsPerMeter
+            writer.Write(0u);                      // biClrUsed
+            writer.Write(0u);                      // biClrImportant
+            writer.Write(pixels);
+            stream.Position = 0;
+            return stream;
+        }
+        catch (Exception)
+        {
+            return null;
         }
     }
 

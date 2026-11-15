@@ -5,6 +5,8 @@ using System.Windows.Media;
 using SkyPaste.Core.Localization;
 using SkyPaste.Core.Models;
 
+using SkyPaste.Services;
+
 namespace SkyPaste;
 
 /// <summary>Text/URL/email/code preview (mac TextPreviewView): selectable text, copy, browser/email open.</summary>
@@ -47,6 +49,7 @@ public partial class TextPreviewWindow : Window
         BrowserButton.Visibility = item.IsUrl ? Visibility.Visible : Visibility.Collapsed;
         EmailButton.Visibility = item.IsEmail ? Visibility.Visible : Visibility.Collapsed;
 
+        Loaded += (_, _) => WindowEffectsService.EnableRoundedCorners(this);
         PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape)

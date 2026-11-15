@@ -3,6 +3,8 @@ using System.Windows;
 using System.Windows.Input;
 using SkyPaste.Views.Controls;
 
+using SkyPaste.Services;
+
 namespace SkyPaste;
 
 /// <summary>
@@ -40,6 +42,7 @@ public partial class TrayPopoverWindow : Window
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
+        WindowEffectsService.EnableRoundedCorners(this);
         // Anchor near the tray area (bottom-right of the primary work area).
         var workArea = SystemParameters.WorkArea;
         Left = workArea.Right - Width - 12;

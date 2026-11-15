@@ -45,11 +45,11 @@
   <data name="settings.launch_at_login_hint" xml:space="preserve"><value>Runs automatically when you sign in to Windows.</value></data>
   <data name="settings.clipboard" xml:space="preserve"><value>Clipboard</value></data>
   <data name="settings.sync" xml:space="preserve"><value>Sync &amp; Privacy</value></data>
-  <data name="settings.lan_sync" xml:space="preserve"><value>Receive Universal Clipboard</value></data>
+  <data name="settings.lan_sync" xml:space="preserve"><value>LAN Sync (Windows &amp; Phones)</value></data>
   <data name="settings.lan_sync_hint" xml:space="preserve"><value>Runs a small LAN service so your phone or other PCs can send clipboard content to SkyPaste.</value></data>
   <data name="settings.lan_sync_upload" xml:space="preserve"><value>Upload local text</value></data>
   <data name="settings.lan_sync_receive" xml:space="preserve"><value>Receive iCloud content</value></data>
-  <data name="settings.lan_sync_hint2" xml:space="preserve"><value>When enabled, SkyPaste syncs text copied on this Mac to your private iCloud database and fetches SkyPaste clipboard items saved from your other devices.</value></data>
+  <data name="settings.lan_sync_hint2" xml:space="preserve"><value>Syncs clipboard text between this Mac and Windows PCs on the same network.</value></data>
   <data name="settings.lan_sync_rules_hint" xml:space="preserve"><value>Control whether SkyPaste uploads text copied on this PC, receives content from devices, or both.</value></data>
   <data name="settings.lan_sync_status_disabled" xml:space="preserve"><value>LAN Sync is off.</value></data>
   <data name="settings.lan_sync_status_unavailable" xml:space="preserve"><value>LAN Sync could not start. Check the port setting.</value></data>
@@ -261,10 +261,10 @@
   <data name="stats.apps.title" xml:space="preserve"><value>By source app</value></data>
   <data name="stats.apps.empty" xml:space="preserve"><value>No source app data yet</value></data>
   <data name="stats.apps.note" xml:space="preserve"><value>Only identifiable Mac apps are included. Percentages use app-attributed copies; previously deleted history cannot be recovered.</value></data>
-  <data name="settings.lan_sync_device_name" xml:space="preserve"><value>Device name</value></data>
-  <data name="settings.lan_sync_port" xml:space="preserve"><value>Port</value></data>
   <data name="settings.lan_sync_token" xml:space="preserve"><value>Pairing token</value></data>
   <data name="settings.lan_sync_token_hint" xml:space="preserve"><value>Send clipboard from your phone with the X-SkyPaste-Token header. See README for iOS Shortcuts and Android steps.</value></data>
+  <data name="settings.lan_sync_device_name" xml:space="preserve"><value>Device name</value></data>
+  <data name="settings.lan_sync_port" xml:space="preserve"><value>Port</value></data>
   <data name="sync.received_from" xml:space="preserve"><value>Received from %@</value></data>
   <data name="about.title" xml:space="preserve"><value>About SkyPaste</value></data>
   <data name="about.subtitle" xml:space="preserve"><value>MIT license · Built for Windows 10 and 11</value></data>
@@ -274,5 +274,6 @@
   <data name="settings.panel_position" xml:space="preserve"><value>Panel position</value></data>
   <data name="panel_position.center" xml:space="preserve"><value>Centered on screen</value></data>
   <data name="panel_position.cursor" xml:space="preserve"><value>Follow cursor</value></data>
+  <data name="hotkey.register_failed" xml:space="preserve"><value>This shortcut is taken by another app — pick a different combination.</value></data>
   <data name="panel_position.remember" xml:space="preserve"><value>Remember last position</value></data>
 </root>

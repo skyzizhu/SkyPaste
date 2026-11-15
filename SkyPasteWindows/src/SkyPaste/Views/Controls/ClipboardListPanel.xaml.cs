@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -32,11 +33,12 @@ public partial class ClipboardListPanel : UserControl
     private string _searchText = string.Empty;
     private DispatcherTimer? _searchDebounce;
     private DispatcherTimer? _pendingPrimaryAction;
-    private bool _rebuilding;
     private bool _suppressSearchCallback;
 
     private List<RowModel> _flatRows = new();
     private readonly Dictionary<Guid, Border> _rowBorders = new();
+    private int _rebuildGeneration;
+    private const int RowBuildChunkSize = 60;
 
     public event Action? CloseRequested;
 
@@ -159,13 +161,18 @@ public partial class ClipboardListPanel : UserControl
 
     // ---- rebuild --------------------------------------------------------------------
 
-    private void Rebuild()
+    /// <summary>
+    /// Rebuilds the list. Rows are appended in small chunks across dispatcher
+    /// yields so a 1000-item history paints the first screen immediately
+    /// instead of blocking the UI thread on one giant layout pass.
+    /// </summary>
+    private async void Rebuild()
     {
-        if (_rebuilding || !IsLoaded)
+        if (!IsLoaded)
         {
             return;
         }
-        _rebuilding = true;
+        var generation = Interlocked.Increment(ref _rebuildGeneration);
         try
         {
             var items = CurrentItems;
@@ -177,45 +184,109 @@ public partial class ClipboardListPanel : UserControl
             SectionHost.Children.Clear();
             _rowBorders.Clear();
             _flatRows = new List<RowModel>();
-            int rowIndex = 0;
 
+            var sections = new List<(string Title, IReadOnlyList<ClipboardItem> Items, bool AllowDayDelete)>();
             if (_selectedFilter == ClipboardFilter.Favorites)
             {
-                if (items.Count == 0)
+                if (items.Count > 0)
                 {
-                    AddEmptyState();
-                }
-                else
-                {
-                    AddSectionCard(L10n.T("section.favorites"), items, ref rowIndex, allowDayDelete: false);
+                    sections.Add((L10n.T("section.favorites"), items, false));
                 }
             }
             else
             {
-                var groups = items
+                foreach (var group in items
                     .GroupBy(i => i.CreatedAt.ToLocalTime().Date)
-                    .OrderByDescending(g => g.Key)
-                    .ToList();
-                if (groups.Count == 0)
+                    .OrderByDescending(g => g.Key))
                 {
-                    AddEmptyState();
+                    sections.Add((L10n.SectionTitle(group.Key), group.ToList(), true));
                 }
-                else
+            }
+
+            var rowCounter = new StrongBox<int>();
+            foreach (var (title, sectionItems, allowDayDelete) in sections)
+            {
+                var stack = await BuildSectionAsync(title, sectionItems, allowDayDelete, generation, rowCounter);
+                if (Volatile.Read(ref _rebuildGeneration) != generation)
                 {
-                    foreach (var group in groups)
-                    {
-                        AddSectionCard(L10n.SectionTitle(group.Key), group.ToList(), ref rowIndex, allowDayDelete: true);
-                    }
+                    return; // superseded by a newer rebuild
                 }
+                SectionHost.Children.Add(stack);
+            }
+
+            if (sections.Count == 0 && Volatile.Read(ref _rebuildGeneration) == generation)
+            {
+                AddEmptyState();
             }
 
             UpdateFooter();
             UpdateSearchVisibility();
         }
-        finally
+        catch (Exception)
         {
-            _rebuilding = false;
+            // Layout races during teardown are ignored.
         }
+    }
+
+    /// <summary>Builds one day/favorites card, yielding between row chunks.</summary>
+    private async Task<Border> BuildSectionAsync(
+        string title, IReadOnlyList<ClipboardItem> items, bool allowDayDelete,
+        int generation, StrongBox<int> rowCounter)
+    {
+        var card = new Border
+        {
+            CornerRadius = new CornerRadius(16),
+            Background = (Brush)FindResource("SectionCard.Background"),
+            Padding = new Thickness(6),
+            Margin = new Thickness(0, 0, 0, 12),
+        };
+        var stack = new StackPanel();
+
+        var header = new Grid { Margin = new Thickness(8, 4, 8, 6) };
+        header.Children.Add(new TextBlock
+        {
+            Text = title,
+            FontSize = 12,
+            FontWeight = FontWeights.SemiBold,
+            Foreground = (Brush)FindResource("Text.Secondary"),
+        });
+        if (allowDayDelete)
+        {
+            var deleteDay = new Button
+            {
+                Style = (Style)FindResource("IconIconButton"),
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Content = new TextBlock { Text = "\uE74D", FontSize = 11 },
+                ToolTip = L10n.T("menu.delete"),
+            };
+            var day = items.Count > 0 ? items[0].CreatedAt.ToLocalTime().Date : DateTime.Today;
+            deleteDay.Click += (_, _) => ShowDeleteDayConfirm(items);
+            header.Children.Add(deleteDay);
+        }
+        stack.Children.Add(header);
+
+        var index = 0;
+        while (index < items.Count)
+        {
+            var chunkEnd = Math.Min(index + RowBuildChunkSize, items.Count);
+            for (; index < chunkEnd; index++)
+            {
+                var row = BuildRow(items[index], rowCounter.Value++);
+                _flatRows.Add(row);
+                stack.Children.Add(row.Border!);
+            }
+            if (index < items.Count)
+            {
+                await Task.Yield();
+                if (Volatile.Read(ref _rebuildGeneration) != generation)
+                {
+                    return card; // superseded; caller discards
+                }
+            }
+        }
+
+        card.Child = stack;
+        return card;
     }
 
     private void AddSectionCard(string title, IReadOnlyList<ClipboardItem> items, ref int rowIndex, bool allowDayDelete)

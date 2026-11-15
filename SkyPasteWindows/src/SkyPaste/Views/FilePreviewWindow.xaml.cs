@@ -51,6 +51,7 @@ public partial class FilePreviewWindow : Window
             ToggleImageMode.Visibility = Visibility.Collapsed;
         }
 
+        Loaded += (_, _) => WindowEffectsService.EnableRoundedCorners(this);
         PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape)

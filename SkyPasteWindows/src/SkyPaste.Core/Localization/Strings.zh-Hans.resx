@@ -45,11 +45,11 @@
   <data name="settings.launch_at_login_hint" xml:space="preserve"><value>登录 Windows 后自动启动。</value></data>
   <data name="settings.clipboard" xml:space="preserve"><value>剪贴板</value></data>
   <data name="settings.sync" xml:space="preserve"><value>同步与隐私</value></data>
-  <data name="settings.lan_sync" xml:space="preserve"><value>接收通用剪贴板</value></data>
+  <data name="settings.lan_sync" xml:space="preserve"><value>局域网同步（Windows 与手机）</value></data>
   <data name="settings.lan_sync_hint" xml:space="preserve"><value>在局域网内开放小型同步服务，手机或其他电脑可把剪贴板内容发送到 SkyPaste。</value></data>
   <data name="settings.lan_sync_upload" xml:space="preserve"><value>上传本机文本</value></data>
   <data name="settings.lan_sync_receive" xml:space="preserve"><value>接收 iCloud 内容</value></data>
-  <data name="settings.lan_sync_hint2" xml:space="preserve"><value>启用后，SkyPaste 会将这台 Mac 的文本剪贴板同步到你的 iCloud 私有数据库，并拉取其他设备保存的 SkyPaste 剪贴板内容。</value></data>
+  <data name="settings.lan_sync_hint2" xml:space="preserve"><value>在同一局域网内的这台 Mac 与 Windows 电脑之间同步剪贴板文本。</value></data>
   <data name="settings.lan_sync_rules_hint" xml:space="preserve"><value>控制 SkyPaste 是否上传本机复制的文本、接收设备内容，或两者都启用。</value></data>
   <data name="settings.lan_sync_status_disabled" xml:space="preserve"><value>局域网同步未开启。</value></data>
   <data name="settings.lan_sync_status_unavailable" xml:space="preserve"><value>局域网同步无法启动，请检查端口设置。</value></data>
@@ -261,10 +261,10 @@
   <data name="stats.apps.title" xml:space="preserve"><value>来源应用统计</value></data>
   <data name="stats.apps.empty" xml:space="preserve"><value>暂无来源应用数据</value></data>
   <data name="stats.apps.note" xml:space="preserve"><value>仅统计可识别的 Mac 应用；占比以有来源应用的记录为基数。之前已删除的历史无法补算。</value></data>
-  <data name="settings.lan_sync_device_name" xml:space="preserve"><value>设备名称</value></data>
-  <data name="settings.lan_sync_port" xml:space="preserve"><value>端口</value></data>
   <data name="settings.lan_sync_token" xml:space="preserve"><value>配对令牌</value></data>
   <data name="settings.lan_sync_token_hint" xml:space="preserve"><value>手机发送剪贴板时请携带 X-SkyPaste-Token 请求头。iOS 快捷指令与 Android 配置步骤见 README。</value></data>
+  <data name="settings.lan_sync_device_name" xml:space="preserve"><value>设备名称</value></data>
+  <data name="settings.lan_sync_port" xml:space="preserve"><value>端口</value></data>
   <data name="sync.received_from" xml:space="preserve"><value>已接收来自 %@ 的内容</value></data>
   <data name="about.title" xml:space="preserve"><value>关于 SkyPaste</value></data>
   <data name="about.subtitle" xml:space="preserve"><value>MIT 许可证 · 为 Windows 10/11 打造</value></data>
@@ -274,5 +274,6 @@
   <data name="settings.panel_position" xml:space="preserve"><value>面板位置</value></data>
   <data name="panel_position.center" xml:space="preserve"><value>屏幕居中</value></data>
   <data name="panel_position.cursor" xml:space="preserve"><value>跟随鼠标</value></data>
+  <data name="hotkey.register_failed" xml:space="preserve"><value>该快捷键已被其他程序占用，请更换组合。</value></data>
   <data name="panel_position.remember" xml:space="preserve"><value>记住上次位置</value></data>
 </root>

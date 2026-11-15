@@ -25,7 +25,12 @@ public partial class DebugWindow : Window
         Background = (Brush)FindResource("Window.Background");
         TitleLabel.Text = L10n.T("debug.title");
         RefreshLabel.Text = L10n.T("debug.refresh");
-        Loaded += (_, _) => Refresh();
+        Loaded += (_, _) =>
+        {
+            WindowEffectsService.EnableRoundedCorners(this);
+            Refresh();
+        };
+        Loaded += (_, _) => WindowEffectsService.EnableRoundedCorners(this);
         PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape)

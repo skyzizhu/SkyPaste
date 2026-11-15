@@ -5,6 +5,8 @@ using System.Windows.Input;
 using SkyPaste.Interop;
 using SkyPaste.Views.Controls;
 
+using SkyPaste.Services;
+
 namespace SkyPaste;
 
 /// <summary>
@@ -137,4 +139,11 @@ public partial class MainWindow : Window
         }
         base.OnClosing(e);
     }
+
+    protected override void OnSourceInitialized(EventArgs e)
+    {
+        base.OnSourceInitialized(e);
+        WindowEffectsService.EnableRoundedCorners(this);
+    }
+
 }

@@ -45,11 +45,11 @@
   <data name="settings.launch_at_login_hint" xml:space="preserve"><value>Windows에 로그인하면 자동으로 시작됩니다.</value></data>
   <data name="settings.clipboard" xml:space="preserve"><value>클립보드</value></data>
   <data name="settings.sync" xml:space="preserve"><value>동기화 및 개인정보</value></data>
-  <data name="settings.lan_sync" xml:space="preserve"><value>Universal Clipboard 받기</value></data>
+  <data name="settings.lan_sync" xml:space="preserve"><value>LAN 동기화(Windows 및 휴대폰)</value></data>
   <data name="settings.lan_sync_hint" xml:space="preserve"><value>LAN에서 작은 동기화 서비스를 열어 휴대폰이나 다른 PC에서 클립보드 내용을 보낼 수 있습니다.</value></data>
   <data name="settings.lan_sync_upload" xml:space="preserve"><value>이 Mac의 텍스트 업로드</value></data>
   <data name="settings.lan_sync_receive" xml:space="preserve"><value>iCloud 내용 받기</value></data>
-  <data name="settings.lan_sync_hint2" xml:space="preserve"><value>켜면 SkyPaste가 이 Mac에서 복사한 텍스트를 개인 iCloud 데이터베이스에 동기화하고, 다른 기기에서 저장한 SkyPaste 클립보드 항목도 가져옵니다.</value></data>
+  <data name="settings.lan_sync_hint2" xml:space="preserve"><value>같은 LAN의 이 Mac과 Windows PC 간에 클립보드 텍스트를 동기화합니다.</value></data>
   <data name="settings.lan_sync_rules_hint" xml:space="preserve"><value>이 PC에서 복사한 텍스트 업로드, 기기에서 수신 또는 둘 다를 제어합니다.</value></data>
   <data name="settings.lan_sync_status_disabled" xml:space="preserve"><value>LAN 동기화가 꺼져 있습니다.</value></data>
   <data name="settings.lan_sync_status_unavailable" xml:space="preserve"><value>LAN 동기화를 시작할 수 없습니다. 포트 설정을 확인하세요.</value></data>
@@ -261,10 +261,10 @@
   <data name="stats.apps.title" xml:space="preserve"><value>복사한 앱별</value></data>
   <data name="stats.apps.empty" xml:space="preserve"><value>앱별 데이터가 아직 없습니다</value></data>
   <data name="stats.apps.note" xml:space="preserve"><value>식별 가능한 Mac 앱만 집계합니다. 비율은 앱을 식별할 수 있는 건수를 기준으로 하며 이전에 삭제된 기록은 복원할 수 없습니다.</value></data>
-  <data name="settings.lan_sync_device_name" xml:space="preserve"><value>장치 이름</value></data>
-  <data name="settings.lan_sync_port" xml:space="preserve"><value>포트</value></data>
   <data name="settings.lan_sync_token" xml:space="preserve"><value>페어링 토큰</value></data>
   <data name="settings.lan_sync_token_hint" xml:space="preserve"><value>휴대폰에서 보낼 때 X-SkyPaste-Token 헤더를 포함하세요. 자세한 단계는 README를 참고하세요.</value></data>
+  <data name="settings.lan_sync_device_name" xml:space="preserve"><value>장치 이름</value></data>
+  <data name="settings.lan_sync_port" xml:space="preserve"><value>포트</value></data>
   <data name="sync.received_from" xml:space="preserve"><value>%@(으)로부터 수신함</value></data>
   <data name="about.title" xml:space="preserve"><value>SkyPaste 정보</value></data>
   <data name="about.subtitle" xml:space="preserve"><value>MIT 라이선스 · Windows 10/11용</value></data>
@@ -274,5 +274,6 @@
   <data name="settings.panel_position" xml:space="preserve"><value>패널 위치</value></data>
   <data name="panel_position.center" xml:space="preserve"><value>화면 중앙</value></data>
   <data name="panel_position.cursor" xml:space="preserve"><value>커서 따라가기</value></data>
+  <data name="hotkey.register_failed" xml:space="preserve"><value>이 단축키는 다른 프로그램이 사용 중입니다. 다른 조합을 선택하세요.</value></data>
   <data name="panel_position.remember" xml:space="preserve"><value>마지막 위치 기억</value></data>
 </root>

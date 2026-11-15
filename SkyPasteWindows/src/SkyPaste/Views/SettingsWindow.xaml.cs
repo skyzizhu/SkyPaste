@@ -28,6 +28,7 @@ public partial class SettingsWindow : Window
         ShowInTaskbar = false;
         Background = (Brush)FindResource("Window.Background");
 
+        Loaded += (_, _) => WindowEffectsService.EnableRoundedCorners(this);
         PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape)
@@ -41,10 +42,12 @@ public partial class SettingsWindow : Window
         ApplyLocalization();
 
         _app.LanSync.StatusChanged += UpdateLanSyncStatus;
+        _app.HotKeys.RegistrationChanged += UpdateHotKeyDisplay;
         L10n.LanguageChanged += ApplyLocalization;
         Closed += (_, _) =>
         {
             _app.LanSync.StatusChanged -= UpdateLanSyncStatus;
+            _app.HotKeys.RegistrationChanged -= UpdateHotKeyDisplay;
             L10n.LanguageChanged -= ApplyLocalization;
         };
 
@@ -328,6 +331,9 @@ public partial class SettingsWindow : Window
     private void UpdateHotKeyDisplay()
     {
         HotKeyDisplay.Text = L10n.Format("settings.current", _app.Settings.HotKeyDisplayText);
+        HotKeyWarning.Text = _app.HotKeys.IsRegistered
+            ? string.Empty
+            : L10n.T("hotkey.register_failed");
     }
 
     private void OnDeviceNameChanged(object sender, TextChangedEventArgs e)

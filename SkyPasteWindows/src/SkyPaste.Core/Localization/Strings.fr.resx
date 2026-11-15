@@ -45,11 +45,11 @@
   <data name="settings.launch_at_login_hint" xml:space="preserve"><value>Se lance automatiquement à l'ouverture de session Windows.</value></data>
   <data name="settings.clipboard" xml:space="preserve"><value>Presse-papiers</value></data>
   <data name="settings.sync" xml:space="preserve"><value>Synchronisation et confidentialité</value></data>
-  <data name="settings.lan_sync" xml:space="preserve"><value>Recevoir le Presse-papiers universel</value></data>
+  <data name="settings.lan_sync" xml:space="preserve"><value>Synchronisation LAN (Windows et téléphones)</value></data>
   <data name="settings.lan_sync_hint" xml:space="preserve"><value>Expose un petit service local pour que votre téléphone ou d'autres PC puissent envoyer du contenu vers SkyPaste.</value></data>
   <data name="settings.lan_sync_upload" xml:space="preserve"><value>Envoyer le texte local</value></data>
   <data name="settings.lan_sync_receive" xml:space="preserve"><value>Recevoir le contenu iCloud</value></data>
-  <data name="settings.lan_sync_hint2" xml:space="preserve"><value>Lorsque cette option est activée, SkyPaste synchronise les textes copiés sur ce Mac vers votre base iCloud privée et récupère aussi les éléments SkyPaste enregistrés depuis vos autres appareils.</value></data>
+  <data name="settings.lan_sync_hint2" xml:space="preserve"><value>Synchronise le texte du presse-papiers entre ce Mac et les PC Windows du même réseau.</value></data>
   <data name="settings.lan_sync_rules_hint" xml:space="preserve"><value>Contrôlez l'envoi du texte copié sur ce PC, la réception depuis des appareils, ou les deux.</value></data>
   <data name="settings.lan_sync_status_disabled" xml:space="preserve"><value>La synchronisation LAN est désactivée.</value></data>
   <data name="settings.lan_sync_status_unavailable" xml:space="preserve"><value>Impossible de démarrer la synchronisation LAN. Vérifiez le port.</value></data>
@@ -261,10 +261,10 @@
   <data name="stats.apps.title" xml:space="preserve"><value>Par application source</value></data>
   <data name="stats.apps.empty" xml:space="preserve"><value>Aucune donnée d'application source</value></data>
   <data name="stats.apps.note" xml:space="preserve"><value>Seules les apps Mac identifiables sont incluses. Les pourcentages portent sur les copies attribuées à une app ; l'historique déjà supprimé est irrécupérable.</value></data>
-  <data name="settings.lan_sync_device_name" xml:space="preserve"><value>Nom de l'appareil</value></data>
-  <data name="settings.lan_sync_port" xml:space="preserve"><value>Port</value></data>
   <data name="settings.lan_sync_token" xml:space="preserve"><value>Jeton d'appairage</value></data>
   <data name="settings.lan_sync_token_hint" xml:space="preserve"><value>Envoyez le presse-papiers depuis votre téléphone avec l'en-tête X-SkyPaste-Token. Voir le README pour les étapes.</value></data>
+  <data name="settings.lan_sync_device_name" xml:space="preserve"><value>Nom de l'appareil</value></data>
+  <data name="settings.lan_sync_port" xml:space="preserve"><value>Port</value></data>
   <data name="sync.received_from" xml:space="preserve"><value>Reçu de %@</value></data>
   <data name="about.title" xml:space="preserve"><value>À propos de SkyPaste</value></data>
   <data name="about.subtitle" xml:space="preserve"><value>Licence MIT · Conçu pour Windows 10 et 11</value></data>
@@ -274,5 +274,6 @@
   <data name="settings.panel_position" xml:space="preserve"><value>Position du panneau</value></data>
   <data name="panel_position.center" xml:space="preserve"><value>Centré à l'écran</value></data>
   <data name="panel_position.cursor" xml:space="preserve"><value>Suivre le curseur</value></data>
+  <data name="hotkey.register_failed" xml:space="preserve"><value>Ce raccourci est déjà utilisé par une autre application — choisissez une autre combinaison.</value></data>
   <data name="panel_position.remember" xml:space="preserve"><value>Mémoriser la dernière position</value></data>
 </root>

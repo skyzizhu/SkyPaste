@@ -101,6 +101,8 @@
                     </UniformGrid>
                     <TextBlock x:Name="HotKeyDisplay" FontSize="11" Margin="0,8,0,0"
                                Foreground="{DynamicResource AccentBrush}" />
+                    <TextBlock x:Name="HotKeyWarning" FontSize="10" Margin="0,4,0,0" TextWrapping="Wrap"
+                               Foreground="{DynamicResource Danger}" />
                 </StackPanel>
             </GroupBox>
 

@@ -54,7 +54,18 @@ SkyPaste 在局域网内开放一个带令牌校验的 HTTP 服务（默认端�
 
 ### Windows ↔ Windows
 
-两台运行 SkyPaste 的电脑在同一局域网会通过 UDP 广播（端口 26178）自动发现彼此，并每 10 秒互拉新增文本（与 macOS 版 iCloud 同步一致的冲突策略：按时间戳新者胜、指纹去重、删除不传播）。
+两台运行 SkyPaste 的电脑在同一局域网会通过 UDP 广播（端口 26178）自动发现彼此，并每 10 秒互拉新增文本（冲突策略与 macOS 版一致：按时间戳新者胜、指纹去重、删除不传播）。
+
+### Windows ↔ Mac
+
+macOS 版 SkyPaste（v0.3.2+，需从源码构建）内置了同一套协议的服务：
+
+1. 两端在同一局域网；**两端都开启「局域网同步」**
+2. **令牌必须一致**：Windows 端在设置里复制「配对令牌」，写入 Mac 端（`defaults write com.huaibor.skypaste settings.lanSyncToken -string "你的令牌"`，或后续版本在 Mac 设置界面直接修改）
+3. Mac 端在偏好设置 → 同步与隐私 → 开启「局域网同步（Windows 与手机）」
+4. 之后两端自动发现、自动互拉文本剪贴板；Mac 复制 → Windows 面板出现（来源显示设备名），反之亦然
+
+> 仅同步**文本**；图片与文件的跨端同步计划在后续版本。Windows 首次开启同步时请允许防火墙弹窗，Mac 端如遇「本地网络」系统提示请选择允许。
 
 ## 从源码构建
 
@@ -70,7 +81,14 @@ dotnet publish src/SkyPaste/SkyPaste.csproj -c Release -r win-x64 --self-contain
   -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
 ```
 
-CI：仓库根目录 `.github/workflows/windows-build.yml` 在 windows-latest 上自动构建 + 测试 + 发布 zip 工件（Actions 页面可下载）。
+CI：仓库根目录 `.github/workflows/windows-build.yml` 在 windows-latest 上自动构建 + 测试 + 发布 zip 工件（Actions 页面可下载）。打 tag 并创建 GitHub Release 时会额外构建 Inno Setup 安装器，并将 zip + Setup.exe 附加到 Release：
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0
+gh release create v0.1.0 --title "SkyPaste v0.1.0" --notes "..." --draft
+```
+
+版本号从 Release tag 自动注入到 exe 元数据。
 
 ## 目录结构
 

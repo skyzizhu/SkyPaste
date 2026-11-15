@@ -17,6 +17,10 @@ public sealed class GlobalHotKeyService : IDisposable
     private HwndSource? _hwndSource;
     private bool _registered;
 
+    public bool IsRegistered => _registered;
+
+    /// <summary>Raised after each (re-)registration attempt so UI can show conflicts.</summary>
+    public event Action? RegistrationChanged;
     public event Action? Pressed;
 
     public GlobalHotKeyService(AppSettingsService settings)
@@ -84,6 +88,7 @@ public sealed class GlobalHotKeyService : IDisposable
             modifiers |= NativeMethods.MOD_WIN;
         }
         _registered = NativeMethods.RegisterHotKey(_hwndSource.Handle, HotKeyId, modifiers, virtualKey);
+        RegistrationChanged?.Invoke();
     }
 
     private void Unregister()

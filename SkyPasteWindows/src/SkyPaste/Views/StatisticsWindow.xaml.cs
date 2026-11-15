@@ -9,6 +9,8 @@ using SkyPaste.Core.Data;
 using SkyPaste.Core.Localization;
 using SkyPaste.Core.Services;
 
+using SkyPaste.Services;
+
 namespace SkyPaste;
 
 /// <summary>
@@ -54,11 +56,20 @@ public partial class StatisticsWindow : Window
 
         ApplyLocalization();
 
+        Loaded += (_, _) => WindowEffectsService.EnableRoundedCorners(this);
         PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape)
             {
                 Close();
+            }
+        };
+
+        TrendCanvas.SizeChanged += (_, _) =>
+        {
+            if (_lastSnapshot is not null)
+            {
+                DrawTrend(_lastSnapshot);
             }
         };
 
@@ -105,11 +116,14 @@ public partial class StatisticsWindow : Window
         }
     }
 
+    private Snapshot? _lastSnapshot;
+
     private void Reload()
     {
         try
         {
             var snapshot = LoadSnapshot(_period);
+            _lastSnapshot = snapshot;
             TotalValue.Text = snapshot.Total.ToString("N0", CultureInfo.CurrentCulture);
             TopCategory.Text = snapshot.LeadingCategory is { } leading
                 ? L10n.T(leading.LabelKey())

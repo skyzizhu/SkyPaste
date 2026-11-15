@@ -253,6 +253,14 @@ NEW_KEYS: dict[str, dict[str, str]] = {
         "ko": "커서 따라가기",
         "fr": "Suivre le curseur",
     },
+    "hotkey.register_failed": {
+        "en": "This shortcut is taken by another app — pick a different combination.",
+        "zh-Hans": "该快捷键已被其他程序占用，请更换组合。",
+        "zh-Hant": "該快捷鍵已被其他程式佔用，請更換組合。",
+        "ja": "このショートカットは他のアプリで使用中です。別の組み合わせを選んでください。",
+        "ko": "이 단축키는 다른 프로그램이 사용 중입니다. 다른 조합을 선택하세요.",
+        "fr": "Ce raccourci est déjà utilisé par une autre application — choisissez une autre combinaison.",
+    },
     "panel_position.remember": {
         "en": "Remember last position",
         "zh-Hans": "记住上次位置",

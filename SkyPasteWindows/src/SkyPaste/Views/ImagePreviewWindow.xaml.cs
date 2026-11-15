@@ -64,6 +64,7 @@ public partial class ImagePreviewWindow : Window
         DragHint.Text = L10n.T("preview.drag_hint");
 
         Loaded += (_, _) => LoadImage();
+        Loaded += (_, _) => WindowEffectsService.EnableRoundedCorners(this);
         PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape)

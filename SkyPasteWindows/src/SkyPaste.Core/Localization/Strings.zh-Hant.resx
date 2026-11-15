@@ -45,11 +45,11 @@
   <data name="settings.launch_at_login_hint" xml:space="preserve"><value>登入 Windows 後自動啟動。</value></data>
   <data name="settings.clipboard" xml:space="preserve"><value>剪貼簿</value></data>
   <data name="settings.sync" xml:space="preserve"><value>同步與隱私</value></data>
-  <data name="settings.lan_sync" xml:space="preserve"><value>接收通用剪貼簿</value></data>
+  <data name="settings.lan_sync" xml:space="preserve"><value>區域網路同步（Windows 與手機）</value></data>
   <data name="settings.lan_sync_hint" xml:space="preserve"><value>在區域網路內開放小型同步服務，手機或其他電腦可將剪貼簿內容傳送到 SkyPaste。</value></data>
   <data name="settings.lan_sync_upload" xml:space="preserve"><value>上傳本機文字</value></data>
   <data name="settings.lan_sync_receive" xml:space="preserve"><value>接收 iCloud 內容</value></data>
-  <data name="settings.lan_sync_hint2" xml:space="preserve"><value>啟用後，SkyPaste 會將這台 Mac 的文字剪貼簿同步到你的 iCloud 私有資料庫，並擷取其他裝置儲存的 SkyPaste 剪貼簿內容。</value></data>
+  <data name="settings.lan_sync_hint2" xml:space="preserve"><value>在同一區域網路內的這台 Mac 與 Windows 電腦之間同步剪貼簿文字。</value></data>
   <data name="settings.lan_sync_rules_hint" xml:space="preserve"><value>控制 SkyPaste 是否上傳本機複製的文字、接收裝置內容，或兩者皆啟用。</value></data>
   <data name="settings.lan_sync_status_disabled" xml:space="preserve"><value>區域網路同步未開啟。</value></data>
   <data name="settings.lan_sync_status_unavailable" xml:space="preserve"><value>區域網路同步無法啟動，請檢查連接埠設定。</value></data>
@@ -261,10 +261,10 @@
   <data name="stats.apps.title" xml:space="preserve"><value>來源應用統計</value></data>
   <data name="stats.apps.empty" xml:space="preserve"><value>尚無來源應用資料</value></data>
   <data name="stats.apps.note" xml:space="preserve"><value>僅統計可辨識的 Mac 應用；百分比以有來源應用的記錄為基數。之前已刪除的歷史無法補算。</value></data>
-  <data name="settings.lan_sync_device_name" xml:space="preserve"><value>裝置名稱</value></data>
-  <data name="settings.lan_sync_port" xml:space="preserve"><value>連接埠</value></data>
   <data name="settings.lan_sync_token" xml:space="preserve"><value>配對權杖</value></data>
   <data name="settings.lan_sync_token_hint" xml:space="preserve"><value>手機傳送剪貼簿時請攜帶 X-SkyPaste-Token 請求標頭。iOS 捷徑與 Android 設定步驟見 README。</value></data>
+  <data name="settings.lan_sync_device_name" xml:space="preserve"><value>裝置名稱</value></data>
+  <data name="settings.lan_sync_port" xml:space="preserve"><value>連接埠</value></data>
   <data name="sync.received_from" xml:space="preserve"><value>已接收來自 %@ 的內容</value></data>
   <data name="about.title" xml:space="preserve"><value>關於 SkyPaste</value></data>
   <data name="about.subtitle" xml:space="preserve"><value>MIT 授權 · 為 Windows 10/11 打造</value></data>
@@ -274,5 +274,6 @@
   <data name="settings.panel_position" xml:space="preserve"><value>面板位置</value></data>
   <data name="panel_position.center" xml:space="preserve"><value>螢幕置中</value></data>
   <data name="panel_position.cursor" xml:space="preserve"><value>跟隨游標</value></data>
+  <data name="hotkey.register_failed" xml:space="preserve"><value>該快捷鍵已被其他程式佔用，請更換組合。</value></data>
   <data name="panel_position.remember" xml:space="preserve"><value>記住上次位置</value></data>
 </root>
