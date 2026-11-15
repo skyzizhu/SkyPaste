@@ -58,6 +58,34 @@ public sealed class LanSyncService : IDisposable
         _store = store;
     }
 
+    /// <summary>First IPv4 address this machine would use for outbound LAN traffic.</summary>
+    public static string? LocalIPv4
+    {
+        get
+        {
+            try
+            {
+                using var socket = new UdpClient();
+                socket.Connect("192.168.255.255", 65530); // no packet is actually sent
+                return (socket.Client.LocalEndPoint as IPEndPoint)?.Address.ToString();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+    }
+
+    /// <summary>URL encoded into the pairing QR code shown in Preferences.</summary>
+    public string PairingUrl
+    {
+        get
+        {
+            var ip = LocalIPv4 ?? "<your-pc-ip>";
+            return $"http://{ip}:{_settings.LanSyncPort}/?t={_settings.LanSyncToken}";
+        }
+    }
+
     // ---- lifecycle ---------------------------------------------------------
 
     public void ApplyCurrentSetting()
@@ -137,6 +165,13 @@ public sealed class LanSyncService : IDisposable
         if (!string.Equals(token, _settings.LanSyncToken, StringComparison.Ordinal))
         {
             return (401, "{\"error\":\"unauthorized\"}");
+        }
+
+        if (request.Path.TrimEnd('/') == "/" && request.Method == "GET")
+        {
+            // Web clipboard shell (public HTML); APIs below still enforce the token.
+            var html = WebClipboardPageBuilder.Build(_settings.DeviceName);
+            return (200, html);
         }
 
         switch (request.Path.TrimEnd('/'))
@@ -546,6 +581,9 @@ public sealed class SimpleHttpServer : IDisposable
                 };
 
                 var (statusCode, responseBody) = TryHandle(request);
+                var contentType = request.Path.TrimEnd('/') == "/" && statusCode == 200
+                    ? "text/html; charset=utf-8"
+                    : "application/json; charset=utf-8";
                 var statusText = statusCode switch
                 {
                     200 => "OK",
@@ -558,7 +596,7 @@ public sealed class SimpleHttpServer : IDisposable
                 };
                 var responseBytes = Encoding.UTF8.GetBytes(responseBody);
                 var response = string.Create(CultureInfo.InvariantCulture,
-                    $"HTTP/1.1 {statusCode} {statusText}\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: {responseBytes.Length}\r\nConnection: close\r\n\r\n");
+                    $"HTTP/1.1 {statusCode} {statusText}\r\nContent-Type: {contentType}\r\nContent-Length: {responseBytes.Length}\r\nConnection: close\r\n\r\n");
                 await stream.WriteAsync(Encoding.ASCII.GetBytes(response), token).ConfigureAwait(false);
                 await stream.WriteAsync(responseBytes, token).ConfigureAwait(false);
                 await stream.FlushAsync(token).ConfigureAwait(false);

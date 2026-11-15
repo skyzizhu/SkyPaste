@@ -52,6 +52,7 @@ public partial class SettingsWindow : Window
         };
 
         LoadSettings();
+        UpdateQrPanel();
         BuildRecentAppChips();
     }
 
@@ -295,6 +296,7 @@ public partial class SettingsWindow : Window
                 _app.Settings.LanSyncHintShown = true;
             }
             settings.LanSyncEnabled = LanSyncToggle.IsChecked == true;
+            UpdateQrPanel();
         }
         else if (sender == LanSyncUploadToggle)
         {
@@ -382,6 +384,34 @@ public partial class SettingsWindow : Window
             return;
         }
         SaveIgnoreApps();
+    }
+
+    private void UpdateQrPanel()
+    {
+        var enabled = _app.Settings.LanSyncEnabled;
+        QrPanel.Visibility = enabled ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+        if (!enabled)
+        {
+            return;
+        }
+        QrLabel.Text = L10n.T("settings.lan_sync_qr");
+        QrHint.Text = L10n.T("settings.lan_sync_qr_hint");
+        var url = _app.LanSync.PairingUrl;
+        QrUrlText.Text = url;
+        try
+        {
+            using var generator = new QRCoder.QRCodeGenerator();
+            var data = generator.CreateQrCode(url, QRCoder.QRCodeGenerator.ECCLevel.M);
+            var png = new QRCoder.PngByteQRCode(data).GetGraphic(10);
+            var image = System.Windows.Media.Imaging.BitmapFrame.Create(
+                new System.IO.MemoryStream(png), System.Windows.Media.Imaging.BitmapCreateOptions.None,
+                System.Windows.Media.Imaging.BitmapCacheOption.OnLoad);
+            QrImage.Source = image;
+        }
+        catch (Exception)
+        {
+            QrImage.Source = null;
+        }
     }
 
     private void UpdateLanSyncStatus()

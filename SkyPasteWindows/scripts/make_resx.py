@@ -237,6 +237,22 @@ NEW_KEYS: dict[str, dict[str, str]] = {
         "ko": "패널 위치",
         "fr": "Position du panneau",
     },
+    "settings.lan_sync_qr": {
+        "en": "Web clipboard QR code",
+        "zh-Hans": "手机网页剪贴板二维码",
+        "zh-Hant": "手機網頁剪貼簿二維碼",
+        "ja": "Web クリップボード QR コード",
+        "ko": "웹 클립보드 QR 코드",
+        "fr": "QR code du presse-papiers web",
+    },
+    "settings.lan_sync_qr_hint": {
+        "en": "Scan with your phone camera to open the web clipboard (no app needed).",
+        "zh-Hans": "用手机相机扫码打开网页剪贴板，无需安装任何应用。",
+        "zh-Hant": "用手機相機掃碼開啟網頁剪貼簿，無需安裝任何應用。",
+        "ja": "スマホのカメラで読み取ると Web クリップボードが開きます（アプリ不要）。",
+        "ko": "휴대폰 카메라로 스캔하면 웹 클립보드가 열립니다(앱 불필요).",
+        "fr": "Scannez avec l'appareil photo du téléphone pour ouvrir le presse-papiers web (aucune app requise).",
+    },
     "panel_position.center": {
         "en": "Centered on screen",
         "zh-Hans": "屏幕居中",

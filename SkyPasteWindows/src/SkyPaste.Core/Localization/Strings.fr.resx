@@ -263,6 +263,8 @@
   <data name="stats.apps.note" xml:space="preserve"><value>Seules les apps Mac identifiables sont incluses. Les pourcentages portent sur les copies attribuées à une app ; l'historique déjà supprimé est irrécupérable.</value></data>
   <data name="settings.lan_sync_token" xml:space="preserve"><value>Jeton d'appairage</value></data>
   <data name="settings.lan_sync_token_hint" xml:space="preserve"><value>Envoyez le presse-papiers depuis votre téléphone avec l'en-tête X-SkyPaste-Token. Voir le README pour les étapes.</value></data>
+  <data name="settings.lan_sync_qr" xml:space="preserve"><value>QR code du presse-papiers web</value></data>
+  <data name="settings.lan_sync_qr_hint" xml:space="preserve"><value>Scannez avec l'appareil photo du téléphone pour ouvrir le presse-papiers web (aucune app requise).</value></data>
   <data name="settings.lan_sync_device_name" xml:space="preserve"><value>Nom de l'appareil</value></data>
   <data name="settings.lan_sync_port" xml:space="preserve"><value>Port</value></data>
   <data name="sync.received_from" xml:space="preserve"><value>Reçu de %@</value></data>

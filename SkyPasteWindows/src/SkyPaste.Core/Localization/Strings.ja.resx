@@ -263,6 +263,8 @@
   <data name="stats.apps.note" xml:space="preserve"><value>識別可能な Mac アプリのみ対象です。割合はアプリを特定できた件数を基準にし、過去に削除された履歴は復元できません。</value></data>
   <data name="settings.lan_sync_token" xml:space="preserve"><value>ペアリングトークン</value></data>
   <data name="settings.lan_sync_token_hint" xml:space="preserve"><value>スマホから送信する場合は X-SkyPaste-Token ヘッダーを付けてください。手順は README を参照。</value></data>
+  <data name="settings.lan_sync_qr" xml:space="preserve"><value>Web クリップボード QR コード</value></data>
+  <data name="settings.lan_sync_qr_hint" xml:space="preserve"><value>スマホのカメラで読み取ると Web クリップボードが開きます（アプリ不要）。</value></data>
   <data name="settings.lan_sync_device_name" xml:space="preserve"><value>デバイス名</value></data>
   <data name="settings.lan_sync_port" xml:space="preserve"><value>ポート</value></data>
   <data name="sync.received_from" xml:space="preserve"><value>%@ から受信しました</value></data>
