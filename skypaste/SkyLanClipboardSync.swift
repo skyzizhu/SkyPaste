@@ -659,7 +659,7 @@ async function api(path, opts) {
     let provided = '';
     try { const j = await r.json(); provided = j.provided || ''; } catch (e2) {}
     localStorage.removeItem('sp_token');
-    msg('server received: " + provided + "');
+    msg('server received: "' + provided + '"');
     throw new Error('unauthorized');
   }
   return r;
@@ -669,7 +669,6 @@ async function readClip() {
   catch (e) { msg('read blocked, paste manually'); }
 }
 async function sendText() {
-  if (boxToken && boxToken !== token) { token = boxToken; localStorage.setItem('sp_token', token); }
   const text = document.getElementById('text').value;
   if (!text.trim()) { msg('empty'); return; }
   let r;
@@ -684,7 +683,6 @@ async function copyItem(text) {
   catch (e) { msg('copy blocked'); }
 }
 async function pull() {
-  if (boxToken && boxToken !== token) { token = boxToken; localStorage.setItem('sp_token', token); }
   let r;
   try { r = await api('/pull?since=0'); }
   catch (e) { return; }
