@@ -654,7 +654,9 @@ function sanitizeToken(v) {
   return (v || '').replace(/\\s+/g, '').replace(/[\\u200b\\u200c\\u200d\\ufeff]/g, '');
 }
 async function api(path, opts) {
-  const r = await fetch(path, Object.assign({ headers: { 'X-SkyPaste-Token': token } }, opts));
+  const merged = Object.assign({ headers: {} }, opts);
+  merged.headers = Object.assign({ 'X-SkyPaste-Token': token }, merged.headers || {});
+  const r = await fetch(path, merged);
   if (r.status === 401) {
     let provided = '';
     try { const j = await r.json(); provided = j.provided || ''; } catch (e2) {}
@@ -664,6 +666,7 @@ async function api(path, opts) {
   }
   return r;
 }
+
 async function readClip() {
   try { document.getElementById('text').value = await navigator.clipboard.readText(); }
   catch (e) { msg('read blocked, paste manually'); }
