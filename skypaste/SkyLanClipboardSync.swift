@@ -246,6 +246,7 @@ public enum LanClipboardSync {
     }
 
     static func send(response: (code: Int, body: Data, contentType: String), on connection: NWConnection) {
+        let cacheControl = response.contentType.hasPrefix("text/html") ? "Cache-Control: no-store\n" : ""
         let statusText: String
         switch response.code {
         case 200: statusText = "OK"
@@ -254,7 +255,7 @@ public enum LanClipboardSync {
         case 403: statusText = "Forbidden"
         default: statusText = "Not Found"
         }
-        let head = "HTTP/1.1 \(response.code) \(statusText)\r\nContent-Type: \(response.contentType); charset=utf-8\r\nContent-Length: \(response.body.count)\r\nConnection: close\r\n\r\n"
+        let head = "HTTP/1.1 \(response.code) \(statusText)\r\nContent-Type: \(response.contentType); charset=utf-8\r\n\(cacheControl)Content-Length: \(response.body.count)\r\nConnection: close\r\n\r\n"
         connection.send(content: Data(head.utf8) + response.body, completion: .contentProcessed { _ in
             connection.cancel()
         })
@@ -623,10 +624,14 @@ async function readClip() {
   catch (e) { msg('read blocked, paste manually'); }
 }
 async function sendText() {
+  const boxToken = document.getElementById('tokenInput').value.trim();
+  if (boxToken && boxToken !== token) { token = boxToken; localStorage.setItem('sp_token', token); }
   const text = document.getElementById('text').value;
   if (!text.trim()) { msg('empty'); return; }
-  const r = await api('/paste', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: text, device: '\u{624b}\u{673a}\u{7f51}\u{9875}' }) });
+  let r;
+  try { r = await api('/paste', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: text, device: '\u{624b}\u{673a}\u{7f51}\u{9875}' }) }); }
+  catch (e) { msg('token required'); return; }
   if (r.ok) { msg('✓ sent'); document.getElementById('text').value = ''; pull(); }
   else msg('failed ' + r.status);
 }
@@ -635,6 +640,8 @@ async function copyItem(text) {
   catch (e) { msg('copy blocked'); }
 }
 async function pull() {
+  const boxToken = document.getElementById('tokenInput').value.trim();
+  if (boxToken && boxToken !== token) { token = boxToken; localStorage.setItem('sp_token', token); }
   let r;
   try { r = await api('/pull?since=0'); }
   catch (e) { return; }

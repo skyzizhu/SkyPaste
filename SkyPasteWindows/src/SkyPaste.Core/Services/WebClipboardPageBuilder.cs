@@ -103,6 +103,8 @@ async function readClip() {
   catch (e) { msg('read blocked, paste manually'); }
 }
 async function sendText() {
+  const boxToken = document.getElementById('tokenInput').value.trim();
+  if (boxToken && boxToken !== token) { token = boxToken; localStorage.setItem('sp_token', token); }
   const text = document.getElementById('text').value;
   if (!text.trim()) { msg('empty'); return; }
   let r;
@@ -117,6 +119,8 @@ async function copyItem(text) {
   catch (e) { msg('copy blocked'); }
 }
 async function pull() {
+  const boxToken = document.getElementById('tokenInput').value.trim();
+  if (boxToken && boxToken !== token) { token = boxToken; localStorage.setItem('sp_token', token); }
   let r;
   try { r = await api('/pull?since=0'); }
   catch (e) { return; }
