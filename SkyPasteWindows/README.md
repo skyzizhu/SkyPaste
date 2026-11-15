@@ -70,7 +70,7 @@ dotnet publish src/SkyPaste/SkyPaste.csproj -c Release -r win-x64 --self-contain
   -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o publish
 ```
 
-CI：`.github/workflows/windows-build.yml` 在 windows-latest 上自动构建 + 测试 + 发布 zip 工件（Actions 页面可下载）。
+CI：仓库根目录 `.github/workflows/windows-build.yml` 在 windows-latest 上自动构建 + 测试 + 发布 zip 工件（Actions 页面可下载）。
 
 ## 目录结构
 
