@@ -260,3 +260,11 @@
 "stats.apps.title" = "來源應用統計";
 "stats.apps.empty" = "尚無來源應用資料";
 "stats.apps.note" = "僅統計可辨識的 Mac 應用；百分比以有來源應用的記錄為基數。之前已刪除的歷史無法補算。";
+
+"settings.lan_sync" = "區域網路同步（Windows 與手機）";
+
+"settings.lan_sync_token" = "配對權杖";
+
+"settings.lan_sync_token_hint" = "Windows 端 SkyPaste 透過此權杖與這台 Mac 在區域網路內配對。";
+
+"settings.lan_sync_hint2" = "在同一區域網路內的這台 Mac 與 Windows 電腦之間同步剪貼簿文字。";

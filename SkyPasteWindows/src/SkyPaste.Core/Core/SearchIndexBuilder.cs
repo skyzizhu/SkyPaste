@@ -70,7 +70,14 @@ public static class SearchIndexBuilder
             parts.Add(device);
         }
 
-        var joined = string.Join("\n", parts.Where(p => !string.IsNullOrWhiteSpace(p)));
-        return joined.ToLowerInvariant();
+        // Pinyin-initial line so queries like "jietu" or "jt" can hit 截图 content.
+        var initials = PinyinInitials.ToInitials(string.Join("\n", parts));
+        if (initials.Length > 0)
+        {
+            parts.Add(initials);
+        }
+
+        var final = string.Join("\n", parts.Where(p => !string.IsNullOrWhiteSpace(p)));
+        return final.ToLowerInvariant();
     }
 }

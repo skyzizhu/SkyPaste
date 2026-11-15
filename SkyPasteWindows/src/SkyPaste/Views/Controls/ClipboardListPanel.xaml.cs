@@ -440,6 +440,7 @@ public partial class ClipboardListPanel : UserControl
                 if (data is not null)
                 {
                     CancelPendingPrimaryAction();
+                    DragPreviewService.AttachPreview(item, data);
                     DragOutService.StartDrag(border, data);
                 }
             }

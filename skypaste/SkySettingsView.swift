@@ -180,6 +180,22 @@ struct SettingsView: View {
         }
     }
 
+    private var lanSyncEnabled: Bool {
+        UserDefaults.standard.bool(forKey: "settings.lanSyncEnabled")
+    }
+
+    private var lanSyncBinding: Binding<Bool> {
+        Binding(
+            get: { lanSyncEnabled },
+            set: { newValue in
+                UserDefaults.standard.set(newValue, forKey: "settings.lanSyncEnabled")
+                if newValue {
+                    UserDefaults.standard.set(true, forKey: "settings.lanSyncHintShown")
+                }
+                NotificationCenter.default.post(name: .iCloudSyncSettingsChanged, object: nil)
+            })
+    }
+
     private var syncSection: some View {
         SettingsSection(title: L10n.tr("settings.sync")) {
             SettingsRow(title: L10n.tr("settings.universal_clipboard")) {
@@ -220,6 +236,32 @@ struct SettingsView: View {
                     }
 
                     hint(L10n.tr("settings.icloud_sync_rules_hint"))
+                }
+                .padding(.leading, 18)
+            }
+
+            Divider()
+                .padding(.vertical, 1)
+
+            SettingsRow(title: L10n.tr("settings.lan_sync")) {
+                Toggle("", isOn: lanSyncBinding)
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+            }
+
+            if lanSyncEnabled {
+                VStack(alignment: .leading, spacing: 10) {
+                    Divider()
+                        .padding(.vertical, 1)
+
+                    SettingsRow(title: L10n.tr("settings.lan_sync_token")) {
+                        Text(LanClipboardSync.token)
+                            .font(.system(size: 12, design: .monospaced))
+                            .textSelection(.enabled)
+                            .help(L10n.tr("settings.lan_sync_token_hint"))
+                    }
+
+                    hint(L10n.tr("settings.lan_sync_hint2"))
                 }
                 .padding(.leading, 18)
             }
