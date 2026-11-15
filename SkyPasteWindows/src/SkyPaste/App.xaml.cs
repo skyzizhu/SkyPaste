@@ -98,6 +98,13 @@ public partial class App : Application
         TrayIcon.Initialize();
 
         Coordinator.PreloadMainWindow();
+
+        // CI smoke test hook (mirrors the macOS --uitesting flag): show the panel
+        // immediately so headless environments can screenshot a real window.
+        if (e.Args.Contains("--uitesting", StringComparer.OrdinalIgnoreCase))
+        {
+            Coordinator.ShowPanel();
+        }
     }
 
     private void ApplyLaunchAtLogin() => LaunchAtLoginService.Apply(Settings.LaunchAtLogin);

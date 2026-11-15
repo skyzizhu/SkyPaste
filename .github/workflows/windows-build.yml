@@ -67,6 +67,36 @@ jobs:
           }
           & $iscc /DMyAppVersion=${{ steps.version.outputs.version }} installer\SkyPaste.iss
 
+      - name: Smoke test (launch, alive check, screenshot)
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath "publish/SkyPaste.exe" -ArgumentList "--uitesting" -PassThru
+          Start-Sleep -Seconds 20
+          $alive = Get-Process -Id $p.Id -ErrorAction SilentlyContinue
+          if (-not $alive) {
+            Write-Error "SkyPaste.exe exited within 20s of launch (startup crash)"
+            exit 1
+          }
+          Add-Type -AssemblyName System.Windows.Forms
+          Add-Type -AssemblyName System.Drawing
+          $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+          $bmp = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
+          $graphics = [System.Drawing.Graphics]::FromImage($bmp)
+          $graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+          $bmp.Save("$PWD/smoke-desktop.png")
+          $graphics.Dispose()
+          $bmp.Dispose()
+          $title = (Get-Process -Id $p.Id).MainWindowTitle
+          Write-Host "MainWindowTitle: '$title'"
+          Stop-Process -Id $p.Id -Force
+
+      - name: Upload smoke screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-desktop-${{ github.sha }}
+          path: smoke-desktop.png
+          if-no-files-found: warn
+
       - name: Upload workflow artifact (every push)
         uses: actions/upload-artifact@v4
         with:
