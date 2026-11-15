@@ -591,12 +591,6 @@ li button { padding: 6px 14px; font-size: 13px; }
 <header><h1>SkyPaste \(title)</h1><p>\u{5c40}\u{57df}\u{7f51}\u{76f4}\u{4f20} \u{b7} \u{6570}\u{636e}\u{4e0d}\u{51fa}\u{5185}\u{7f51} \u{b7} LAN direct, no cloud</p></header>
 <main>
 <p id="msg"></p>
-<section id="tokenBox" style="display:none">
-<p><b>首次使用 / First visit</b></p>
-<p style="font-size:13px;color:#8a8a8e">令牌无效。请重新扫描电脑端设置里的二维码打开本页（推荐，无需输入）；或在下方输入电脑端显示的配对令牌。Token invalid — re-scan the QR in desktop Preferences (recommended), or enter the token below.</p>
-<input id="tokenInput" style="width:100%;padding:10px;border:1px solid #d8dbe4;border-radius:10px;font-size:15px" placeholder="Pairing token">
-<div class="row"><button onclick="saveToken()">保存 Save</button></div>
-</section>
 
 <section>
 <p><b>\(sendTo)</b></p>
@@ -613,13 +607,9 @@ li button { padding: 6px 14px; font-size: 13px; }
 </section>
 <script>
 const params = new URLSearchParams(location.search);
-let token = params.get('t') || localStorage.getItem('sp_token') || '';
+let token = sanitizeToken(params.get('t')) || localStorage.getItem('sp_token') || '';
 if (params.get('t')) { localStorage.setItem('sp_token', token); history.replaceState(null, '', location.pathname); }
 function msg(t) { const m = document.getElementById('msg'); m.textContent = t; setTimeout(() => m.textContent = '', 2500); }
-function showTokenBox(prefill) {
-  document.getElementById('tokenInput').value = prefill || '';
-  document.getElementById('tokenBox').style.display = 'block';
-}
 function sanitizeToken(v) {
   // Strip whitespace and zero-width chars from copy/pasted tokens.
   return (v || '').replace(/\\s+/g, '').replace(/[\\u200b\\u200c\\u200d\\ufeff]/g, '');
@@ -629,7 +619,7 @@ async function api(path, opts) {
   if (r.status === 401) {
     let provided = '';
     try { const j = await r.json(); provided = j.provided || ''; } catch (e2) {}
-    showTokenBox(provided);
+    localStorage.removeItem('sp_token');
     msg('server received: " + provided + "');
     throw new Error('unauthorized');
   }
@@ -640,7 +630,6 @@ async function readClip() {
   catch (e) { msg('read blocked, paste manually'); }
 }
 async function sendText() {
-  const boxToken = sanitizeToken(document.getElementById('tokenInput').value);
   if (boxToken && boxToken !== token) { token = boxToken; localStorage.setItem('sp_token', token); }
   const text = document.getElementById('text').value;
   if (!text.trim()) { msg('empty'); return; }
@@ -656,7 +645,6 @@ async function copyItem(text) {
   catch (e) { msg('copy blocked'); }
 }
 async function pull() {
-  const boxToken = sanitizeToken(document.getElementById('tokenInput').value);
   if (boxToken && boxToken !== token) { token = boxToken; localStorage.setItem('sp_token', token); }
   let r;
   try { r = await api('/pull?since=0'); }
