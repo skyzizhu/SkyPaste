@@ -53,6 +53,13 @@ li button { padding: 6px 14px; font-size: 13px; }
 </h1><p>局域网直传 · 数据不出内网 · LAN direct, no cloud</p></header>
 <main>
 <p id="msg"></p>
+<section id="tokenBox" style="display:none">
+<p><b>首次使用 / First visit</b></p>
+<p style="font-size:13px;color:#8a8a8e">输入电脑端显示的配对令牌 Enter the pairing token shown on the desktop.</p>
+<input id="tokenInput" style="width:100%;padding:10px;border:1px solid #d8dbe4;border-radius:10px;font-size:15px" placeholder="Pairing token">
+<div class="row"><button onclick="saveToken()">保存 Save</button></div>
+</section>
+
 <section>
 <p><b>发送到这台电脑 Send to this computer</b></p>
 <textarea id="text" placeholder="粘贴或输入内容…"></textarea>
@@ -71,7 +78,23 @@ const params = new URLSearchParams(location.search);
 let token = params.get('t') || localStorage.getItem('sp_token') || '';
 if (params.get('t')) { localStorage.setItem('sp_token', token); history.replaceState(null, '', location.pathname); }
 function msg(t) { const m = document.getElementById('msg'); m.textContent = t; setTimeout(() => m.textContent = '', 2500); }
-async function api(path, opts) { return fetch(path, Object.assign({ headers: { 'X-SkyPaste-Token': token } }, opts)); }
+function showTokenBox() { document.getElementById('tokenBox').style.display = 'block'; }
+function saveToken() {
+  token = document.getElementById('tokenInput').value.trim();
+  if (!token) return;
+  localStorage.setItem('sp_token', token);
+  document.getElementById('tokenBox').style.display = 'none';
+  pull();
+}
+async function api(path, opts) {
+  const r = await fetch(path, Object.assign({ headers: { 'X-SkyPaste-Token': token } }, opts));
+  if (r.status === 401) {
+    localStorage.removeItem('sp_token'); token = '';
+    showTokenBox();
+    throw new Error('unauthorized');
+  }
+  return r;
+}
 async function readClip() {
   try { document.getElementById('text').value = await navigator.clipboard.readText(); }
   catch (e) { msg('read blocked, paste manually'); }
@@ -79,8 +102,10 @@ async function readClip() {
 async function sendText() {
   const text = document.getElementById('text').value;
   if (!text.trim()) { msg('empty'); return; }
-  const r = await api('/paste', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ text: text, device: '手机网页' }) });
+  let r;
+  try { r = await api('/paste', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text: text, device: '手机网页' }) }); }
+  catch (e) { msg('token required'); return; }
   if (r.ok) { msg('✓ sent'); document.getElementById('text').value = ''; pull(); }
   else msg('failed ' + r.status);
 }
@@ -89,7 +114,9 @@ async function copyItem(text) {
   catch (e) { msg('copy blocked'); }
 }
 async function pull() {
-  const r = await api('/pull?since=0');
+  let r;
+  try { r = await api('/pull?since=0'); }
+  catch (e) { return; }
   if (!r.ok) return;
   const items = await r.json();
   const list = document.getElementById('list');

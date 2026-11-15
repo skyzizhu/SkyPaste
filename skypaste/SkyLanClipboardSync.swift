@@ -573,6 +573,13 @@ li button { padding: 6px 14px; font-size: 13px; }
 <header><h1>SkyPaste \(title)</h1><p>\u{5c40}\u{57df}\u{7f51}\u{76f4}\u{4f20} \u{b7} \u{6570}\u{636e}\u{4e0d}\u{51fa}\u{5185}\u{7f51} \u{b7} LAN direct, no cloud</p></header>
 <main>
 <p id="msg"></p>
+<section id="tokenBox" style="display:none">
+<p><b>首次使用 / First visit</b></p>
+<p style="font-size:13px;color:#8a8a8e">输入电脑端显示的配对令牌 Enter the pairing token shown on the desktop.</p>
+<input id="tokenInput" style="width:100%;padding:10px;border:1px solid #d8dbe4;border-radius:10px;font-size:15px" placeholder="Pairing token">
+<div class="row"><button onclick="saveToken()">保存 Save</button></div>
+</section>
+
 <section>
 <p><b>\(sendTo)</b></p>
 <textarea id="text" placeholder="\u{7c98}\u{8d34}\u{6216}\u{8f93}\u{5165}\u{5185}\u{5bb9}\u{2026}"></textarea>
@@ -591,7 +598,23 @@ const params = new URLSearchParams(location.search);
 let token = params.get('t') || localStorage.getItem('sp_token') || '';
 if (params.get('t')) { localStorage.setItem('sp_token', token); history.replaceState(null, '', location.pathname); }
 function msg(t) { const m = document.getElementById('msg'); m.textContent = t; setTimeout(() => m.textContent = '', 2500); }
-async function api(path, opts) { return fetch(path, Object.assign({ headers: { 'X-SkyPaste-Token': token } }, opts)); }
+function showTokenBox() { document.getElementById('tokenBox').style.display = 'block'; }
+function saveToken() {
+  token = document.getElementById('tokenInput').value.trim();
+  if (!token) return;
+  localStorage.setItem('sp_token', token);
+  document.getElementById('tokenBox').style.display = 'none';
+  pull();
+}
+async function api(path, opts) {
+  const r = await fetch(path, Object.assign({ headers: { 'X-SkyPaste-Token': token } }, opts));
+  if (r.status === 401) {
+    localStorage.removeItem('sp_token'); token = '';
+    showTokenBox();
+    throw new Error('unauthorized');
+  }
+  return r;
+}
 async function readClip() {
   try { document.getElementById('text').value = await navigator.clipboard.readText(); }
   catch (e) { msg('read blocked, paste manually'); }
@@ -609,7 +632,9 @@ async function copyItem(text) {
   catch (e) { msg('copy blocked'); }
 }
 async function pull() {
-  const r = await api('/pull?since=0');
+  let r;
+  try { r = await api('/pull?since=0'); }
+  catch (e) { return; }
   if (!r.ok) return;
   const items = await r.json();
   const list = document.getElementById('list');
