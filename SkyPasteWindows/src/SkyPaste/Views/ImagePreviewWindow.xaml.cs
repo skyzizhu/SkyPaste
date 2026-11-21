@@ -50,8 +50,7 @@ public partial class ImagePreviewWindow : Window
         MinWidth = 760;
         MinHeight = 560;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        Topmost = true;
-        ShowInTaskbar = false;
+        ShowInTaskbar = true;
         Background = (Brush)FindResource("Window.Background");
 
         PreviewTitle.Text = L10n.T("preview.title");

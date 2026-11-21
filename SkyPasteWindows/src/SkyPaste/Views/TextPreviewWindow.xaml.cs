@@ -30,8 +30,7 @@ public partial class TextPreviewWindow : Window
         MinWidth = 700;
         MinHeight = 480;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        Topmost = true;
-        ShowInTaskbar = false;
+        ShowInTaskbar = true;
         Background = (Brush)FindResource("Window.Background");
 
         CopyLabel.Text = item.IsUrl ? L10n.T("menu.copy_link") : L10n.T("menu.copy");

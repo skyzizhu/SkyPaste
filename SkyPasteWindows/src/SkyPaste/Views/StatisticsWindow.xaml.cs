@@ -50,8 +50,7 @@ public partial class StatisticsWindow : Window
         MinWidth = 700;
         MinHeight = 520;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        Topmost = true;
-        ShowInTaskbar = false;
+        ShowInTaskbar = true;
         Background = (Brush)FindResource("Window.Background");
 
         ApplyLocalization();
@@ -412,7 +411,14 @@ public partial class StatisticsWindow : Window
         foreach (var child in PeriodHost.Children.OfType<Button>())
         {
             var selected = (StatisticsPeriod)int.Parse((string)child.Tag, CultureInfo.InvariantCulture);
-            ((TextBlock)child.Content).Text = PeriodLabel(selected);
+            if (child.Content is TextBlock textBlock)
+            {
+                textBlock.Text = PeriodLabel(selected);
+            }
+            else
+            {
+                child.Content = PeriodLabel(selected);
+            }
             child.Background = selected == _period
                 ? (Brush)FindResource("Chip.Selected.Background")
                 : (Brush)FindResource("Chip.Unselected.Background");

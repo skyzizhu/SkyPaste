@@ -1,7 +1,7 @@
 <Window x:Class="SkyPaste.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Preferences" WindowStyle="ToolWindow">
+        Title="Preferences">
     <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,0,4,0">
         <StackPanel MaxWidth="600" HorizontalAlignment="Center" Margin="0,14,0,20">
 
@@ -157,7 +157,7 @@
                                            Foreground="{DynamicResource Text.Primary}" />
                                 <TextBlock x:Name="TokenHint" FontSize="10" TextWrapping="Wrap"
                                            Foreground="{DynamicResource Text.Secondary}" />
-                                <TextBox x:Name="TokenBox" IsReadOnly="True" Margin="0,6,0,0" FontFamily="Consolas, monospace"
+                                <TextBox x:Name="TokenBox" IsReadOnly="True" Margin="0,6,0,0" FontFamily="Cascadia Mono, Consolas"
                                          Background="{DynamicResource SearchField.Background}"
                                          Foreground="{DynamicResource Text.Primary}" BorderThickness="1"
                                          BorderBrush="{DynamicResource SearchField.Border}" />
@@ -169,7 +169,7 @@
                                     <TextBlock x:Name="QrHint" FontSize="10" TextWrapping="Wrap"
                                                Foreground="{DynamicResource Text.Secondary}" />
                                     <TextBlock x:Name="QrMetaText" FontSize="10" Foreground="{DynamicResource Text.Secondary}" Margin="0,4,0,0" />
-                                    <TextBlock x:Name="QrUrlText" FontSize="10" FontFamily="Consolas, monospace"
+                                    <TextBlock x:Name="QrUrlText" FontSize="10" FontFamily="Cascadia Mono, Consolas"
                                                Foreground="{DynamicResource Text.Secondary}" Margin="0,2,0,0" />
                                 </StackPanel>
                             </StackPanel>

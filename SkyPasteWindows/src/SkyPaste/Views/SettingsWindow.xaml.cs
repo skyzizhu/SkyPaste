@@ -25,7 +25,8 @@ public partial class SettingsWindow : Window
         MinWidth = 600;
         MinHeight = 560;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        ShowInTaskbar = false;
+        ShowInTaskbar = true;
+        ShowActivated = true;
         Background = (Brush)FindResource("Window.Background");
 
         Loaded += (_, _) => WindowEffectsService.EnableRoundedCorners(this);

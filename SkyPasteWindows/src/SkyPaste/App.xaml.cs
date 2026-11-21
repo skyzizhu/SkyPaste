@@ -43,6 +43,20 @@ public partial class App : Application
         DispatcherUnhandledException += (_, args) =>
         {
             args.Handled = true;
+            try
+            {
+                var logDir = System.IO.Path.Combine(
+                    AppSettingsService.DefaultDirectory, "logs");
+                System.IO.Directory.CreateDirectory(logDir);
+                var file = System.IO.Path.Combine(
+                    logDir, $"ui-{DateTime.Now:yyyyMMdd}.log");
+                System.IO.File.AppendAllText(file,
+                    $"[{DateTime.Now:HH:mm:ss}] {args.Exception}\n\n");
+            }
+            catch
+            {
+                // Logging must never throw.
+            }
         };
 
         Settings = new AppSettingsService();

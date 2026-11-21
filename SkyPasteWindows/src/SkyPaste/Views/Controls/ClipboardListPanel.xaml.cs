@@ -292,51 +292,6 @@ public partial class ClipboardListPanel : UserControl
         return card;
     }
 
-    private void AddSectionCard(string title, IReadOnlyList<ClipboardItem> items, ref int rowIndex, bool allowDayDelete)
-    {
-        var card = new Border
-        {
-            CornerRadius = new CornerRadius(16),
-            Background = (Brush)FindResource("SectionCard.Background"),
-            Padding = new Thickness(6),
-            Margin = new Thickness(0, 0, 0, 12),
-        };
-        var stack = new StackPanel();
-
-        var header = new Grid { Margin = new Thickness(8, 4, 8, 6) };
-        header.Children.Add(new TextBlock
-        {
-            Text = title,
-            FontSize = 12,
-            FontWeight = FontWeights.SemiBold,
-            Foreground = (Brush)FindResource("Text.Secondary"),
-        });
-        if (allowDayDelete)
-        {
-            var deleteDay = new Button
-            {
-                Style = (Style)FindResource("IconIconButton"),
-                HorizontalAlignment = HorizontalAlignment.Right,
-                Content = new TextBlock { Text = "\uE74D", FontSize = 11, FontFamily = GlyphFont },
-                ToolTip = L10n.T("menu.delete"),
-            };
-            deleteDay.Click += (_, _) => ShowDeleteDayConfirm(items);
-            header.Children.Add(deleteDay);
-        }
-        stack.Children.Add(header);
-
-        for (var i = 0; i < items.Count; i++)
-        {
-            var row = BuildRow(items[i], rowIndex);
-            _flatRows.Add(row);
-            stack.Children.Add(row.Border);
-            rowIndex++;
-        }
-
-        card.Child = stack;
-        SectionHost.Children.Add(card);
-    }
-
     private RowModel BuildRow(ClipboardItem item, int index)
     {
         var row = new RowModel
@@ -423,7 +378,7 @@ public partial class ClipboardListPanel : UserControl
         };
         if (item.IsCode)
         {
-            titleBlock.FontFamily = new FontFamily("Consolas, Menlo, monospace");
+            titleBlock.FontFamily = new FontFamily("Cascadia Mono, Consolas");
             titleBlock.TextTrimming = TextTrimming.CharacterEllipsis;
         }
         textStack.Children.Add(titleBlock);

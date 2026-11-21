@@ -1,7 +1,7 @@
 <Window x:Class="SkyPaste.TextPreviewWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Text Preview" WindowStyle="ToolWindow">
+        Title="Text Preview">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />

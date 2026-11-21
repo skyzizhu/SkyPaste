@@ -20,8 +20,7 @@ public partial class DebugWindow : Window
         Width = 620;
         Height = 560;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        Topmost = true;
-        ShowInTaskbar = false;
+        ShowInTaskbar = true;
         Background = (Brush)FindResource("Window.Background");
         TitleLabel.Text = L10n.T("debug.title");
         RefreshLabel.Text = L10n.T("debug.refresh");
@@ -30,7 +29,6 @@ public partial class DebugWindow : Window
             WindowEffectsService.EnableRoundedCorners(this);
             Refresh();
         };
-        Loaded += (_, _) => WindowEffectsService.EnableRoundedCorners(this);
         PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape)
