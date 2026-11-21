@@ -1,11 +1,15 @@
 <Application x:Class="SkyPaste.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
              ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <!-- Theme dictionaries are inserted at index 0 at runtime by ThemeService. -->
+                <!-- WPF-UI Fluent theme + control styles (Windows 11 look). -->
+                <ui:ThemesDictionary Theme="Light" />
+                <ui:ControlsDictionary />
+                <!-- App-specific brushes/styles; swapped at runtime by ThemeService. -->
                 <ResourceDictionary Source="pack://application:,,,/SkyPaste;component/Views/Styles/Theme.Light.xaml" />
             </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>

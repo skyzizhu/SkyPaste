@@ -75,14 +75,10 @@ public sealed class AppCoordinator
     /// <summary>Called by windows right before they appear (mac captureFrontApp).</summary>
     public void CaptureForeground() => _previousForegroundWindow = PasteBackService.CaptureForeground();
 
-    /// <summary>Renders the visible main panel to a PNG (CI --uitesting screenshots).</summary>
-    public void CaptureMainWindowScreenshot(string path)
+
+    /// <summary>Renders a window to a PNG (CI --uitesting screenshots).</summary>
+    public void CaptureWindowScreenshot(System.Windows.Window window, string path)
     {
-        var window = _mainWindow;
-        if (window is null || !window.IsVisible)
-        {
-            return;
-        }
         try
         {
             var width = (int)window.ActualWidth;
@@ -103,6 +99,10 @@ public sealed class AppCoordinator
         {
         }
     }
+
+    public System.Windows.Window? SettingsWindowView => _settingsWindow;
+    public System.Windows.Window? StatisticsWindowView => _statisticsWindow;
+    public System.Windows.Window? MainWindowView => _mainWindow;
 
     // ---- copy / paste ---------------------------------------------------------
 

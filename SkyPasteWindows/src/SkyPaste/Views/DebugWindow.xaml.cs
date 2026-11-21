@@ -8,7 +8,7 @@ using SkyPaste.Services;
 namespace SkyPaste;
 
 /// <summary>Pasteboard debug panel (mac PasteboardDebugPanel): formats, decoded summary, preview.</summary>
-public partial class DebugWindow : Window
+public partial class DebugWindow : Wpf.Ui.Controls.FluentWindow
 {
     private readonly App _app;
 
@@ -26,8 +26,7 @@ public partial class DebugWindow : Window
         RefreshLabel.Text = L10n.T("debug.refresh");
         Loaded += (_, _) =>
         {
-            WindowEffectsService.EnableRoundedCorners(this);
-            Refresh();
+                Refresh();
         };
         PreviewKeyDown += (_, e) =>
         {

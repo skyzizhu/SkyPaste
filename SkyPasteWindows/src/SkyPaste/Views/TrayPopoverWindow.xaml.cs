@@ -57,6 +57,12 @@ public partial class TrayPopoverWindow : Window
         if (_panel.HandleKeyDown(e.Key, Keyboard.Modifiers))
         {
             e.Handled = true;
+            return;
+        }
+        if (e.Key == Key.Escape)
+        {
+            Close();
+            e.Handled = true;
         }
     }
 

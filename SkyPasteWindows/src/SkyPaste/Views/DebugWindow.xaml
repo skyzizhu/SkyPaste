@@ -1,7 +1,17 @@
-<Window x:Class="SkyPaste.DebugWindow"
+<ui:FluentWindow x:Class="SkyPaste.DebugWindow"
+        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Pasteboard Debug">
+        Title="Pasteboard Debug"
+        ExtendsContentIntoTitleBar="True"
+        WindowBackdropType="Mica">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <ui:TitleBar Grid.Row="0" Title="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=Title}" ShowMaximize="True" ShowMinimize="False" />
+        <Grid Grid.Row="1">
     <Grid Margin="14,12,14,12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -36,4 +46,6 @@
                  Background="{DynamicResource SectionCard.Background}"
                  Foreground="{DynamicResource Text.Primary}" />
     </Grid>
-</Window>
+        </Grid>
+    </Grid>
+</ui:FluentWindow>

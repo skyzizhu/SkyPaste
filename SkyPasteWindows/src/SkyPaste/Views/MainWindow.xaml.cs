@@ -13,7 +13,7 @@ namespace SkyPaste;
 /// Main panel window (mac: 700x620 floating NSPanel, centered, topmost,
 /// Esc closes, Enter pastes, Ctrl+1..9 quick copy, stays visible on deactivate).
 /// </summary>
-public partial class MainWindow : Window
+public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
 {
     private readonly App _app;
     private readonly ClipboardListPanel _panel;
@@ -35,7 +35,6 @@ public partial class MainWindow : Window
         Topmost = true;
         ShowInTaskbar = false;
         ResizeMode = ResizeMode.CanResize;
-        Background = (System.Windows.Media.Brush)FindResource("Window.Background");
 
         _panel = new ClipboardListPanel(app, popoverMode: false);
         PanelHost.Content = _panel;
@@ -138,12 +137,6 @@ public partial class MainWindow : Window
             return;
         }
         base.OnClosing(e);
-    }
-
-    protected override void OnSourceInitialized(EventArgs e)
-    {
-        base.OnSourceInitialized(e);
-        WindowEffectsService.EnableRoundedCorners(this);
     }
 
 }

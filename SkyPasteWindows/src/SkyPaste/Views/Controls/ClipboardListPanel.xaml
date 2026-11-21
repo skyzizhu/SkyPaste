@@ -19,7 +19,7 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <Border Grid.Column="0" Width="34" Height="34" CornerRadius="8"
+            <Border Grid.Column="0" x:Name="BrandLogo" Width="34" Height="34" CornerRadius="8"
                     Background="{DynamicResource AccentSoftBrush}">
                 <TextBlock Text="S" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"
                            HorizontalAlignment="Center" VerticalAlignment="Center" />

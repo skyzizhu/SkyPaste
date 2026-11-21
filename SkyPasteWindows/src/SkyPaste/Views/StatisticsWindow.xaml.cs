@@ -17,7 +17,7 @@ namespace SkyPaste;
 /// Clipboard Insights (mac ClipboardStatisticsView/Charts): 5 time ranges,
 /// hand-drawn trend bars, category donut with legend, source-app ranking.
 /// </summary>
-public partial class StatisticsWindow : Window
+public partial class StatisticsWindow : Wpf.Ui.Controls.FluentWindow
 {
     private readonly App _app;
     private StatisticsPeriod _period = StatisticsPeriod.Week;

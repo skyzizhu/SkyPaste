@@ -13,7 +13,7 @@ namespace SkyPaste;
 /// File/folder preview (mac FileSystemPreviewView): details, directory contents,
 /// missing-path banner, and an image-file dual view with preview toggle.
 /// </summary>
-public partial class FilePreviewWindow : Window
+public partial class FilePreviewWindow : Wpf.Ui.Controls.FluentWindow
 {
     private readonly App _app;
     private readonly ClipboardItem _item;

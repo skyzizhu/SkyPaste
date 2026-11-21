@@ -54,12 +54,20 @@ public partial class ClipboardListPanel : UserControl
         if (popoverMode)
         {
             BatchToggle.Visibility = Visibility.Collapsed;
-            CloseToggle.Visibility = Visibility.Collapsed;
+            CloseToggle.Visibility = Visibility.Visible;
             StatsToggle.Visibility = Visibility.Visible;
+            // Popover has no TitleBar: keep the brand block visible.
+            BrandLogo.Visibility = Visibility.Visible;
+            HeaderTitle.Visibility = Visibility.Visible;
         }
         else
         {
             StatsToggle.Visibility = Visibility.Collapsed;
+            // Main panel: TitleBar already shows the app identity and the X
+            // caption button hides the panel.
+            CloseToggle.Visibility = Visibility.Collapsed;
+            BrandLogo.Visibility = Visibility.Collapsed;
+            HeaderTitle.Visibility = Visibility.Collapsed;
         }
 
         _app.Settings.FilterOrderSettingsChanged += RebuildChips;

@@ -10,7 +10,7 @@ using SkyPaste.Services;
 namespace SkyPaste;
 
 /// <summary>Text/URL/email/code preview (mac TextPreviewView): selectable text, copy, browser/email open.</summary>
-public partial class TextPreviewWindow : Window
+public partial class TextPreviewWindow : Wpf.Ui.Controls.FluentWindow
 {
     private readonly App _app;
     private readonly ClipboardItem _item;

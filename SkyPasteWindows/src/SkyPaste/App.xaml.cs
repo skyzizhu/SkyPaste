@@ -113,11 +113,32 @@ public partial class App : Application
 
         Coordinator.PreloadMainWindow();
 
-        // CI smoke test hook (mirrors the macOS --uitesting flag): show the panel
-        // immediately so headless environments can screenshot a real window.
-        if (e.Args.Contains("--uitesting", StringComparer.OrdinalIgnoreCase))
+        // CI smoke test hook: --uitesting[:main|settings|statistics] shows the
+        // corresponding window so headless environments can screenshot it.
+        var uitesting = e.Args.FirstOrDefault(a =>
+            a.StartsWith("--uitesting", StringComparison.OrdinalIgnoreCase));
+        if (uitesting is not null)
         {
-            Coordinator.ShowPanel();
+            var scenario = uitesting.Contains(':')
+                ? uitesting.Split(':', 2)[1].ToLowerInvariant()
+                : "main";
+            System.Windows.Window? target;
+            switch (scenario)
+            {
+                case "settings":
+                    Coordinator.ShowSettings();
+                    target = Coordinator.SettingsWindowView;
+                    break;
+                case "statistics":
+                    Coordinator.ShowStatistics();
+                    target = Coordinator.StatisticsWindowView;
+                    break;
+                default:
+                    Coordinator.ShowPanel();
+                    target = Coordinator.MainWindowView;
+                    break;
+            }
+
             var smokeTimer = new System.Windows.Threading.DispatcherTimer
             {
                 Interval = TimeSpan.FromSeconds(6),
@@ -125,8 +146,12 @@ public partial class App : Application
             smokeTimer.Tick += (_, _) =>
             {
                 smokeTimer.Stop();
-                Coordinator.CaptureMainWindowScreenshot(
-                    System.IO.Path.Combine(AppContext.BaseDirectory, "smoke-app-window.png"));
+                if (target is not null)
+                {
+                    Coordinator.CaptureWindowScreenshot(
+                        target,
+                        System.IO.Path.Combine(AppContext.BaseDirectory, $"smoke-{scenario}.png"));
+                }
             };
             smokeTimer.Start();
         }
