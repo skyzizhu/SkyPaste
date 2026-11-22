@@ -56,7 +56,11 @@ public sealed class ThemeService : IDisposable
         }
 
         // WPF-UI swaps its Fluent dictionaries and repaints open windows.
-        ApplicationThemeManager.Apply(theme, Wpf.Ui.Controls.WindowBackdropType.Mica);
+        // Backdrop stays None: Mica is unavailable on Windows Server SKUs and
+        // Win10 (CI renders transparent/black), and solid backgrounds keep the
+        // look consistent everywhere. Rounded corners still come from DWM.
+
+        ApplicationThemeManager.Apply(theme);
 
         // Swap our app-specific brush dictionary to match.
         var dictionaries = System.Windows.Application.Current?.Resources?.MergedDictionaries;
