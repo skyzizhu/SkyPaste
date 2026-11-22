@@ -11,7 +11,7 @@ namespace SkyPaste;
 /// Preferences (mac SkySettingsView): general / hotkey / sync &amp; privacy /
 /// library / about, one column, bound to AppSettingsService.
 /// </summary>
-public partial class SettingsWindow : Window
+public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 {
     private readonly App _app;
     private bool _loading;
@@ -20,15 +20,15 @@ public partial class SettingsWindow : Window
     {
         InitializeComponent();
         _app = app;
-        Width = 660;
-        Height = 700;
-        MinWidth = 600;
+        Width = 860;
+        Height = 660;
+        MinWidth = 760;
         MinHeight = 560;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        ShowInTaskbar = false;
+        ShowInTaskbar = true;
+        ShowActivated = true;
         Background = (Brush)FindResource("Window.Background");
 
-        Loaded += (_, _) => WindowEffectsService.EnableRoundedCorners(this);
         PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape)
@@ -59,9 +59,28 @@ public partial class SettingsWindow : Window
     }
 
     /// <summary>All static texts; re-applied when the app language changes.</summary>
+    private void OnNavChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (NavList is null || SectionGeneral is null)
+        {
+            return; // raised during XAML parse, before named fields are assigned
+        }
+        var index = NavList.SelectedIndex;
+        SectionGeneral.Visibility = index == 0 ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+        SectionHotkey.Visibility = index == 1 ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+        SectionSync.Visibility = index == 2 ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+        SectionLibrary.Visibility = index == 3 ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+        SectionAbout.Visibility = index == 4 ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
+    }
+
     private void ApplyLocalization()
     {
         Title = L10n.T("menu.preferences");
+        NavGeneral.Text = L10n.T("settings.general");
+        NavHotkey.Text = L10n.T("settings.hotkey");
+        NavSync.Text = L10n.T("settings.sync");
+        NavLibrary.Text = L10n.T("settings.library");
+        NavAbout.Text = L10n.T("about.title");
         SectionGeneral.Header = L10n.T("settings.general");
         SectionHotkey.Header = L10n.T("settings.hotkey");
         SectionSync.Header = L10n.T("settings.sync");
@@ -363,7 +382,7 @@ public partial class SettingsWindow : Window
 
     private void OnHistoryLimitChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        if (MaxRecordsValue is null || _loading)
+        if (MaxRecordsValue is null || _app is null || _loading)
         {
             return;
         }

@@ -269,6 +269,15 @@ NEW_KEYS: dict[str, dict[str, str]] = {
         "ko": "휴대폰 카메라로 스캔하면 웹 클립보드가 열립니다(앱 불필요).",
         "fr": "Scannez avec l'appareil photo du téléphone pour ouvrir le presse-papiers web (aucune app requise).",
     },
+    "settings.ctrl": {
+        "en": "Ctrl", "zh-Hans": "Ctrl", "zh-Hant": "Ctrl", "ja": "Ctrl", "ko": "Ctrl", "fr": "Ctrl",
+    },
+    "settings.alt": {
+        "en": "Alt", "zh-Hans": "Alt", "zh-Hant": "Alt", "ja": "Alt", "ko": "Alt", "fr": "Alt",
+    },
+    "settings.win": {
+        "en": "Win", "zh-Hans": "Win", "zh-Hant": "Win", "ja": "Win", "ko": "Win", "fr": "Win",
+    },
     "panel_position.center": {
         "en": "Centered on screen",
         "zh-Hans": "屏幕居中",

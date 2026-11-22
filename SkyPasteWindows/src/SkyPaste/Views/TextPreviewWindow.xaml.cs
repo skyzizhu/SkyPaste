@@ -10,7 +10,7 @@ using SkyPaste.Services;
 namespace SkyPaste;
 
 /// <summary>Text/URL/email/code preview (mac TextPreviewView): selectable text, copy, browser/email open.</summary>
-public partial class TextPreviewWindow : Window
+public partial class TextPreviewWindow : Wpf.Ui.Controls.FluentWindow
 {
     private readonly App _app;
     private readonly ClipboardItem _item;
@@ -30,8 +30,7 @@ public partial class TextPreviewWindow : Window
         MinWidth = 700;
         MinHeight = 480;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        Topmost = true;
-        ShowInTaskbar = false;
+        ShowInTaskbar = true;
         Background = (Brush)FindResource("Window.Background");
 
         CopyLabel.Text = item.IsUrl ? L10n.T("menu.copy_link") : L10n.T("menu.copy");

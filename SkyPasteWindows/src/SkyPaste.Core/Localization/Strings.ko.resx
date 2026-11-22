@@ -31,9 +31,9 @@
   <data name="settings.language" xml:space="preserve"><value>언어</value></data>
   <data name="settings.language_hint" xml:space="preserve"><value>시스템을 선택하면 macOS 언어를 따르고, 앱 전용 언어를 고를 수도 있습니다.</value></data>
   <data name="settings.key" xml:space="preserve"><value>키</value></data>
-  <data name="settings.ctrl" xml:space="preserve"><value>Command</value></data>
+  <data name="settings.ctrl" xml:space="preserve"><value>Ctrl</value></data>
   <data name="settings.shift" xml:space="preserve"><value>Shift</value></data>
-  <data name="settings.alt" xml:space="preserve"><value>Option</value></data>
+  <data name="settings.alt" xml:space="preserve"><value>Alt</value></data>
   <data name="settings.control" xml:space="preserve"><value>Control</value></data>
   <data name="settings.current" xml:space="preserve"><value>현재: %@</value></data>
   <data name="settings.version_format" xml:space="preserve"><value>버전 %@ (%@)</value></data>
@@ -267,6 +267,7 @@
   <data name="settings.lan_sync_qr_hint" xml:space="preserve"><value>휴대폰 카메라로 스캔하면 웹 클립보드가 열립니다(앱 불필요).</value></data>
   <data name="settings.lan_sync_qr_generated" xml:space="preserve"><value>QR 코드 생성 시각: %@</value></data>
   <data name="settings.lan_sync_ip_changed_toast" xml:space="preserve"><value>LAN IP가 %@(으)로 변경되었습니다. QR을 다시 스캔하세요</value></data>
+  <data name="clipboard.source.lan" xml:space="preserve"><value>LAN 동기화</value></data>
   <data name="settings.lan_sync_device_name" xml:space="preserve"><value>장치 이름</value></data>
   <data name="settings.lan_sync_port" xml:space="preserve"><value>포트</value></data>
   <data name="sync.received_from" xml:space="preserve"><value>%@(으)로부터 수신함</value></data>
@@ -276,6 +277,7 @@
   <data name="paste.foreground_failed" xml:space="preserve"><value>복사했습니다. 이전 창으로 자동 전환하지 못했습니다. Ctrl+V로 붙여넣으세요.</value></data>
   <data name="settings.lan_sync_firewall_hint" xml:space="preserve"><value>Windows 방화벽 권한을 묻는 창이 뜨면 &quot;허용&quot;을 선택하세요. 허용하지 않으면 휴대폰에서 이 PC로 보낼 수 없습니다.</value></data>
   <data name="settings.panel_position" xml:space="preserve"><value>패널 위치</value></data>
+  <data name="settings.win" xml:space="preserve"><value>Win</value></data>
   <data name="panel_position.center" xml:space="preserve"><value>화면 중앙</value></data>
   <data name="panel_position.cursor" xml:space="preserve"><value>커서 따라가기</value></data>
   <data name="hotkey.register_failed" xml:space="preserve"><value>이 단축키는 다른 프로그램이 사용 중입니다. 다른 조합을 선택하세요.</value></data>

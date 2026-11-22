@@ -31,9 +31,9 @@
   <data name="settings.language" xml:space="preserve"><value>Language</value></data>
   <data name="settings.language_hint" xml:space="preserve"><value>Choose System to follow macOS, or pick a fixed app language.</value></data>
   <data name="settings.key" xml:space="preserve"><value>Key</value></data>
-  <data name="settings.ctrl" xml:space="preserve"><value>Command</value></data>
+  <data name="settings.ctrl" xml:space="preserve"><value>Ctrl</value></data>
   <data name="settings.shift" xml:space="preserve"><value>Shift</value></data>
-  <data name="settings.alt" xml:space="preserve"><value>Option</value></data>
+  <data name="settings.alt" xml:space="preserve"><value>Alt</value></data>
   <data name="settings.control" xml:space="preserve"><value>Control</value></data>
   <data name="settings.current" xml:space="preserve"><value>Current: %@</value></data>
   <data name="settings.version_format" xml:space="preserve"><value>Version %@ (%@)</value></data>
@@ -267,6 +267,7 @@
   <data name="settings.lan_sync_qr_hint" xml:space="preserve"><value>Scan with your phone camera to open the web clipboard (no app needed).</value></data>
   <data name="settings.lan_sync_qr_generated" xml:space="preserve"><value>QR generated at %@</value></data>
   <data name="settings.lan_sync_ip_changed_toast" xml:space="preserve"><value>LAN IP changed to %@ — re-scan the pairing QR</value></data>
+  <data name="clipboard.source.lan" xml:space="preserve"><value>LAN Sync</value></data>
   <data name="settings.lan_sync_device_name" xml:space="preserve"><value>Device name</value></data>
   <data name="settings.lan_sync_port" xml:space="preserve"><value>Port</value></data>
   <data name="sync.received_from" xml:space="preserve"><value>Received from %@</value></data>
@@ -276,6 +277,7 @@
   <data name="paste.foreground_failed" xml:space="preserve"><value>Copied. The previous window could not be focused automatically — press Ctrl+V to paste.</value></data>
   <data name="settings.lan_sync_firewall_hint" xml:space="preserve"><value>If Windows Firewall asks for permission, choose &quot;Allow&quot; — otherwise your phone cannot send clipboard content to this PC.</value></data>
   <data name="settings.panel_position" xml:space="preserve"><value>Panel position</value></data>
+  <data name="settings.win" xml:space="preserve"><value>Win</value></data>
   <data name="panel_position.center" xml:space="preserve"><value>Centered on screen</value></data>
   <data name="panel_position.cursor" xml:space="preserve"><value>Follow cursor</value></data>
   <data name="hotkey.register_failed" xml:space="preserve"><value>This shortcut is taken by another app — pick a different combination.</value></data>

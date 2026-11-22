@@ -13,7 +13,7 @@ namespace SkyPaste;
 /// File/folder preview (mac FileSystemPreviewView): details, directory contents,
 /// missing-path banner, and an image-file dual view with preview toggle.
 /// </summary>
-public partial class FilePreviewWindow : Window
+public partial class FilePreviewWindow : Wpf.Ui.Controls.FluentWindow
 {
     private readonly App _app;
     private readonly ClipboardItem _item;
@@ -30,8 +30,7 @@ public partial class FilePreviewWindow : Window
         MinWidth = 700;
         MinHeight = 500;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        Topmost = true;
-        ShowInTaskbar = false;
+        ShowInTaskbar = true;
         Background = (Brush)FindResource("Window.Background");
 
         CopyLabel.Text = L10n.T("menu.copy");
@@ -92,7 +91,7 @@ public partial class FilePreviewWindow : Window
                         {
                             Text = string.Join("\n", missing),
                             FontSize = 11,
-                            FontFamily = new FontFamily("Consolas, monospace"),
+                            FontFamily = new FontFamily("Cascadia Mono, Consolas"),
                             Foreground = (Brush)FindResource("Text.Secondary"),
                             TextWrapping = TextWrapping.Wrap,
                             Margin = new Thickness(0, 4, 0, 0),
@@ -187,7 +186,7 @@ public partial class FilePreviewWindow : Window
             };
             if (label == L10n.T("preview.file_system_label_path"))
             {
-                valueText.FontFamily = new FontFamily("Consolas, monospace");
+                valueText.FontFamily = new FontFamily("Cascadia Mono, Consolas");
             }
             Grid.SetColumn(valueText, 1);
             row.Children.Add(valueText);

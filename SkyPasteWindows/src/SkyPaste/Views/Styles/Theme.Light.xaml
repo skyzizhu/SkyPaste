@@ -9,17 +9,17 @@
     <SolidColorBrush x:Key="AccentSoftBrush" Color="#29146BF0" />
     <SolidColorBrush x:Key="AccentBorderBrush" Color="#2E146BF0" />
 
-    <SolidColorBrush x:Key="Window.Background" Color="#F6F7FA" />
+    <SolidColorBrush x:Key="Window.Background" Color="#F9F9F9" />
     <SolidColorBrush x:Key="Window.GradientTop" Color="#22146BF0" />
     <SolidColorBrush x:Key="Window.GradientBottom" Color="#08101018" />
     <SolidColorBrush x:Key="Card.Background" Color="#C2FFFFFF" />
     <SolidColorBrush x:Key="Card.Border" Color="#0D101018" />
-    <SolidColorBrush x:Key="SectionCard.Background" Color="#D6FFFFFF" />
+    <SolidColorBrush x:Key="SectionCard.Background" Color="#A8FFFFFF" />
     <SolidColorBrush x:Key="Surface.Material" Color="#66FFFFFF" />
     <SolidColorBrush x:Key="Divider" Color="#14000000" />
 
     <SolidColorBrush x:Key="Text.Primary" Color="#141414" />
-    <SolidColorBrush x:Key="Text.Secondary" Color="#8A8A8E" />
+    <SolidColorBrush x:Key="Text.Secondary" Color="#5E5E62" />
     <SolidColorBrush x:Key="Text.OnAccent" Color="#FFFFFF" />
 
     <SolidColorBrush x:Key="Chip.Unselected.Background" Color="#F0FFFFFF" />
@@ -27,7 +27,7 @@
     <SolidColorBrush x:Key="Chip.Selected.Background" Color="#29146BF0" />
     <SolidColorBrush x:Key="Chip.Selected.Foreground" Color="#146BF0" />
 
-    <SolidColorBrush x:Key="Row.Hover" Color="#85FFFFFF" />
+    <SolidColorBrush x:Key="Row.Hover" Color="#5CFFFFFF" />
     <SolidColorBrush x:Key="Row.Selected.Background" Color="#1C146BF0" />
     <SolidColorBrush x:Key="Row.Selected.Border" Color="#2E146BF0" />
 

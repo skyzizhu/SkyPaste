@@ -15,7 +15,7 @@ namespace SkyPaste;
 /// toggles 3x, pen annotation with 5 colors / 2-12 width / undo / clear, and
 /// PNG export that re-renders the strokes at original resolution.
 /// </summary>
-public partial class ImagePreviewWindow : Window
+public partial class ImagePreviewWindow : Wpf.Ui.Controls.FluentWindow
 {
     private readonly App _app;
     private readonly ClipboardItem _item;
@@ -50,8 +50,7 @@ public partial class ImagePreviewWindow : Window
         MinWidth = 760;
         MinHeight = 560;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        Topmost = true;
-        ShowInTaskbar = false;
+        ShowInTaskbar = true;
         Background = (Brush)FindResource("Window.Background");
 
         PreviewTitle.Text = L10n.T("preview.title");

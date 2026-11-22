@@ -1,11 +1,13 @@
 using Microsoft.Win32;
+using Wpf.Ui.Appearance;
 using SkyPaste.Core.Services;
 
 namespace SkyPaste.Services;
 
 /// <summary>
-/// Port of the macOS appearance setting: Follow System / Light / Dark by
-/// swapping merged resource dictionaries. System mode tracks the Windows registry.
+/// Appearance: Follow System / Light / Dark, implemented on WPF-UI's
+/// ApplicationThemeManager (Fluent resources + dark window chrome) with our
+/// app-specific brush dictionary swapped alongside it.
 /// </summary>
 public sealed class ThemeService : IDisposable
 {
@@ -13,6 +15,7 @@ public sealed class ThemeService : IDisposable
     private const string DarkDictionary = "Views/Styles/Theme.Dark.xaml";
 
     private readonly AppSettingsService _settings;
+    private ApplicationTheme _appliedTheme = ApplicationTheme.Light;
 
     public ThemeService(AppSettingsService settings)
     {
@@ -21,50 +24,66 @@ public sealed class ThemeService : IDisposable
         SystemEvents.UserPreferenceChanged += OnUserPreferenceChanged;
     }
 
-    public bool IsDarkMode { get; private set; }
+    public bool IsDarkMode => _appliedTheme == ApplicationTheme.Dark;
 
     public void ApplyCurrentSetting()
     {
-        var mode = _settings.Appearance;
-        var dark = mode switch
+        var dark = _settings.Appearance switch
         {
             AppAppearanceMode.Light => false,
             AppAppearanceMode.Dark => true,
             _ => IsSystemDarkMode(),
         };
-        Apply(dark);
+        Apply(dark ? ApplicationTheme.Dark : ApplicationTheme.Light);
     }
 
     private void OnUserPreferenceChanged(object sender, UserPreferenceChangedEventArgs e)
     {
         if (e.Category == UserPreferenceCategory.General && _settings.Appearance == AppAppearanceMode.System)
         {
-            Apply(IsSystemDarkMode());
+            ApplyCurrentSetting();
         }
     }
 
-    private void Apply(bool dark)
+    private void Apply(ApplicationTheme theme)
     {
-        IsDarkMode = dark;
-        var dictionaries = System.Windows.Application.Current?.Resources?.MergedDictionaries;
-        if (dictionaries is null)
+        if (theme == _appliedTheme && System.Windows.Application.Current?.Resources?.MergedDictionaries
+                .Any(d => d.Source?.OriginalString?.EndsWith(
+                    theme == ApplicationTheme.Dark ? DarkDictionary : LightDictionary,
+                    StringComparison.OrdinalIgnoreCase) == true) == true)
         {
             return;
         }
-        for (var i = dictionaries.Count - 1; i >= 0; i--)
+
+        // WPF-UI swaps its Fluent dictionaries and repaints open windows.
+        // Backdrop stays None: Mica is unavailable on Windows Server SKUs and
+        // Win10 (CI renders transparent/black), and solid backgrounds keep the
+        // look consistent everywhere. Rounded corners still come from DWM.
+
+        ApplicationThemeManager.Apply(theme);
+
+        // Swap our app-specific brush dictionary to match.
+        var dictionaries = System.Windows.Application.Current?.Resources?.MergedDictionaries;
+        if (dictionaries is not null)
         {
-            var source = dictionaries[i].Source?.OriginalString;
-            if (source is not null && (source.EndsWith("Theme.Light.xaml", StringComparison.OrdinalIgnoreCase)
-                                       || source.EndsWith("Theme.Dark.xaml", StringComparison.OrdinalIgnoreCase)))
+            for (var i = dictionaries.Count - 1; i >= 0; i--)
             {
-                dictionaries.RemoveAt(i);
+                var source = dictionaries[i].Source?.OriginalString;
+                if (source is not null && (source.EndsWith("Theme.Light.xaml", StringComparison.OrdinalIgnoreCase)
+                                           || source.EndsWith("Theme.Dark.xaml", StringComparison.OrdinalIgnoreCase)))
+                {
+                    dictionaries.RemoveAt(i);
+                }
             }
+            var dictionary = new System.Windows.ResourceDictionary
+            {
+                Source = new Uri("pack://application:,,,/SkyPaste;component/" +
+                    (theme == ApplicationTheme.Dark ? DarkDictionary : LightDictionary), UriKind.Absolute),
+            };
+            dictionaries.Add(dictionary);
         }
-        var dictionary = new System.Windows.ResourceDictionary
-        {
-            Source = new Uri("pack://application:,,,/SkyPaste;component/" + (dark ? DarkDictionary : LightDictionary), UriKind.Absolute),
-        };
-        dictionaries.Insert(0, dictionary);
+
+        _appliedTheme = theme;
         ThemeChanged?.Invoke();
     }
 

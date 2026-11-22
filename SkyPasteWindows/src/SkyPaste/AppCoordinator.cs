@@ -75,14 +75,10 @@ public sealed class AppCoordinator
     /// <summary>Called by windows right before they appear (mac captureFrontApp).</summary>
     public void CaptureForeground() => _previousForegroundWindow = PasteBackService.CaptureForeground();
 
-    /// <summary>Renders the visible main panel to a PNG (CI --uitesting screenshots).</summary>
-    public void CaptureMainWindowScreenshot(string path)
+
+    /// <summary>Renders a window to a PNG (CI --uitesting screenshots).</summary>
+    public void CaptureWindowScreenshot(System.Windows.Window window, string path)
     {
-        var window = _mainWindow;
-        if (window is null || !window.IsVisible)
-        {
-            return;
-        }
         try
         {
             var width = (int)window.ActualWidth;
@@ -103,6 +99,10 @@ public sealed class AppCoordinator
         {
         }
     }
+
+    public System.Windows.Window? SettingsWindowView => _settingsWindow;
+    public System.Windows.Window? StatisticsWindowView => _statisticsWindow;
+    public System.Windows.Window? MainWindowView => _mainWindow;
 
     // ---- copy / paste ---------------------------------------------------------
 
@@ -169,6 +169,14 @@ public sealed class AppCoordinator
 
     // ---- secondary windows -------------------------------------------------------
 
+    /// <summary>
+    /// Tool windows are owned by the main panel (when visible) so they can
+    /// never be buried under the always-on-top panel - the previous cause of
+    /// 'Preferences opens but is invisible'.
+    /// </summary>
+    private System.Windows.Window? ToolOwner =>
+        _mainWindow is { Visibility: System.Windows.Visibility.Visible } ? _mainWindow : null;
+
     public void ShowSettings()
     {
         if (_settingsWindow is { Visibility: Visibility.Visible })
@@ -176,9 +184,12 @@ public sealed class AppCoordinator
             _settingsWindow.Activate();
             return;
         }
-        _settingsWindow = new SettingsWindow(_app);
+        App.UiLog("ShowSettings: creating window");
+        _settingsWindow = new SettingsWindow(_app) { Owner = ToolOwner };
+        App.UiLog("ShowSettings: ctor ok, showing");
         _settingsWindow.Show();
         _settingsWindow.Activate();
+        App.UiLog($"ShowSettings: shown, visibility={_settingsWindow.Visibility}, isLoaded={_settingsWindow.IsLoaded}");
     }
 
     public void ShowStatistics()
@@ -188,7 +199,7 @@ public sealed class AppCoordinator
             _statisticsWindow.Activate();
             return;
         }
-        _statisticsWindow = new StatisticsWindow(_app);
+        _statisticsWindow = new StatisticsWindow(_app) { Owner = ToolOwner };
         _statisticsWindow.Show();
         _statisticsWindow.Activate();
     }
@@ -200,7 +211,7 @@ public sealed class AppCoordinator
             _debugWindow.Activate();
             return;
         }
-        _debugWindow = new DebugWindow(_app);
+        _debugWindow = new DebugWindow(_app) { Owner = ToolOwner };
         _debugWindow.Show();
         _debugWindow.Activate();
     }
@@ -226,21 +237,21 @@ public sealed class AppCoordinator
     private void OpenImagePreview(ClipboardItem item)
     {
         var full = _app.Store.RestoreFullResolutionItem(item);
-        var window = new ImagePreviewWindow(_app, full);
+        var window = new ImagePreviewWindow(_app, full) { Owner = ToolOwner };
         window.Show();
         window.Activate();
     }
 
     private void OpenTextPreview(ClipboardItem item)
     {
-        var window = new TextPreviewWindow(_app, item);
+        var window = new TextPreviewWindow(_app, item) { Owner = ToolOwner };
         window.Show();
         window.Activate();
     }
 
     private void OpenFilePreview(ClipboardItem item)
     {
-        var window = new FilePreviewWindow(_app, item);
+        var window = new FilePreviewWindow(_app, item) { Owner = ToolOwner };
         window.Show();
         window.Activate();
     }
