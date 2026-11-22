@@ -70,9 +70,11 @@ jobs:
           }
           & $iscc /DMyAppVersion=${{ steps.version.outputs.version }} installer\SkyPaste.iss
 
-      - name: Smoke test (launch, alive check, per-window screenshots)
+      - name: Smoke test (launch, alive check, desktop screenshots)
         shell: pwsh
         run: |
+          Add-Type -AssemblyName System.Windows.Forms
+          Add-Type -AssemblyName System.Drawing
           foreach ($scenario in @("main", "settings", "statistics")) {
             $p = Start-Process -FilePath "publish/SkyPaste.exe" -ArgumentList "--uitesting:$scenario" -PassThru
             Start-Sleep -Seconds 20
@@ -81,18 +83,28 @@ jobs:
               Write-Error "SkyPaste.exe exited within 20s of launch (scenario: $scenario)"
               exit 1
             }
+            $title = (Get-Process -Id $p.Id).MainWindowTitle
+            Write-Host "scenario=$scenario MainWindowTitle='$title'"
+            $bounds = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+            $bmp = New-Object System.Drawing.Bitmap $bounds.Width, $bounds.Height
+            $graphics = [System.Drawing.Graphics]::FromImage($bmp)
+            $graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
+            $bmp.Save("$PWD/smoke-$scenario.png")
+            $graphics.Dispose()
+            $bmp.Dispose()
             Stop-Process -Id $p.Id -Force
             Start-Sleep -Seconds 2
           }
 
-      - name: Upload smoke screenshots
+      - name: Upload smoke screenshots + UI logs
         uses: actions/upload-artifact@v4
         with:
           name: smoke-${{ github.sha }}
           path: |
-            SkyPasteWindows/publish/smoke-main.png
-            SkyPasteWindows/publish/smoke-settings.png
-            SkyPasteWindows/publish/smoke-statistics.png
+            SkyPasteWindows/smoke-main.png
+            SkyPasteWindows/smoke-settings.png
+            SkyPasteWindows/smoke-statistics.png
+            C:/Users/runneradmin/AppData/Roaming/SkyPaste/logs/
           if-no-files-found: warn
 
       - name: Upload workflow artifact (every push)
