@@ -50,8 +50,28 @@
             </StackPanel>
         </Grid>
 
+        <!-- Startup notice banner (mac startupNotice) -->
+        <Border x:Name="StartupNoticeBar" Grid.Row="1" Margin="16,10,16,0" CornerRadius="12"
+                Background="{DynamicResource AccentSoftBrush}" Padding="12,8" Visibility="Collapsed">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="&#xE946;" FontFamily="{DynamicResource GlyphFont}"
+                           FontSize="12" VerticalAlignment="Center" Margin="0,0,8,0"
+                           Foreground="{DynamicResource AccentBrush}" />
+                <TextBlock x:Name="StartupNoticeText" Grid.Column="1" FontSize="11" TextWrapping="Wrap"
+                           Foreground="{DynamicResource Text.Primary}" VerticalAlignment="Center" />
+                <Button Grid.Column="2" Style="{DynamicResource IconIconButton}" Click="OnStartupNoticeClose">
+                    <TextBlock Text="&#xE711;" FontSize="10" />
+                </Button>
+            </Grid>
+        </Border>
+
         <!-- Search field -->
-        <Border x:Name="SearchBar" Grid.Row="1" Margin="16,12,16,0" CornerRadius="14"
+        <Border x:Name="SearchBar" Grid.Row="2" Margin="16,12,16,0" CornerRadius="14"
                 Background="{DynamicResource SearchField.Background}"
                 BorderBrush="{DynamicResource SearchField.Border}" BorderThickness="1"
                 Padding="12,8" Visibility="Collapsed">

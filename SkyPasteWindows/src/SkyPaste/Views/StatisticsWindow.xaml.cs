@@ -158,14 +158,17 @@ public partial class StatisticsWindow : Wpf.Ui.Controls.FluentWindow
         var daily = _app.Statistics.DailyEntries(fromBucket, toBucket);
         var hourly = _app.Statistics.HourlyEntries(hourlyFrom, hourlyTo);
 
+        // Mac: the Today period counts categories from hourly entries.
+        var categoryEntries = _period == StatisticsPeriod.Today ? hourly : daily;
         var categories = new Dictionary<StatisticsCategory, long>();
-        foreach (var entry in daily)
+        foreach (var entry in categoryEntries)
         {
             var category = (StatisticsCategory)entry.Category;
             categories[category] = categories.GetValueOrDefault(category) + entry.Count;
         }
 
-        var trend = bucketMode switch
+        // Mac fills empty buckets with 0 across the period.
+        List<(DateTime, long)> trend = bucketMode switch
         {
             "hour" => hourly.GroupBy(e => e.Bucket).Select(g => (BucketToDateTime(g.Key, "hour"), g.Sum(e => e.Count))).ToList(),
             "day" => daily.GroupBy(e => e.Bucket).Select(g => (BucketToDateTime(g.Key, "day"), g.Sum(e => e.Count))).ToList(),
@@ -175,6 +178,7 @@ public partial class StatisticsWindow : Wpf.Ui.Controls.FluentWindow
                 .GroupBy(x => x.Item1).Select(g => (g.Key, g.Sum(x => x.Item2))).ToList(),
         };
         trend = trend.OrderBy(t => t.Item1).ToList();
+        trend = FillMissingBuckets(trend, bucketMode);
         if (trend.Count > 60)
         {
             trend = trend.Skip(trend.Count - 60).ToList();
@@ -185,6 +189,35 @@ public partial class StatisticsWindow : Wpf.Ui.Controls.FluentWindow
         var leading = categories.OrderByDescending(kv => kv.Value).FirstOrDefault();
         return new Snapshot(total, categories, trend, apps,
             total > 0 ? leading.Key : null);
+    }
+
+    private static List<(DateTime, long)> FillMissingBuckets(List<(DateTime, long)> trend, string mode)
+    {
+        if (trend.Count < 2)
+        {
+            return trend;
+        }
+        var step = mode switch
+        {
+            "hour" => TimeSpan.FromHours(1),
+            "day" => TimeSpan.FromDays(1),
+            "week" => TimeSpan.FromDays(7),
+            _ => TimeSpan.FromDays(30),
+        };
+        var filled = new List<(DateTime, long)>();
+        for (var i = 0; i < trend.Count - 1; i++)
+        {
+            filled.Add(trend[i]);
+            var next = trend[i + 1].Item1;
+            var cursor = trend[i].Item1 + step;
+            while (cursor < next - TimeSpan.FromMinutes(30))
+            {
+                filled.Add((cursor, 0));
+                cursor += step;
+            }
+        }
+        filled.Add(trend[^1]);
+        return filled;
     }
 
     private static DateTime BucketToDateTime(long bucket, string mode)
@@ -382,7 +415,7 @@ public partial class StatisticsWindow : Wpf.Ui.Controls.FluentWindow
             return;
         }
         var totalAppCopies = snapshot.Apps.Sum(a => a.Count);
-        foreach (var app in snapshot.Apps.Take(10))
+        foreach (var app in snapshot.Apps)
         {
             var fraction = totalAppCopies > 0 ? app.Count / (double)totalAppCopies : 0;
             var grid = new Grid { Margin = new Thickness(0, 4, 0, 4) };
