@@ -184,9 +184,12 @@ public sealed class AppCoordinator
             _settingsWindow.Activate();
             return;
         }
+        App.UiLog("ShowSettings: creating window");
         _settingsWindow = new SettingsWindow(_app) { Owner = ToolOwner };
+        App.UiLog("ShowSettings: ctor ok, showing");
         _settingsWindow.Show();
         _settingsWindow.Activate();
+        App.UiLog($"ShowSettings: shown, visibility={_settingsWindow.Visibility}, isLoaded={_settingsWindow.IsLoaded}");
     }
 
     public void ShowStatistics()

@@ -95,6 +95,9 @@ jobs:
             Stop-Process -Id $p.Id -Force
             Start-Sleep -Seconds 2
           }
+          if (Test-Path "C:/Users/runneradmin/AppData/Roaming/SkyPaste/logs") {
+            Copy-Item -Recurse -Force "C:/Users/runneradmin/AppData/Roaming/SkyPaste/logs" "$PWD/ui-logs"
+          }
 
       - name: Upload smoke screenshots + UI logs
         uses: actions/upload-artifact@v4
@@ -104,7 +107,7 @@ jobs:
             SkyPasteWindows/smoke-main.png
             SkyPasteWindows/smoke-settings.png
             SkyPasteWindows/smoke-statistics.png
-            C:/Users/runneradmin/AppData/Roaming/SkyPaste/logs/
+            SkyPasteWindows/ui-logs/
           if-no-files-found: warn
 
       - name: Upload workflow artifact (every push)

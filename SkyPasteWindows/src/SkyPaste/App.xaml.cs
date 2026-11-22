@@ -43,6 +43,7 @@ public partial class App : Application
         DispatcherUnhandledException += (_, args) =>
         {
             args.Handled = true;
+            UiLog("EXCEPTION " + args.Exception);
             try
             {
                 var logDir = System.IO.Path.Combine(
@@ -186,5 +187,24 @@ public partial class App : Application
     public void Quit()
     {
         Shutdown();
+    }
+
+    /// <summary>Diagnostics sink for the exception handler and window lifecycle notes.</summary>
+    public static void UiLog(string line)
+    {
+        try
+        {
+            var logDir = System.IO.Path.Combine(
+                AppSettingsService.DefaultDirectory, "logs");
+            System.IO.Directory.CreateDirectory(logDir);
+            var file = System.IO.Path.Combine(
+                logDir, $"ui-{DateTime.Now:yyyyMMdd}.log");
+            System.IO.File.AppendAllText(file,
+                $"[{DateTime.Now:HH:mm:ss}] {line}\n\n");
+        }
+        catch
+        {
+            // Logging must never throw.
+        }
     }
 }
