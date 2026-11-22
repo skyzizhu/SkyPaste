@@ -159,6 +159,14 @@ public sealed class StatisticsDatabase
         {
             Upsert(connection, transaction, "hourly_counts", hourBucket, category);
         }
+        using (var prune = connection.CreateCommand())
+        {
+            prune.Transaction = transaction;
+            prune.CommandText = "DELETE FROM hourly_counts WHERE bucket < $cutoff";
+            prune.Parameters.AddWithValue("$cutoff", cutoff);
+            prune.ExecuteNonQuery();
+        }
+
         if (item.SourceApp is { } app)
         {
             using var appCommand = connection.CreateCommand();
@@ -166,7 +174,8 @@ public sealed class StatisticsDatabase
             appCommand.CommandText = """
                 INSERT INTO daily_app_counts (bucket, bundle_id, name, count)
                 VALUES ($bucket, $bundle_id, $name, 1)
-                ON CONFLICT (bucket, bundle_id) DO UPDATE SET count = count + 1
+                ON CONFLICT (bucket, bundle_id) DO UPDATE SET
+                    name = excluded.name, count = count + 1
                 """;
             appCommand.Parameters.AddWithValue("$bucket", dayBucket);
             appCommand.Parameters.AddWithValue("$bundle_id", app.ProcessId);
@@ -229,9 +238,37 @@ public sealed class StatisticsDatabase
         }
         SetMetadata(connection, SeedDailyKey, "1");
 
-        // App counts keep a separate marker (mirrors history_app_seed_v1).
+        // App counts keep a separate marker + backfill (mirrors history_app_seed_v1).
         if (GetMetadata(connection, SeedAppKey) is null)
         {
+            using (var transaction = connection.BeginTransaction())
+            {
+                var firstAppDay = MinBucket(connection, "daily_app_counts");
+                foreach (var item in items)
+                {
+                    if (item.SourceApp is not { } app)
+                    {
+                        continue;
+                    }
+                    var local = item.CreatedAt.ToLocalTime();
+                    var dayBucket = DayBucket(local);
+                    if (firstAppDay is null || dayBucket < firstAppDay)
+                    {
+                        using var appCommand = connection.CreateCommand();
+                        appCommand.Transaction = transaction;
+                        appCommand.CommandText = """
+                            INSERT INTO daily_app_counts (bucket, bundle_id, name, count)
+                            VALUES ($bucket, $bundle_id, $name, 1)
+                            ON CONFLICT (bucket, bundle_id) DO UPDATE SET count = count + 1
+                            """;
+                        appCommand.Parameters.AddWithValue("$bucket", dayBucket);
+                        appCommand.Parameters.AddWithValue("$bundle_id", app.ProcessId);
+                        appCommand.Parameters.AddWithValue("$name", app.Name);
+                        appCommand.ExecuteNonQuery();
+                    }
+                }
+                transaction.Commit();
+            }
             SetMetadata(connection, SeedAppKey, "1");
         }
     }

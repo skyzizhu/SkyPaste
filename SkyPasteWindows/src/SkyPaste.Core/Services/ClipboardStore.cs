@@ -84,42 +84,49 @@ public sealed class ClipboardStore
     /// <summary>Port of macOS add(): privacy filter, favorite inheritance, top-dedupe, insert at head, trim.</summary>
     public void Add(ClipboardItem rawItem)
     {
-        var item = MemoryOptimizer?.Invoke(rawItem) ?? rawItem;
-
-        if (SensitiveContentFilter.ShouldExclude(item.TextValue, item.SourceApp, _settings.PrivacyFilteringEnabled))
+        if (SensitiveContentFilter.ShouldExclude(rawItem.TextValue, rawItem.SourceApp, _settings.PrivacyFilteringEnabled))
         {
             return;
         }
 
         // Inherit favorite state from an existing item with the same fingerprint.
-        var existingFavorite = Items.FirstOrDefault(i => i.Fingerprint == item.Fingerprint)?.IsFavorite
-                               ?? _database.FavoriteStateForFingerprint(item.Fingerprint);
-        if (existingFavorite == true)
+        var existingFavorite = Items.FirstOrDefault(i => i.Fingerprint == rawItem.Fingerprint)?.IsFavorite
+                               ?? _database.FavoriteStateForFingerprint(rawItem.Fingerprint);
+        if (existingFavorite is not null)
         {
-            item.IsFavorite = true;
+            rawItem.IsFavorite = existingFavorite.Value;
         }
 
         // Top-of-list duplicate: refresh timestamp only when something meaningful changed.
-        if (Items.Count > 0 && Items[0].Fingerprint == item.Fingerprint)
+        if (Items.Count > 0 && Items[0].Fingerprint == rawItem.Fingerprint)
         {
-            if (!ShouldRefreshTopItem(Items[0], item))
+            if (!ShouldRefreshTopItem(Items[0], rawItem))
             {
                 return;
             }
-            var refreshed = RecreateWithTimestamp(item, DateTime.UtcNow);
-            Persist(refreshed);
+            // Mac semantics: the refreshed copy is a NEW item (new id) persisted
+            // WITHOUT recording statistics again, and it still notifies upload.
+            var refreshed = RecreateWithTimestamp(rawItem, DateTime.UtcNow);
+            PersistWithoutStatistic(refreshed);
             ReplaceTop(refreshed);
+            if (refreshed.Source == ClipboardSource.Local)
+            {
+                OnLocalItemAdded?.Invoke(refreshed);
+            }
             return;
         }
 
-        Persist(item);
-        Items.RemoveAll(i => i.Fingerprint == item.Fingerprint);
-        Items.Insert(0, item);
+        // Mac order: persist the ORIGINAL first, then keep the memory-optimized
+        // copy in the list (full resolution lives in SQLite).
+        Persist(rawItem);
+        var memoryItem = MemoryOptimizer?.Invoke(rawItem) ?? rawItem;
+        Items.RemoveAll(i => i.Fingerprint == memoryItem.Fingerprint);
+        Items.Insert(0, memoryItem);
         EnforceHistoryLimit();
         UpdateFilteredItemsSync();
-        if (item.Source == ClipboardSource.Local)
+        if (memoryItem.Source == ClipboardSource.Local)
         {
-            OnLocalItemAdded?.Invoke(item);
+            OnLocalItemAdded?.Invoke(rawItem);
         }
         ItemsChanged?.Invoke();
     }
@@ -140,8 +147,14 @@ public sealed class ClipboardStore
         {
             Items.Remove(existing);
         }
+        var existingFavorite = Items.FirstOrDefault(i => i.Fingerprint == incoming.Fingerprint)?.IsFavorite
+                               ?? _database.FavoriteStateForFingerprint(incoming.Fingerprint);
+        if (existingFavorite is not null)
+        {
+            incoming.IsFavorite = existingFavorite.Value;
+        }
+        Persist(incoming);
         var item = MemoryOptimizer?.Invoke(incoming) ?? incoming;
-        Persist(item);
 
         var index = Items.FindIndex(i => i.CreatedAt < item.CreatedAt);
         if (index < 0)
@@ -166,8 +179,10 @@ public sealed class ClipboardStore
 
     private static ClipboardItem RecreateWithTimestamp(ClipboardItem item, DateTime utcNow)
     {
+        // Mac: the refreshed copy is a NEW decoded item (new UUID) persisted
+        // via remove-by-fingerprint + insert.
         var replacement = new ClipboardItem(
-            item.Id, utcNow, item.Content, item.Fingerprint, item.Source, item.SourceApp ?? (item.DeviceName is null ? null : new ClipboardSourceApp("device", item.DeviceName)), item.IsFavorite);
+            Guid.NewGuid(), utcNow, item.Content, item.Fingerprint, item.Source, item.SourceApp ?? (item.DeviceName is null ? null : new ClipboardSourceApp("device", item.DeviceName)), item.IsFavorite);
         return replacement;
     }
 
@@ -183,6 +198,17 @@ public sealed class ClipboardStore
         }
         _statistics.Record(item);
         StatisticsChanged?.Invoke();
+    }
+
+    private void PersistWithoutStatistic(ClipboardItem item)
+    {
+        try
+        {
+            _database.Save(item, _settings.HistoryLimit);
+        }
+        catch (Exception)
+        {
+        }
     }
 
     // ---- list management ---------------------------------------------------
@@ -384,7 +410,9 @@ public sealed class ClipboardStore
         }
         try
         {
-            ClipboardDatabase.SetFavorites(_database.DatabasePath, ids, favorite, _settings.HistoryLimit);
+            // Mac: trimming happens only when UN-favoriting.
+            ClipboardDatabase.SetFavorites(_database.DatabasePath, ids, favorite,
+                favorite ? null : _settings.HistoryLimit);
         }
         catch (Exception)
         {
@@ -425,13 +453,15 @@ public sealed class ClipboardStore
     {
         var fromUtc = DateTime.SpecifyKind(localDay.Date, DateTimeKind.Local).ToUniversalTime();
         var toUtc = fromUtc.AddDays(1);
+        // Mac deletes exactly the VISIBLE day's items by id; rows beyond the
+        // history limit must survive.
         var ids = Items
             .Where(i => i.CreatedAt >= fromUtc && i.CreatedAt < toUtc)
             .Select(i => i.Id)
             .ToList();
         try
         {
-            _database.DeleteCreatedAtRange(fromUtc, toUtc);
+            ClipboardDatabase.DeleteItems(_database.DatabasePath, ids);
         }
         catch (Exception)
         {
@@ -447,5 +477,6 @@ public sealed class ClipboardStore
             .Where(i => i.Source == ClipboardSource.Local
                         && i.Content.Kind == ClipboardContentKind.Text
                         && !string.IsNullOrWhiteSpace(i.Content.Text))
+            .OrderBy(i => i.CreatedAt)
             .ToList();
 }

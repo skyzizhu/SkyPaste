@@ -63,7 +63,7 @@ public partial class ClipboardListPanel : UserControl
 
         _app.Settings.FilterOrderSettingsChanged += RebuildChips;
         L10n.LanguageChanged += RefreshLocalization;
-        Loaded += (_, _) => { RefreshLocalization(); RebuildChips(); Rebuild(); };
+        Loaded += (_, _) => { RefreshLocalization(); RebuildChips(); Rebuild(); ShowStartupNotice(); };
         Unloaded += (_, _) => _pendingPrimaryAction?.Stop();
     }
 
@@ -221,12 +221,46 @@ public partial class ClipboardListPanel : UserControl
                 AddEmptyState();
             }
 
+            ValidateSourceSelection();
+            RestoreSelectionBaseline();
+
             UpdateFooter();
             UpdateSearchVisibility();
         }
         catch (Exception)
         {
             // Layout races during teardown are ignored.
+        }
+    }
+
+    private void SelectFirstRowBaseline()
+    {
+        var items = CurrentItems;
+        _selectedItemId = items.Count > 0 ? items[0].Id : null;
+    }
+
+    /// <summary>Mac validateSourceAppSelection: a stale app selection falls back to all.</summary>
+    private void ValidateSourceSelection()
+    {
+        if (_sourceSelection.Kind == ClipboardSourceSelection.SelectionKind.App
+            && _app.Store.SourceAppOptionsByFilter.TryGetValue(_selectedFilter, out var options)
+            && options.All(o => o.ProcessId != _sourceSelection.ProcessId))
+        {
+            _sourceSelection = ClipboardSourceSelection.AllApps;
+            UpdateSourceMenuLabel();
+        }
+    }
+
+    /// <summary>Mac keeps a valid selection baseline (defaults to the first row).</summary>
+    private void RestoreSelectionBaseline()
+    {
+        if (_selectedItemId is null || _flatRows.All(r => r.Item.Id != _selectedItemId))
+        {
+            _selectedItemId = _flatRows.Count > 0 ? _flatRows[0].Item.Id : null;
+        }
+        foreach (var itemId in _rowBorders.Keys)
+        {
+            UpdateRowVisual(itemId);
         }
     }
 
@@ -413,8 +447,41 @@ public partial class ClipboardListPanel : UserControl
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(8, 0, 0, 0),
         };
+        if (!_batchMode && _selectedItemId == item.Id)
+        {
+            // Mac: selected rows carry a small 'ctrl+c copy' hint.
+            tailStack.Children.Add(new TextBlock
+            {
+                Text = L10n.T("menu.command_c_copy"),
+                FontSize = 8.5,
+                Foreground = (System.Windows.Media.Brush)FindResource("Text.Secondary"),
+                VerticalAlignment = VerticalAlignment.Bottom,
+                Margin = new Thickness(0, 0, 6, 0),
+            });
+        }
+        if (!_batchMode && _selectedItemId == item.Id)
+        {
+            // Mac: selected rows carry a small 'ctrl+c copy' hint.
+            tailStack.Children.Add(new TextBlock
+            {
+                Text = L10n.T("menu.command_c_copy"),
+                FontSize = 8.5,
+                Foreground = (System.Windows.Media.Brush)FindResource("Text.Secondary"),
+                VerticalAlignment = VerticalAlignment.Bottom,
+                Margin = new Thickness(0, 0, 6, 0),
+            });
+        }
         if (_batchMode)
         {
+            if (item.IsFavorite)
+            {
+                tailStack.Children.Add(new TextBlock
+                {
+                    Text = "\uE735",
+                    FontSize = 11,
+                    Foreground = (Brush)FindResource("Favorite"),
+                });
+            }
             tailStack.Children.Add(new TextBlock
             {
                 Name = "BatchGlyph",
@@ -441,6 +508,14 @@ public partial class ClipboardListPanel : UserControl
 
         border.Child = grid;
 
+        border.MouseEnter += (_, _) =>
+        {
+            if (_selectedItemId != item.Id)
+            {
+                border.Background = (System.Windows.Media.Brush)FindResource("Row.Hover");
+            }
+        };
+        border.MouseLeave += (_, _) => UpdateRowVisual(item.Id);
         border.MouseDown += (_, e) =>
         {
             if (e.ChangedButton == MouseButton.Left)
@@ -539,42 +614,27 @@ public partial class ClipboardListPanel : UserControl
         _ = placeholder;
     }
 
-    private async void SchedulePendingPrimaryAction(ClipboardItem item)
+    private void SchedulePendingPrimaryAction(ClipboardItem item)
     {
-        if (_popoverMode)
+        // Mac semantics: single click (autoPaste=on) copies ONLY after the
+        // double-click window - the panel stays open. Popover copies too.
+        if (!_app.Settings.AutoPasteEnabled && !_popoverMode)
         {
-            // Tray popover: single click copies (no paste-back) after the
-            // double-click window, mirroring the macOS popover behavior.
-            var copyTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(180) };
-            copyTimer.Tick += (_, _) =>
-            {
-                copyTimer.Stop();
-                if (_selectedItemId == item.Id)
-                {
-                    _app.Coordinator.CopyOnly(item);
-                }
-            };
-            copyTimer.Start();
-            await Task.CompletedTask;
-            return;
-        }
-        if (!_app.Settings.AutoPasteEnabled)
-        {
-            return;
+            return; // autoPaste=off: click only selects
         }
         CancelPendingPrimaryAction();
         var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(180) };
         timer.Tick += (_, _) =>
         {
             timer.Stop();
-            if (_selectedItemId == item.Id)
+            if (_selectedItemId != item.Id)
             {
-                _app.Coordinator.Paste(item);
+                return;
             }
+            _app.Coordinator.CopyOnly(item);
         };
         _pendingPrimaryAction = timer;
         timer.Start();
-        await Task.CompletedTask;
     }
 
     private void CancelPendingPrimaryAction()
@@ -591,7 +651,10 @@ public partial class ClipboardListPanel : UserControl
         }
         else
         {
+            // Mac: copy then CLOSE the panel (both autoPaste states close it
+            // when autoPaste is off).
             _app.Coordinator.CopyOnly(item);
+            CloseRequested?.Invoke();
         }
     }
 
@@ -603,7 +666,18 @@ public partial class ClipboardListPanel : UserControl
             {
                 _batchSelection.Remove(batchId);
             }
-            Rebuild();
+            if (_rowBorders.TryGetValue(batchId, out var border))
+            {
+                foreach (var glyph in FindVisualChildren<TextBlock>(border)
+                    .Where(t => t.Text == "\uE73E" || t.Text == "\uE739"))
+                {
+                    glyph.Text = _batchSelection.Contains(batchId) ? "\uE73E" : "\uE739";
+                    glyph.Foreground = _batchSelection.Contains(batchId)
+                        ? (System.Windows.Media.Brush)FindResource("AccentBrush")
+                        : (System.Windows.Media.Brush)FindResource("Text.Secondary");
+                }
+            }
+            UpdateFooter();
             return;
         }
         _selectedItemId = id;
@@ -723,6 +797,38 @@ public partial class ClipboardListPanel : UserControl
             ((StackPanel)card.Child).Children.Add(clearButton);
         }
         SectionHost.Children.Add(card);
+    }
+
+    private void ShowStartupNotice()
+    {
+        var notice = _app.Store.StartupNotice;
+        if (string.IsNullOrEmpty(notice))
+        {
+            StartupNoticeBar.Visibility = Visibility.Collapsed;
+            return;
+        }
+        StartupNoticeText.Text = notice;
+        StartupNoticeBar.Visibility = Visibility.Visible;
+    }
+
+    private void OnStartupNoticeClose(object sender, RoutedEventArgs e)
+    {
+        StartupNoticeBar.Visibility = Visibility.Collapsed;
+    }
+
+    private DispatcherTimer? _batchBannerTimer;
+    private void ShowBatchBanner(string text)
+    {
+        StartupNoticeText.Text = text;
+        StartupNoticeBar.Visibility = Visibility.Visible;
+        _batchBannerTimer?.Stop();
+        _batchBannerTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(1700) };
+        _batchBannerTimer.Tick += (_, _) =>
+        {
+            _batchBannerTimer?.Stop();
+            StartupNoticeBar.Visibility = Visibility.Collapsed;
+        };
+        _batchBannerTimer.Start();
     }
 
     private static string FilterLabel(ClipboardFilter filter) => L10n.T(filter.LocalizationKey());
@@ -977,8 +1083,11 @@ public partial class ClipboardListPanel : UserControl
     private void SelectFilter(ClipboardFilter filter)
     {
         _selectedFilter = filter;
-        _selectedItemId = null;
-        _batchSelection.Clear();
+        SelectFirstRowBaseline();
+        // Mac: batch selection is intersected with the newly visible items.
+        var visible = _app.Store.FilteredItemsByFilter.TryGetValue(filter, out var items)
+            ? items.Select(i => i.Id).ToHashSet() : new HashSet<Guid>();
+        _batchSelection.IntersectWith(visible);
         RebuildChips();
         Rebuild();
         UpdateSourceMenuLabel();
@@ -1044,6 +1153,7 @@ public partial class ClipboardListPanel : UserControl
         {
             _sourceSelection = selection;
             UpdateSourceMenuLabel();
+            SelectFirstRowBaseline();
             Rebuild();
         };
         return item;
@@ -1125,6 +1235,7 @@ public partial class ClipboardListPanel : UserControl
 
     private void ToggleBatchMode()
     {
+        CancelPendingPrimaryAction();
         _batchMode = !_batchMode;
         _batchSelection.Clear();
         if (_batchMode && _selectedItemId is { } id)
@@ -1143,19 +1254,25 @@ public partial class ClipboardListPanel : UserControl
 
         if (_batchMode)
         {
-            FooterBatch.Children.Add(NewFooterButton(L10n.T("panel.batch_select_all"), () =>
-            {
-                foreach (var row in _flatRows)
+            var allSelected = _flatRows.Count > 0
+                              && _flatRows.All(r => _batchSelection.Contains(r.Item.Id));
+            FooterBatch.Children.Add(NewFooterButton(
+                allSelected ? L10n.T("panel.batch_clear_selection") : L10n.T("panel.batch_select_all"),
+                () =>
                 {
-                    _batchSelection.Add(row.Item.Id);
-                }
-                Rebuild();
-            }));
-            FooterBatch.Children.Add(NewFooterButton(L10n.T("panel.batch_clear_selection"), () =>
-            {
-                _batchSelection.Clear();
-                Rebuild();
-            }));
+                    if (allSelected)
+                    {
+                        _batchSelection.Clear();
+                    }
+                    else
+                    {
+                        foreach (var row in _flatRows)
+                        {
+                            _batchSelection.Add(row.Item.Id);
+                        }
+                    }
+                    Rebuild();
+                }));
             var allFavorited = _batchSelection.Count > 0
                                && _flatRows.Where(r => _batchSelection.Contains(r.Item.Id)).All(r => r.Item.IsFavorite);
             FooterBatch.Children.Add(NewFooterButton(
@@ -1165,7 +1282,7 @@ public partial class ClipboardListPanel : UserControl
                     var ids = _batchSelection.ToList();
                     var favorite = !allFavorited;
                     _app.Store.SetFavorites(ids, favorite);
-                    _app.Toast.Show(L10n.Format(
+                    ShowBatchBanner(L10n.Format(
                         favorite ? "panel.batch_favorite_success" : "panel.batch_unfavorite_success", ids.Count));
                 }));
             FooterBatch.Children.Add(NewFooterButton(L10n.T("panel.batch_delete_selected"), () =>
@@ -1173,7 +1290,7 @@ public partial class ClipboardListPanel : UserControl
                 var count = _batchSelection.Count;
                 _app.Store.DeleteItems(_batchSelection.ToList());
                 _batchSelection.Clear();
-                _app.Toast.Show(L10n.Format("panel.batch_delete_success", count));
+                ShowBatchBanner(L10n.Format("panel.batch_delete_success", count));
                 if (_flatRows.Count == 0)
                 {
                     _batchMode = false;
@@ -1335,6 +1452,24 @@ public partial class ClipboardListPanel : UserControl
 
     // ---- icons ---------------------------------------------------------------------------
 
+    private static System.Collections.Generic.IEnumerable<T> FindVisualChildren<T>(System.Windows.DependencyObject root)
+        where T : System.Windows.DependencyObject
+    {
+        var count = System.Windows.Media.VisualTreeHelper.GetChildrenCount(root);
+        for (var i = 0; i < count; i++)
+        {
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(root, i);
+            if (child is T typed)
+            {
+                yield return typed;
+            }
+            foreach (var descendant in FindVisualChildren<T>(child))
+            {
+                yield return descendant;
+            }
+        }
+    }
+
     private static string IconGlyphFor(ClipboardItem item) =>
         item switch
         {
@@ -1352,9 +1487,9 @@ public partial class ClipboardListPanel : UserControl
         {
             _ when item.IsEmail => Color.FromRgb(0x1A, 0x6B, 0xE8),
             _ when item.IsUrl => Color.FromRgb(0x1F, 0xA3, 0xD1),
-            _ when item.IsCode => Color.FromRgb(0x87, 0x63, 0xC9),
-            _ when item.IsFileCollection && item.ContainsFolders => Color.FromRgb(0xE0, 0xA3, 0x29),
-            _ when item.IsFileCollection => Color.FromRgb(0x1F, 0x9E, 0x8C),
+            _ when item.IsCode => Color.FromRgb(0x1F, 0x9E, 0x8C),
+            _ when item.IsFileCollection && item.ContainsFolders => Color.FromRgb(0xFF, 0x95, 0x00),
+            _ when item.IsFileCollection => Color.FromRgb(0x58, 0x56, 0xD6),
             _ => Color.FromRgb(0x8A, 0x8A, 0x8E),
         };
         var brush = new SolidColorBrush(color);

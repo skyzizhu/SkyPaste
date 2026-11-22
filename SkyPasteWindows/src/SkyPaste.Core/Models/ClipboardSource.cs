@@ -30,7 +30,7 @@ public static class ClipboardSourceExtensions
         source switch
         {
             ClipboardSource.Local => new[] { "local", "mac", "this mac", "pc", "本机", "本地", "这台电脑" },
-            ClipboardSource.LanDevice => new[] { "phone", "iphone", "android", "device", "universal", "sync", "手机", "设备", "同步" },
+            ClipboardSource.LanDevice => new[] { "phone", "iphone", "universal", "universal clipboard", "手机", "iphone 剪贴板", "通用剪贴板", "icloud", "cloud", "sync", "云", "云同步", "icloud sync", "lan", "device", "局域网", "设备", "同步" },
             _ => Array.Empty<string>(),
         };
 }

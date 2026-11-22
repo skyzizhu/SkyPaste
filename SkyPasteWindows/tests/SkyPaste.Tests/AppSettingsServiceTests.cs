@@ -31,7 +31,7 @@ public class AppSettingsServiceTests : IDisposable
         Assert.True(settings.HotKeyShift);
         Assert.False(settings.HotKeyAlt);
         Assert.True(settings.LaunchAtLogin);
-        Assert.False(settings.AutoPasteEnabled); // Mac App Store default: click only selects
+        Assert.True(settings.AutoPasteEnabled); // direct-distribution default (Mac parity)
         Assert.False(settings.PrivacyFilteringEnabled);
         Assert.False(settings.LanSyncEnabled);
         Assert.True(settings.LanSyncUploadEnabled);
