@@ -87,9 +87,20 @@ public sealed class ThumbnailProvider
             return null;
         }
         var key = item.Id + "#image-data";
-        return _cache.GetOrAdd(key, _ =>
-            ImageOptimizerService.CreateThumbnail(item.Content.ImageData ?? Array.Empty<byte>(), RowMaxPixelSize)
-            ?? Array.Empty<byte>()) is { Length: > 0 } bytes ? bytes : null;
+        if (_cache.TryGetValue(key, out var cached) && cached.Length > 0)
+        {
+            return cached;
+        }
+        var bytes = ImageOptimizerService.CreateThumbnail(
+            item.Content.ImageData ?? Array.Empty<byte>(), RowMaxPixelSize);
+        // Never cache failures: a transient clipboard lock at capture time
+        // must not blank the row forever.
+        if (bytes is { Length: > 0 })
+        {
+            _cache[key] = bytes;
+            return bytes;
+        }
+        return null;
     }
 
     /// <summary>Returns PNG thumbnail bytes for a single image file on disk.</summary>
@@ -99,9 +110,18 @@ public sealed class ThumbnailProvider
         {
             return null;
         }
-        return _cache.GetOrAdd(path.ToLowerInvariant() + "#160", _ =>
-            ImageOptimizerService.CreateThumbnail(LoadFileBytes(path), RowMaxPixelSize)
-            ?? Array.Empty<byte>()) is { Length: > 0 } bytes ? bytes : null;
+        var key = path.ToLowerInvariant() + "#160";
+        if (_cache.TryGetValue(key, out var cached) && cached.Length > 0)
+        {
+            return cached;
+        }
+        var bytes = ImageOptimizerService.CreateThumbnail(LoadFileBytes(path), RowMaxPixelSize);
+        if (bytes is { Length: > 0 })
+        {
+            _cache[key] = bytes;
+            return bytes;
+        }
+        return null;
     }
 
     private static byte[] LoadFileBytes(string path)

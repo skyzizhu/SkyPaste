@@ -47,6 +47,7 @@ public static class ClipboardDecoder
         try
         {
             var imageData = TryReadImage();
+            SkyPaste.App.UiLog($"decode image: bytes={imageData?.LongLength ?? 0}");
             if (imageData is { Length: > 0 })
             {
                 var name = InferImageName();
@@ -62,6 +63,7 @@ public static class ClipboardDecoder
         {
         }
 
+        SkyPaste.App.UiLog("decode: no image payload captured");
         // 3. Text (URLs and emails are classified downstream).
         try
         {

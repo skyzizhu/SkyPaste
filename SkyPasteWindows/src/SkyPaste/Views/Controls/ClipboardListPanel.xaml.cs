@@ -34,6 +34,7 @@ public partial class ClipboardListPanel : UserControl
     private DispatcherTimer? _searchDebounce;
     private DispatcherTimer? _pendingPrimaryAction;
     private bool _suppressSearchCallback;
+    private bool _suppressClick;
 
     private static System.Windows.Media.FontFamily GlyphFont =>
         (System.Windows.Media.FontFamily)System.Windows.Application.Current.TryFindResource("GlyphFont");
@@ -461,6 +462,12 @@ public partial class ClipboardListPanel : UserControl
         {
             if (e.ChangedButton == MouseButton.Left && !_batchMode)
             {
+                if (_suppressClick)
+                {
+                    // Second release of a double-click: preview already opened.
+                    _suppressClick = false;
+                    return;
+                }
                 SchedulePendingPrimaryAction(item);
             }
         };
@@ -469,6 +476,7 @@ public partial class ClipboardListPanel : UserControl
             if (e.ClickCount == 2 && !_batchMode)
             {
                 CancelPendingPrimaryAction();
+                _suppressClick = true;
                 _app.Coordinator.OpenPreview(item);
             }
         };

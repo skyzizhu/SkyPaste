@@ -174,6 +174,22 @@ public sealed class AppCoordinator
     /// never be buried under the always-on-top panel - the previous cause of
     /// 'Preferences opens but is invisible'.
     /// </summary>
+    /// <summary>
+    /// Activate() alone can be denied by the Windows foreground lock when the
+    /// caller is not the foreground process; a one-frame Topmost flash wins.
+    /// </summary>
+    private static void ForceToFront(System.Windows.Window window)
+    {
+        try
+        {
+            window.Topmost = true;
+            window.Topmost = false;
+        }
+        catch (Exception)
+        {
+        }
+    }
+
     private System.Windows.Window? ToolOwner =>
         _mainWindow is { Visibility: System.Windows.Visibility.Visible } ? _mainWindow : null;
 
@@ -189,6 +205,7 @@ public sealed class AppCoordinator
         App.UiLog("ShowSettings: ctor ok, showing");
         _settingsWindow.Show();
         _settingsWindow.Activate();
+        ForceToFront(_settingsWindow);
         App.UiLog($"ShowSettings: shown, visibility={_settingsWindow.Visibility}, isLoaded={_settingsWindow.IsLoaded}");
     }
 
@@ -202,6 +219,7 @@ public sealed class AppCoordinator
         _statisticsWindow = new StatisticsWindow(_app) { Owner = ToolOwner };
         _statisticsWindow.Show();
         _statisticsWindow.Activate();
+        ForceToFront(_statisticsWindow);
     }
 
     public void ShowDebug()
@@ -214,6 +232,7 @@ public sealed class AppCoordinator
         _debugWindow = new DebugWindow(_app) { Owner = ToolOwner };
         _debugWindow.Show();
         _debugWindow.Activate();
+        ForceToFront(_debugWindow);
     }
 
     // ---- previews -------------------------------------------------------------------
