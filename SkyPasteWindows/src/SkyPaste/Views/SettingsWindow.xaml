@@ -21,7 +21,7 @@
             <ListBox x:Name="NavList" Grid.Column="0" Margin="8,4,0,8"
                      SelectionChanged="OnNavChanged"
                      Background="Transparent" BorderThickness="0">
-                <ListBoxItem IsSelected="True">
+                <ListBoxItem>
                     <StackPanel Orientation="Horizontal" Margin="4,6">
                         <TextBlock Text="&#xE713;" FontFamily="{DynamicResource GlyphFont}" FontSize="15" VerticalAlignment="Center" />
                         <TextBlock x:Name="NavGeneral" Text="General" Margin="10,0,0,0" VerticalAlignment="Center" />

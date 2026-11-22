@@ -61,6 +61,10 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
     /// <summary>All static texts; re-applied when the app language changes.</summary>
     private void OnNavChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
     {
+        if (NavList is null || SectionGeneral is null)
+        {
+            return; // raised during XAML parse, before named fields are assigned
+        }
         var index = NavList.SelectedIndex;
         SectionGeneral.Visibility = index == 0 ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
         SectionHotkey.Visibility = index == 1 ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
