@@ -31,9 +31,9 @@
   <data name="settings.language" xml:space="preserve"><value>Langue</value></data>
   <data name="settings.language_hint" xml:space="preserve"><value>Choisissez Système pour suivre macOS, ou définissez une langue propre à l'app.</value></data>
   <data name="settings.key" xml:space="preserve"><value>Touche</value></data>
-  <data name="settings.ctrl" xml:space="preserve"><value>Command</value></data>
+  <data name="settings.ctrl" xml:space="preserve"><value>Ctrl</value></data>
   <data name="settings.shift" xml:space="preserve"><value>Shift</value></data>
-  <data name="settings.alt" xml:space="preserve"><value>Option</value></data>
+  <data name="settings.alt" xml:space="preserve"><value>Alt</value></data>
   <data name="settings.control" xml:space="preserve"><value>Control</value></data>
   <data name="settings.current" xml:space="preserve"><value>Actuel : %@</value></data>
   <data name="settings.version_format" xml:space="preserve"><value>Version %@ (%@)</value></data>
@@ -267,6 +267,7 @@
   <data name="settings.lan_sync_qr_hint" xml:space="preserve"><value>Scannez avec l'appareil photo du téléphone pour ouvrir le presse-papiers web (aucune app requise).</value></data>
   <data name="settings.lan_sync_qr_generated" xml:space="preserve"><value>QR généré à %@</value></data>
   <data name="settings.lan_sync_ip_changed_toast" xml:space="preserve"><value>L'IP LAN a changé vers %@ — re-scannez le QR d'appairage</value></data>
+  <data name="clipboard.source.lan" xml:space="preserve"><value>Synchronisation LAN</value></data>
   <data name="settings.lan_sync_device_name" xml:space="preserve"><value>Nom de l'appareil</value></data>
   <data name="settings.lan_sync_port" xml:space="preserve"><value>Port</value></data>
   <data name="sync.received_from" xml:space="preserve"><value>Reçu de %@</value></data>
@@ -276,6 +277,7 @@
   <data name="paste.foreground_failed" xml:space="preserve"><value>Copié. Impossible de revenir automatiquement à la fenêtre précédente — collez avec Ctrl+V.</value></data>
   <data name="settings.lan_sync_firewall_hint" xml:space="preserve"><value>Si le pare-feu Windows demande l'autorisation, choisissez « Autoriser » — sinon votre téléphone ne pourra pas envoyer de contenu vers ce PC.</value></data>
   <data name="settings.panel_position" xml:space="preserve"><value>Position du panneau</value></data>
+  <data name="settings.win" xml:space="preserve"><value>Win</value></data>
   <data name="panel_position.center" xml:space="preserve"><value>Centré à l'écran</value></data>
   <data name="panel_position.cursor" xml:space="preserve"><value>Suivre le curseur</value></data>
   <data name="hotkey.register_failed" xml:space="preserve"><value>Ce raccourci est déjà utilisé par une autre application — choisissez une autre combinaison.</value></data>

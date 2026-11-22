@@ -31,9 +31,9 @@
   <data name="settings.language" xml:space="preserve"><value>語言</value></data>
   <data name="settings.language_hint" xml:space="preserve"><value>選擇「跟隨系統」以使用 macOS 語言，或為應用程式指定固定語言。</value></data>
   <data name="settings.key" xml:space="preserve"><value>按鍵</value></data>
-  <data name="settings.ctrl" xml:space="preserve"><value>Command</value></data>
+  <data name="settings.ctrl" xml:space="preserve"><value>Ctrl</value></data>
   <data name="settings.shift" xml:space="preserve"><value>Shift</value></data>
-  <data name="settings.alt" xml:space="preserve"><value>Option</value></data>
+  <data name="settings.alt" xml:space="preserve"><value>Alt</value></data>
   <data name="settings.control" xml:space="preserve"><value>Control</value></data>
   <data name="settings.current" xml:space="preserve"><value>目前：%@</value></data>
   <data name="settings.version_format" xml:space="preserve"><value>版本 %@（%@）</value></data>
@@ -267,6 +267,7 @@
   <data name="settings.lan_sync_qr_hint" xml:space="preserve"><value>用手機相機掃碼開啟網頁剪貼簿，無需安裝任何應用。</value></data>
   <data name="settings.lan_sync_qr_generated" xml:space="preserve"><value>二維碼生成於 %@</value></data>
   <data name="settings.lan_sync_ip_changed_toast" xml:space="preserve"><value>區域網路 IP 已變更為 %@，請重新掃描配對 QR</value></data>
+  <data name="clipboard.source.lan" xml:space="preserve"><value>區域網路同步</value></data>
   <data name="settings.lan_sync_device_name" xml:space="preserve"><value>裝置名稱</value></data>
   <data name="settings.lan_sync_port" xml:space="preserve"><value>連接埠</value></data>
   <data name="sync.received_from" xml:space="preserve"><value>已接收來自 %@ 的內容</value></data>
@@ -276,6 +277,7 @@
   <data name="paste.foreground_failed" xml:space="preserve"><value>已複製。無法自動切回之前的視窗，請手動按 Ctrl+V 貼上。</value></data>
   <data name="settings.lan_sync_firewall_hint" xml:space="preserve"><value>如果 Windows 防火牆彈出權限詢問，請選擇「允許存取」，否則手機將無法傳送剪貼簿內容到這台電腦。</value></data>
   <data name="settings.panel_position" xml:space="preserve"><value>面板位置</value></data>
+  <data name="settings.win" xml:space="preserve"><value>Win</value></data>
   <data name="panel_position.center" xml:space="preserve"><value>螢幕置中</value></data>
   <data name="panel_position.cursor" xml:space="preserve"><value>跟隨游標</value></data>
   <data name="hotkey.register_failed" xml:space="preserve"><value>該快捷鍵已被其他程式佔用，請更換組合。</value></data>

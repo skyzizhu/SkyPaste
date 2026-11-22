@@ -31,9 +31,9 @@
   <data name="settings.language" xml:space="preserve"><value>言語</value></data>
   <data name="settings.language_hint" xml:space="preserve"><value>「システム」にすると macOS の言語に従います。固定のアプリ言語も選べます。</value></data>
   <data name="settings.key" xml:space="preserve"><value>キー</value></data>
-  <data name="settings.ctrl" xml:space="preserve"><value>Command</value></data>
+  <data name="settings.ctrl" xml:space="preserve"><value>Ctrl</value></data>
   <data name="settings.shift" xml:space="preserve"><value>Shift</value></data>
-  <data name="settings.alt" xml:space="preserve"><value>Option</value></data>
+  <data name="settings.alt" xml:space="preserve"><value>Alt</value></data>
   <data name="settings.control" xml:space="preserve"><value>Control</value></data>
   <data name="settings.current" xml:space="preserve"><value>現在: %@</value></data>
   <data name="settings.version_format" xml:space="preserve"><value>バージョン %@（%@）</value></data>
@@ -267,6 +267,7 @@
   <data name="settings.lan_sync_qr_hint" xml:space="preserve"><value>スマホのカメラで読み取ると Web クリップボードが開きます（アプリ不要）。</value></data>
   <data name="settings.lan_sync_qr_generated" xml:space="preserve"><value>QR コード生成時刻: %@</value></data>
   <data name="settings.lan_sync_ip_changed_toast" xml:space="preserve"><value>LAN IP が %@ に変わりました。QR を再スキャンしてください</value></data>
+  <data name="clipboard.source.lan" xml:space="preserve"><value>LAN同期</value></data>
   <data name="settings.lan_sync_device_name" xml:space="preserve"><value>デバイス名</value></data>
   <data name="settings.lan_sync_port" xml:space="preserve"><value>ポート</value></data>
   <data name="sync.received_from" xml:space="preserve"><value>%@ から受信しました</value></data>
@@ -276,6 +277,7 @@
   <data name="paste.foreground_failed" xml:space="preserve"><value>コピーしました。前のウィンドウに自動で切り替えできませんでした。Ctrl+V で貼り付けてください。</value></data>
   <data name="settings.lan_sync_firewall_hint" xml:space="preserve"><value>Windows ファイアウォールの確認が表示されたら「許可」を選んでください。許可しないとスマホからこの PC に送信できません。</value></data>
   <data name="settings.panel_position" xml:space="preserve"><value>パネル位置</value></data>
+  <data name="settings.win" xml:space="preserve"><value>Win</value></data>
   <data name="panel_position.center" xml:space="preserve"><value>画面中央</value></data>
   <data name="panel_position.cursor" xml:space="preserve"><value>カーソルに追従</value></data>
   <data name="hotkey.register_failed" xml:space="preserve"><value>このショートカットは他のアプリで使用中です。別の組み合わせを選んでください。</value></data>
