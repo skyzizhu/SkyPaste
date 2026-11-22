@@ -163,7 +163,8 @@ public sealed class ClipboardItem
     public static bool IsImagePath(string path)
     {
         var ext = Path.GetExtension(path).TrimStart('.').ToLowerInvariant();
-        return ext is "png" or "jpg" or "jpeg" or "gif" or "bmp" or "webp" or "tif" or "tiff" or "heic" or "heif" or "ico" or "svg" or "avif";
+        return ext is "png" or "jpg" or "jpeg" or "gif" or "bmp" or "webp" or "tif" or "tiff" or "heic" or "heif" or "ico" or "svg" or "avif"
+            or "tga" or "dng" or "exr" or "jp2" or "j2k" or "jxl" or "heics" or "raw" or "cr2" or "nef" or "arw" or "orf" or "rw2";
     }
 
     // ---- presentation ----------------------------------------------------
@@ -176,10 +177,14 @@ public sealed class ClipboardItem
             {
                 case ClipboardContentKind.Text:
                 {
-                    var text = Content.Text ?? string.Empty;
+                    var text = (Content.Text ?? string.Empty).Trim();
+                    if (text.Length == 0)
+                    {
+                        return L10n.T("clipboard.empty_text");
+                    }
                     if (IsEmail)
                     {
-                        return text.Trim();
+                        return text;
                     }
                     if (IsUrl)
                     {
@@ -203,9 +208,9 @@ public sealed class ClipboardItem
                         var p = paths[0];
                         if (FileSystemItemKindOf(p) == FileSystemItemKind.Folder)
                         {
-                            return AbbreviateHome(p);
+                            return L10n.Format("clipboard.folder_single", AbbreviateHome(p));
                         }
-                        return Path.GetFileName(p);
+                        return L10n.Format("clipboard.file_single", Path.GetFileName(p));
                     }
                     var allFolders = paths.All(p => FileSystemItemKindOf(p) == FileSystemItemKind.Folder);
                     return allFolders
@@ -245,24 +250,25 @@ public sealed class ClipboardItem
                         if (IsImagePath(p) && FileSystemItemKindOf(p) == FileSystemItemKind.File)
                         {
                             var ext = Path.GetExtension(p).TrimStart('.').ToUpperInvariant();
-                            return L10n.Format("clipboard.subtitle.image_file_format", ext);
+                            return ext.Length == 0
+                                ? L10n.T("clipboard.subtitle.image_file")
+                                : L10n.Format("clipboard.subtitle.image_file_format", ext);
                         }
                         return FileSystemItemKindOf(p) == FileSystemItemKind.Folder
                             ? L10n.T("clipboard.subtitle.folder")
                             : L10n.T("clipboard.subtitle.file");
                     }
-                    var files = paths.Count(p => FileSystemItemKindOf(p) == FileSystemItemKind.File);
-                    var folders = paths.Count - files;
-                    var parts = new List<string>();
-                    if (files > 0)
+                    // Mac: all folders -> folder_count; all image files ->
+                    // image_file_count; otherwise file_count.
+                    if (paths.All(p => FileSystemItemKindOf(p) == FileSystemItemKind.Folder))
                     {
-                        parts.Add(L10n.Format("clipboard.subtitle.file_count", files));
+                        return L10n.Format("clipboard.subtitle.folder_count", paths.Count);
                     }
-                    if (folders > 0)
+                    if (paths.All(p => IsImagePath(p) && FileSystemItemKindOf(p) == FileSystemItemKind.File))
                     {
-                        parts.Add(L10n.Format("clipboard.subtitle.folder_count", folders));
+                        return L10n.Format("clipboard.subtitle.image_file_count", paths.Count);
                     }
-                    return string.Join(" · ", parts);
+                    return L10n.Format("clipboard.subtitle.file_count", paths.Count);
                 }
                 default:
                     return string.Empty;
@@ -270,8 +276,23 @@ public sealed class ClipboardItem
         }
     }
 
-    public string OpenActionTitle =>
-        ContainsFolders ? L10n.T("menu.open_folder") : L10n.T("menu.open_file");
+    public string OpenActionTitle
+    {
+        get
+        {
+            if (!IsFileCollection)
+            {
+                return L10n.T("menu.open_item");
+            }
+            if (Content.FilePaths is { Count: 1 } single)
+            {
+                return FileSystemItemKindOf(single[0]) == FileSystemItemKind.Folder
+                    ? L10n.T("menu.open_folder")
+                    : L10n.T("menu.open_file");
+            }
+            return L10n.T("menu.open_item");
+        }
+    }
 
     private static string PrettyUrlTitle(string raw)
     {
@@ -280,7 +301,8 @@ public sealed class ClipboardItem
         {
             candidate = "https://" + candidate;
         }
-        if (!Uri.TryCreate(candidate, UriKind.Absolute, out var uri))
+        if (!Uri.TryCreate(candidate, UriKind.Absolute, out var uri)
+            || !SkyPaste.Core.Core.Classification.IsLikelyWebHost(uri.Host))
         {
             return raw;
         }

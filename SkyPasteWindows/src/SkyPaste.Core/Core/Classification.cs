@@ -44,12 +44,11 @@ public static partial class Classification
             return true;
         }
 
-        // Fallback: an explicit http(s) URL accepted by Uri even when the custom
-        // host validator rejects it (IDN hosts, unusual ports, etc.).
+        // Fallback (Mac NSDataDetector semantics): the whole string must be an
+        // absolute http(s) URL - never a bare domain.
         if (Uri.TryCreate(trimmed, UriKind.Absolute, out var direct)
             && (direct.Scheme == Uri.UriSchemeHttp || direct.Scheme == Uri.UriSchemeHttps)
-            && !string.IsNullOrEmpty(direct.Host)
-            && direct.Host.Contains('.'))
+            && !string.IsNullOrEmpty(direct.Host))
         {
             return true;
         }
@@ -114,7 +113,7 @@ public static partial class Classification
     [GeneratedRegex(@"\b(import|export)\b")]
     private static partial Regex ImportExportRegex();
 
-    [GeneratedRegex(@"\b(public|private|protected|internal|static|final|abstract|override|readonly|sealed|virtual)\b\s+\w")]
+    [GeneratedRegex(@"\b(public|private|protected|final|static)\b\s+(func|class|struct|enum|protocol|extension|interface|def|var|let|const|void|int|string|bool)")]
     private static partial Regex ModifierRegex();
 
     [GeneratedRegex(@"\b(if|else\s+if|for|while|switch|guard|catch)\b\s*[\({]")]
@@ -149,7 +148,8 @@ public static partial class Classification
         var weakCount = 0;
         var lower = text.ToLowerInvariant();
 
-        if (text.Contains("```"))
+        var trimmedForFence = text.Trim();
+        if (trimmedForFence.StartsWith("```") && trimmedForFence.EndsWith("```") && trimmedForFence.Length > 6)
         {
             strongCount += 1;
         }
@@ -184,7 +184,12 @@ public static partial class Classification
         }
 
         var trimmedStart = text.TrimStart();
-        if (trimmedStart.StartsWith('{') || trimmedStart.StartsWith('['))
+        if (trimmedStart.StartsWith('{') && trimmedStart.Length > 1
+            && (trimmedStart[1] == '"' || char.IsLetterOrDigit(trimmedStart[1])))
+        {
+            strongCount += 1;
+        }
+        else if (trimmedStart.StartsWith('[') && trimmedStart.Length > 2 && (trimmedStart[1] == '"' || char.IsLetterOrDigit(trimmedStart[1])))
         {
             strongCount += 1;
         }
@@ -230,7 +235,7 @@ public static partial class Classification
         }
 
         var additions = 0;
-        var newlineCount = text.Count(c => c == '\n');
+        var newlineCount = text.Split('\n').Count(l => l.Trim().Length > 0) - 1;
         if (newlineCount >= 2)
         {
             additions += 1;
@@ -254,7 +259,10 @@ public static partial class Classification
         var penalty = 0;
         foreach (var word in PenaltyWords)
         {
-            penalty += CountOccurrences(lower, word.ToLowerInvariant());
+            if (lower.Contains(word.ToLowerInvariant()))
+            {
+                penalty += 1;
+            }
         }
         penalty = Math.Min(penalty, 2);
 
