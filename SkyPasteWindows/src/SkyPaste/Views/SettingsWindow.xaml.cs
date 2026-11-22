@@ -382,7 +382,7 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
     private void OnHistoryLimitChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
-        if (MaxRecordsValue is null || _loading)
+        if (MaxRecordsValue is null || _app is null || _loading)
         {
             return;
         }
