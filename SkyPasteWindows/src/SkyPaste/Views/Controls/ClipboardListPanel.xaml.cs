@@ -52,24 +52,14 @@ public partial class ClipboardListPanel : UserControl
         _app = app;
         _popoverMode = popoverMode;
 
-        if (popoverMode)
-        {
-            BatchToggle.Visibility = Visibility.Collapsed;
-            CloseToggle.Visibility = Visibility.Visible;
-            StatsToggle.Visibility = Visibility.Visible;
-            // Popover has no TitleBar: keep the brand block visible.
-            BrandLogo.Visibility = Visibility.Visible;
-            HeaderTitle.Visibility = Visibility.Visible;
-        }
-        else
-        {
-            StatsToggle.Visibility = Visibility.Collapsed;
-            // Main panel: TitleBar already shows the app identity and the X
-            // caption button hides the panel.
-            CloseToggle.Visibility = Visibility.Collapsed;
-            BrandLogo.Visibility = Visibility.Collapsed;
-            HeaderTitle.Visibility = Visibility.Collapsed;
-        }
+        // No in-header close button on any surface: the main panel closes via
+        // its TitleBar X / Esc, the popover via Esc / outside click / tray.
+        BatchToggle.Visibility = popoverMode ? Visibility.Collapsed : Visibility.Visible;
+        CloseToggle.Visibility = Visibility.Collapsed;
+        StatsToggle.Visibility = popoverMode ? Visibility.Visible : Visibility.Collapsed;
+        // Popover has no TitleBar: keep the brand block visible.
+        BrandLogo.Visibility = popoverMode ? Visibility.Visible : Visibility.Collapsed;
+        HeaderTitle.Visibility = popoverMode ? Visibility.Visible : Visibility.Collapsed;
 
         _app.Settings.FilterOrderSettingsChanged += RebuildChips;
         L10n.LanguageChanged += RefreshLocalization;
@@ -996,6 +986,7 @@ public partial class ClipboardListPanel : UserControl
 
     private void UpdateSourceMenuLabel()
     {
+        SourceMenuLabel.Visibility = Visibility.Collapsed; // icon-only button
         SourceMenuLabel.Text = _sourceSelection.Kind switch
         {
             ClipboardSourceSelection.SelectionKind.Device => L10n.T("filter.source_device"),

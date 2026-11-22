@@ -106,7 +106,7 @@ public sealed class AppSettingsService : INotifyPropertyChanged
         set => SetAndSave(ref _launchAtLogin, value, nameof(LaunchAtLogin));
     }
 
-    private bool _autoPasteEnabled = true;
+    private bool _autoPasteEnabled;
     public bool AutoPasteEnabled
     {
         get => _autoPasteEnabled;
@@ -408,7 +408,7 @@ public sealed class AppSettingsService : INotifyPropertyChanged
         public bool HotKeyWin { get; set; }
         public string? IgnoredAppsInput { get; set; }
         public bool LaunchAtLogin { get; set; } = true;
-        public bool AutoPasteEnabled { get; set; } = true;
+        public bool AutoPasteEnabled { get; set; }
         public bool PrivacyFilteringEnabled { get; set; }
         public bool LanSyncEnabled { get; set; }
         public bool LanSyncUploadEnabled { get; set; } = true;

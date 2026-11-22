@@ -87,8 +87,8 @@
             <Button x:Name="SourceMenuButton" Grid.Column="1" Margin="8,0,0,0"
                     Style="{DynamicResource CapsuleButton}" Click="OnSourceMenuClick">
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock x:Name="SourceMenuGlyph" Text="&#xE8A9;" FontSize="11" FontFamily="{DynamicResource GlyphFont}" />
-                    <TextBlock x:Name="SourceMenuLabel" Margin="5,0,0,0" Text="Apps" FontSize="11" />
+                    <TextBlock x:Name="SourceMenuGlyph" Text="&#xE8A9;" FontSize="12" FontFamily="{DynamicResource GlyphFont}" />
+                    <TextBlock x:Name="SourceMenuLabel" Margin="5,0,0,0" Text="Apps" FontSize="11" Visibility="Collapsed" />
                 </StackPanel>
             </Button>
         </Grid>
