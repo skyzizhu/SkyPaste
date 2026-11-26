@@ -140,6 +140,18 @@ internal static class NativeMethods
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     public static extern bool GetMonitorInfo(IntPtr hMonitor, ref MONITORINFO info);
 
+    [DllImport("user32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SetWindowPos(IntPtr window, IntPtr insertAfter, int x, int y,
+        int width, int height, uint flags);
+
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
+    public static extern int SHParseDisplayName(string path, IntPtr bindContext, out IntPtr item,
+        uint requestedAttributes, out uint attributes);
+
+    [DllImport("shell32.dll", ExactSpelling = true)]
+    public static extern int SHOpenFolderAndSelectItems(IntPtr item, uint count, IntPtr children, uint flags);
+
     [DllImport("shcore.dll")]
     public static extern int GetDpiForMonitor(IntPtr hMonitor, int type, out uint dpiX, out uint dpiY);
 

@@ -28,6 +28,16 @@ public sealed class ThemeService : IDisposable
 
     public void ApplyCurrentSetting()
     {
+        var dispatcher = System.Windows.Application.Current?.Dispatcher;
+        if (dispatcher is null || dispatcher.HasShutdownStarted)
+        {
+            return;
+        }
+        if (!dispatcher.CheckAccess())
+        {
+            dispatcher.BeginInvoke(ApplyCurrentSetting);
+            return;
+        }
         var dark = _settings.Appearance switch
         {
             AppAppearanceMode.Light => false,
@@ -66,21 +76,27 @@ public sealed class ThemeService : IDisposable
         var dictionaries = System.Windows.Application.Current?.Resources?.MergedDictionaries;
         if (dictionaries is not null)
         {
+            var dictionary = new System.Windows.ResourceDictionary
+            {
+                Source = new Uri("pack://application:,,,/SkyPaste;component/" +
+                    (theme == ApplicationTheme.Dark ? DarkDictionary : LightDictionary), UriKind.Absolute),
+            };
+            var replaced = false;
             for (var i = dictionaries.Count - 1; i >= 0; i--)
             {
                 var source = dictionaries[i].Source?.OriginalString;
                 if (source is not null && (source.EndsWith("Theme.Light.xaml", StringComparison.OrdinalIgnoreCase)
                                            || source.EndsWith("Theme.Dark.xaml", StringComparison.OrdinalIgnoreCase)))
                 {
-                    dictionaries.RemoveAt(i);
+                    dictionaries[i] = dictionary;
+                    replaced = true;
+                    break;
                 }
             }
-            var dictionary = new System.Windows.ResourceDictionary
+            if (!replaced)
             {
-                Source = new Uri("pack://application:,,,/SkyPaste;component/" +
-                    (theme == ApplicationTheme.Dark ? DarkDictionary : LightDictionary), UriKind.Absolute),
-            };
-            dictionaries.Add(dictionary);
+                dictionaries.Add(dictionary);
+            }
         }
 
         _appliedTheme = theme;

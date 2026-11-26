@@ -24,7 +24,7 @@ public sealed class ClipboardMonitorService : IDisposable
     private HwndSource? _hwndSource;
     private DispatcherTimer? _pollTimer;
     private uint _lastSequenceNumber;
-    private DateTime _suppressUntilUtc;
+    private int _writeDepth;
     private bool _started;
     private int _decodeRetries;
     private DispatcherTimer? _decodeRetryTimer;
@@ -33,8 +33,26 @@ public sealed class ClipboardMonitorService : IDisposable
     private const int MaxDecodeRetries = 2;
     private static readonly TimeSpan DecodeRetryDelay = TimeSpan.FromMilliseconds(300);
 
-    /// <summary>Set while SkyPaste itself writes the clipboard so self-copies aren't captured.</summary>
-    public void SuppressNextCapture() => _suppressUntilUtc = DateTime.UtcNow.AddMilliseconds(500);
+    public void WriteWithoutCapture(Action write)
+    {
+        var before = NativeMethods.GetClipboardSequenceNumber();
+        _writeDepth++;
+        try
+        {
+            write();
+            var after = NativeMethods.GetClipboardSequenceNumber();
+            if (after != before)
+            {
+                _lastSequenceNumber = after;
+                _decodeRetries = 0;
+                _decodeRetryTimer?.Stop();
+            }
+        }
+        finally
+        {
+            _writeDepth--;
+        }
+    }
 
     public event Action<ClipboardItem>? ClipboardCaptured;
 
@@ -93,26 +111,29 @@ public sealed class ClipboardMonitorService : IDisposable
         }
         _pollTimer?.Stop();
         _pollTimer = null;
+        _decodeRetryTimer?.Stop();
     }
 
     private IntPtr WndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
     {
         if (msg == NativeMethods.WM_CLIPBOARDUPDATE)
         {
-            CheckSequence(forceCapture: true);
+            CheckSequence();
             handled = true;
         }
         return IntPtr.Zero;
     }
 
-    private void CheckSequence(bool forceCapture = false)
+    private void CheckSequence()
     {
         var sequence = NativeMethods.GetClipboardSequenceNumber();
-        if (!forceCapture && sequence == _lastSequenceNumber)
+        if (_writeDepth > 0 || sequence == _lastSequenceNumber)
         {
             return;
         }
         _lastSequenceNumber = sequence;
+        _decodeRetryTimer?.Stop();
+        _decodeRetries = 0;
         CaptureClipboard();
     }
 
@@ -121,7 +142,7 @@ public sealed class ClipboardMonitorService : IDisposable
 
     private void CaptureClipboard()
     {
-        if (DateTime.UtcNow < _suppressUntilUtc)
+        if (_writeDepth > 0)
         {
             return;
         }

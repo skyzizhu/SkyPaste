@@ -47,7 +47,7 @@ public sealed class TrayIconService : IDisposable
         menu.Items.Add(L10n.T("menu.open_panel"), null, (_, _) => _app.Coordinator.ShowPanel());
         menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
         menu.Items.Add(L10n.T("stats.title"), null, (_, _) => _app.Coordinator.ShowStatistics());
-        menu.Items.Add(L10n.T("menu.preferences"), null, (_, _) => _app.Coordinator.ShowSettings());
+        menu.Items.Add(L10n.T("menu.preferences"), null, (_, _) => _app.Coordinator.ShowSettingsAfterMenu());
         menu.Items.Add(L10n.T("menu.debug"), null, (_, _) => _app.Coordinator.ShowDebug());
         menu.Items.Add(new System.Windows.Forms.ToolStripSeparator());
         menu.Items.Add(L10n.T("menu.quit"), null, (_, _) => _app.Quit());

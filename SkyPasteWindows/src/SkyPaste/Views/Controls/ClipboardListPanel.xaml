@@ -8,6 +8,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
@@ -19,15 +20,14 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <Border Grid.Column="0" x:Name="BrandLogo" Width="34" Height="34" CornerRadius="8"
+            <Border Grid.Column="0" x:Name="BrandLogo" Width="38" Height="38" CornerRadius="9"
                     Background="{DynamicResource AccentSoftBrush}">
-                <TextBlock Text="S" FontSize="16" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"
-                           HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <Image Source="/SkyPaste;component/Assets/icon.ico" Width="38" Height="38" />
             </Border>
             <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
-                <TextBlock x:Name="HeaderTitle" Text="SkyPaste" FontSize="14" FontWeight="SemiBold"
+                <TextBlock x:Name="HeaderTitle" Text="SkyPaste" FontSize="19" FontWeight="SemiBold"
                            Foreground="{DynamicResource Text.Primary}" />
-                <TextBlock x:Name="HeaderHint" FontSize="9" Foreground="{DynamicResource Text.Secondary}"
+                <TextBlock x:Name="HeaderHint" FontSize="11" Foreground="{DynamicResource Text.Secondary}"
                            Margin="0,1,0,0" TextTrimming="CharacterEllipsis" />
             </StackPanel>
             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
@@ -95,7 +95,7 @@
         </Border>
 
         <!-- Filter chips + source menu -->
-        <Grid Grid.Row="2" Margin="16,12,16,0">
+        <Grid Grid.Row="3" Margin="16,12,16,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
@@ -114,7 +114,7 @@
         </Grid>
 
         <!-- Content -->
-        <Grid Grid.Row="3" Margin="16,12,16,0">
+        <Grid Grid.Row="4" Margin="16,12,16,0">
             <ScrollViewer x:Name="ContentScroll" VerticalScrollBarVisibility="Auto">
                 <StackPanel x:Name="SectionHost" />
             </ScrollViewer>
@@ -123,9 +123,9 @@
         </Grid>
 
         <!-- Footer -->
-        <Grid Grid.Row="4" Margin="16,10,16,14">
-            <StackPanel x:Name="FooterNormal" Orientation="Horizontal" />
-            <StackPanel x:Name="FooterBatch" Orientation="Horizontal" Visibility="Collapsed" />
+        <Grid Grid.Row="5" Margin="16,10,16,14">
+            <WrapPanel x:Name="FooterNormal" />
+            <WrapPanel x:Name="FooterBatch" Visibility="Collapsed" />
         </Grid>
     </Grid>
 </UserControl>

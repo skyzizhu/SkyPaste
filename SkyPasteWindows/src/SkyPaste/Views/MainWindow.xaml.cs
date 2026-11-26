@@ -13,7 +13,7 @@ namespace SkyPaste;
 /// Main panel window (mac: 700x620 floating NSPanel, centered, topmost,
 /// Esc closes, Enter pastes, Ctrl+1..9 quick copy, stays visible on deactivate).
 /// </summary>
-public partial class MainWindow : Wpf.Ui.Controls.FluentWindow
+public partial class MainWindow : Window
 {
     private readonly App _app;
     private readonly ClipboardListPanel _panel;

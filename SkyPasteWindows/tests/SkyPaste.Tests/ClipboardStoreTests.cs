@@ -70,6 +70,25 @@ public class ClipboardStoreTests : IDisposable
     }
 
     [Fact]
+    public void FavoriteFromSeparatePreviewUpdatesVisibleItemAndFavoriteFilter()
+    {
+        var (store, _) = MakeStore();
+        store.Add(TestItems.Text("favorite from preview"));
+        var item = Assert.Single(store.Items);
+        var preview = new ClipboardItem(item.Id, item.CreatedAt, item.Content, item.Fingerprint,
+            item.Source, item.SourceApp, item.IsFavorite);
+
+        store.SetFavorite(preview, true);
+        Assert.True(item.IsFavorite);
+        Assert.True(preview.IsFavorite);
+        Assert.Same(item, Assert.Single(store.FilteredItemsByFilter[ClipboardFilter.Favorites]));
+
+        store.SetFavorite(preview, false);
+        Assert.False(item.IsFavorite);
+        Assert.Empty(store.FilteredItemsByFilter[ClipboardFilter.Favorites]);
+    }
+
+    [Fact]
     public void HistoryLimitKeepsFavorites()
     {
         var (store, _) = MakeStore(historyLimit: 20);

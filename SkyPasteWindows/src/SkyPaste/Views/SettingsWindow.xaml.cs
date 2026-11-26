@@ -11,15 +11,15 @@ namespace SkyPaste;
 /// Preferences (mac SkySettingsView): general / hotkey / sync &amp; privacy /
 /// library / about, one column, bound to AppSettingsService.
 /// </summary>
-public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
+public partial class SettingsWindow : Window
 {
     private readonly App _app;
-    private bool _loading;
+    private bool _loading = true;
 
     public SettingsWindow(App app)
     {
-        InitializeComponent();
         _app = app;
+        InitializeComponent();
         Width = 860;
         Height = 660;
         MinWidth = 760;
@@ -27,7 +27,7 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         ShowInTaskbar = true;
         ShowActivated = true;
-        Background = (Brush)FindResource("Window.Background");
+        SetResourceReference(BackgroundProperty, "Window.Background");
 
         PreviewKeyDown += (_, e) =>
         {
@@ -40,6 +40,9 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
         BuildLanguageOptions();
         BuildKeyOptions();
         ApplyLocalization();
+        LoadSettings();
+        UpdateQrPanel();
+        BuildRecentAppChips();
 
         _app.LanSync.StatusChanged += UpdateLanSyncStatus;
         _app.LanSync.IpChanged += OnLanIpChanged;
@@ -53,39 +56,16 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
             L10n.LanguageChanged -= ApplyLocalization;
         };
 
-        LoadSettings();
-        UpdateQrPanel();
-        BuildRecentAppChips();
-    }
-
-    /// <summary>All static texts; re-applied when the app language changes.</summary>
-    private void OnNavChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
-    {
-        if (NavList is null || SectionGeneral is null)
-        {
-            return; // raised during XAML parse, before named fields are assigned
-        }
-        var index = NavList.SelectedIndex;
-        SectionGeneral.Visibility = index == 0 ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
-        SectionHotkey.Visibility = index == 1 ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
-        SectionSync.Visibility = index == 2 ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
-        SectionLibrary.Visibility = index == 3 ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
-        SectionAbout.Visibility = index == 4 ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
     }
 
     private void ApplyLocalization()
     {
         Title = L10n.T("menu.preferences");
-        NavGeneral.Text = L10n.T("settings.general");
-        NavHotkey.Text = L10n.T("settings.hotkey");
-        NavSync.Text = L10n.T("settings.sync");
-        NavLibrary.Text = L10n.T("settings.library");
-        NavAbout.Text = L10n.T("about.title");
         SectionGeneral.Header = L10n.T("settings.general");
         SectionHotkey.Header = L10n.T("settings.hotkey");
         SectionSync.Header = L10n.T("settings.sync");
         SectionLibrary.Header = L10n.T("settings.library");
-        SectionAbout.Header = L10n.T("about.title");
+        SectionAbout.Header = L10n.T("settings.support");
 
         AppearanceLabel.Text = L10n.T("settings.appearance");
         LanguageLabel.Text = L10n.T("settings.language");
@@ -102,6 +82,7 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
         WinToggleLabel.Text = L10n.T("settings.win");
 
         LanSyncLabel.Text = L10n.T("settings.lan_sync");
+        WindowsClipboardSettingsButton.Content = L10n.T("settings.windows_clipboard");
         LanSyncHint.Text = L10n.T("settings.lan_sync_hint");
         LanSyncUploadLabel.Text = L10n.T("settings.lan_sync_upload");
         LanSyncReceiveLabel.Text = L10n.T("settings.lan_sync_receive");
@@ -120,6 +101,9 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
         AboutSubtitle.Text = L10n.T("about.subtitle");
         OpenLicenseLabel.Text = L10n.T("about.open_license");
+        WenPaiTitle.Text = L10n.T("wenpai.title");
+        WenPaiSubtitle.Text = L10n.T("wenpai.subtitle");
+        WenPaiButton.Content = L10n.T("wenpai.open");
 
         SetComboItemsText(AppearanceMode,
             "appearance.system", "appearance.light", "appearance.dark");
@@ -149,7 +133,6 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
 
     private void LoadSettings()
     {
-        _loading = true;
         var settings = _app.Settings;
         AppearanceMode.SelectedIndex = settings.AppearanceMode switch
         {
@@ -204,7 +187,6 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
         LanguageMode.Items.Add(new ComboBoxItem { Content = L10n.T("language.ja") });
         LanguageMode.Items.Add(new ComboBoxItem { Content = L10n.T("language.ko") });
         LanguageMode.Items.Add(new ComboBoxItem { Content = L10n.T("language.fr") });
-        LanguageMode.SelectedIndex = 0;
     }
 
     private void BuildKeyOptions()
@@ -291,6 +273,14 @@ public partial class SettingsWindow : Wpf.Ui.Controls.FluentWindow
             _ => "system",
         };
     }
+
+    private async void OnOpenWindowsClipboardSettings(object sender, RoutedEventArgs e)
+    {
+        await Windows.System.Launcher.LaunchUriAsync(new Uri("ms-settings:clipboard"));
+    }
+
+    private void OnOpenWenPai(object sender, RoutedEventArgs e) =>
+        _app.Coordinator.OpenInBrowser(new Uri("https://wol.yourtools.xyz/"));
 
     private void OnToggleChanged(object sender, RoutedEventArgs e)
     {

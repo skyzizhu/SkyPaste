@@ -383,17 +383,29 @@ public sealed class ClipboardStore
 
     public void SetFavorite(ClipboardItem item, bool favorite)
     {
-        item.IsFavorite = favorite;
+        var visibleItem = Items.FirstOrDefault(candidate => candidate.Id == item.Id);
+        if (visibleItem is null)
+        {
+            return;
+        }
         try
         {
             _database.SetFavorite(item.Id, favorite);
-            if (!favorite)
-            {
-                _database.TrimToLimit(_settings.HistoryLimit);
-            }
         }
         catch (Exception)
         {
+            return;
+        }
+        visibleItem.IsFavorite = item.IsFavorite = favorite;
+        if (!favorite)
+        {
+            try
+            {
+                _database.TrimToLimit(_settings.HistoryLimit);
+            }
+            catch (Exception)
+            {
+            }
         }
         Items = ApplyingHistoryLimit(Items, _settings.HistoryLimit).ToList();
         UpdateFilteredItemsSync();

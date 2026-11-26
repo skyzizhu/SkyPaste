@@ -32,7 +32,7 @@ public sealed class ToastService
 
         Close();
 
-        _window = new Window
+        var window = new Window
         {
             WindowStyle = WindowStyle.None,
             AllowsTransparency = true,
@@ -44,6 +44,7 @@ public sealed class ToastService
             SizeToContent = SizeToContent.WidthAndHeight,
             Opacity = 0,
         };
+        _window = window;
 
         var pill = new Border
         {
@@ -55,14 +56,16 @@ public sealed class ToastService
                 Text = message,
                 FontSize = 13,
                 FontWeight = FontWeights.Medium,
+                MaxWidth = 360,
+                TextWrapping = TextWrapping.Wrap,
                 Foreground = (Brush)System.Windows.Application.Current.Resources["Toast.Foreground"],
             },
         };
-        _window.Content = pill;
+        window.Content = pill;
 
-        _window.SourceInitialized += (_, _) =>
+        window.SourceInitialized += (_, _) =>
         {
-            var hwnd = new WindowInteropHelper(_window).Handle;
+            var hwnd = new WindowInteropHelper(window).Handle;
             const int GWL_EXSTYLE = -20;
             const int WS_EX_TRANSPARENT = 0x20;
             const int WS_EX_NOACTIVATE = 0x08000000;
@@ -71,31 +74,38 @@ public sealed class ToastService
             SetWindowLong(hwnd, GWL_EXSTYLE, exStyle | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW);
         };
 
-        _window.Loaded += (_, _) =>
+        window.Loaded += (_, _) =>
         {
             // Center on the primary work area (mac centers the toast on screen).
             var workArea = SystemParameters.WorkArea;
-            _window.Left = (workArea.Width - _window.ActualWidth) / 2;
-            _window.Top = workArea.Height * 0.42 - _window.ActualHeight / 2;
+            window.Left = workArea.Left + (workArea.Width - window.ActualWidth) / 2;
+            window.Top = workArea.Top + (workArea.Height - window.ActualHeight) / 2;
 
             var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(140));
-            _window.BeginAnimation(Window.OpacityProperty, fadeIn);
+            window.BeginAnimation(Window.OpacityProperty, fadeIn);
         };
 
-        _window.Show();
+        window.Show();
 
-        _hideTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(950) };
-        _hideTimer.Tick += (_, _) =>
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(950) };
+        _hideTimer = timer;
+        timer.Tick += (_, _) =>
         {
-            _hideTimer?.Stop();
-            if (_window is not null)
+            timer.Stop();
+            if (_window == window)
             {
                 var fadeOut = new DoubleAnimation(0, TimeSpan.FromMilliseconds(180));
-                fadeOut.Completed += (_, _) => Close();
-                _window.BeginAnimation(Window.OpacityProperty, fadeOut);
+                fadeOut.Completed += (_, _) =>
+                {
+                    if (_window == window)
+                    {
+                        Close();
+                    }
+                };
+                window.BeginAnimation(Window.OpacityProperty, fadeOut);
             }
         };
-        _hideTimer.Start();
+        timer.Start();
     }
 
     public void Close()

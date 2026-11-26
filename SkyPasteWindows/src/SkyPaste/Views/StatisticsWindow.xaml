@@ -1,18 +1,9 @@
-<ui:FluentWindow x:Class="SkyPaste.StatisticsWindow"
-        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
+<Window x:Class="SkyPaste.StatisticsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Clipboard Insights"
-        ExtendsContentIntoTitleBar="True"
-        WindowBackdropType="Mica">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <ui:TitleBar Grid.Row="0" Title="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=Title}" ShowMaximize="True" ShowMinimize="False" />
-        <Grid Grid.Row="1">
-    <Grid Margin="18,14,18,14">
+        Title="Clipboard Insights">
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+    <Grid Margin="22,18,22,22">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -20,11 +11,11 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
 
         <StackPanel Grid.Row="0">
-            <TextBlock x:Name="TitleLabel" Text="Clipboard Insights" FontSize="18" FontWeight="SemiBold"
+            <TextBlock x:Name="TitleLabel" Text="Clipboard Insights" FontSize="23" FontWeight="SemiBold"
                        Foreground="{DynamicResource Text.Primary}" />
             <TextBlock x:Name="SubtitleLabel" FontSize="11" Margin="0,2,0,0"
                        Foreground="{DynamicResource Text.Secondary}" />
@@ -48,23 +39,30 @@
             </Button>
         </StackPanel>
 
-        <Border Grid.Row="2" Background="{DynamicResource SectionCard.Background}" CornerRadius="14"
-                Padding="16,12,16,12" Margin="0,12,0,0">
-            <StackPanel Orientation="Horizontal">
+        <Grid Grid.Row="2" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border Background="{DynamicResource Header.Background}" CornerRadius="16" Margin="0,0,6,0"
+                    BorderBrush="{DynamicResource Card.Border}" BorderThickness="1" Padding="16,12">
                 <StackPanel>
                     <TextBlock x:Name="TotalHeader" Text="Recorded copies" FontSize="10"
                                Foreground="{DynamicResource Text.Secondary}" />
-                    <TextBlock x:Name="TotalValue" Text="0" FontSize="24" FontWeight="SemiBold"
+                    <TextBlock x:Name="TotalValue" Text="0" FontSize="30" FontWeight="SemiBold"
                                Foreground="{DynamicResource Text.Primary}" Margin="0,2,0,0" />
                 </StackPanel>
-                <StackPanel Margin="48,0,0,0">
+            </Border>
+            <Border Grid.Column="1" Background="{DynamicResource SectionCard.Background}" CornerRadius="16"
+                    Margin="6,0,0,0" BorderBrush="{DynamicResource Card.Border}" BorderThickness="1" Padding="16,12">
+                <StackPanel>
                     <TextBlock x:Name="TopCategoryHeader" Text="Top category" FontSize="10"
                                Foreground="{DynamicResource Text.Secondary}" />
                     <TextBlock x:Name="TopCategory" Text="-" FontSize="16" FontWeight="SemiBold"
                                Foreground="{DynamicResource AccentBrush}" Margin="0,6,0,0" />
                 </StackPanel>
-            </StackPanel>
-        </Border>
+            </Border>
+        </Grid>
 
         <TextBlock x:Name="TrendHeader" Grid.Row="3" Text="Activity over time" FontSize="13" FontWeight="SemiBold"
                    Foreground="{DynamicResource Text.Primary}" Margin="0,14,0,6" />
@@ -100,6 +98,5 @@
         <TextBlock x:Name="NoteText" Grid.Row="6" FontSize="10" TextWrapping="Wrap" Margin="0,12,0,0"
                    Foreground="{DynamicResource Text.Secondary}" />
     </Grid>
-        </Grid>
-    </Grid>
-</ui:FluentWindow>
+    </ScrollViewer>
+</Window>

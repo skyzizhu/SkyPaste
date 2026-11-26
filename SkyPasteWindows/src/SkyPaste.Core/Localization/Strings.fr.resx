@@ -169,7 +169,7 @@
   <data name="preview.open" xml:space="preserve"><value>Aperçu de l’image</value></data>
   <data name="preview.open_image" xml:space="preserve"><value>Ouvrir l’image</value></data>
   <data name="preview.drag_hint" xml:space="preserve"><value>Glisser l’image</value></data>
-  <data name="preview.drag_zoomed_hint" xml:space="preserve"><value>Option + glisser l’image</value></data>
+  <data name="preview.drag_zoomed_hint" xml:space="preserve"><value>Alt + glisser l’image</value></data>
   <data name="preview.annotate" xml:space="preserve"><value>Annoter</value></data>
   <data name="preview.annotation_done" xml:space="preserve"><value>Terminer</value></data>
   <data name="preview.annotation_hint" xml:space="preserve"><value>Tracer sur l’image</value></data>
@@ -223,7 +223,7 @@
   <data name="preview.source_label" xml:space="preserve"><value>Source :</value></data>
   <data name="preview.source_app" xml:space="preserve"><value>%@</value></data>
   <data name="preview.source_device" xml:space="preserve"><value>%@</value></data>
-  <data name="preview.source_local" xml:space="preserve"><value>Ce Mac</value></data>
+  <data name="preview.source_local" xml:space="preserve"><value>Ce PC</value></data>
   <data name="open.missing_file_title" xml:space="preserve"><value>Fichier introuvable</value></data>
   <data name="open.missing_folder_title" xml:space="preserve"><value>Dossier introuvable</value></data>
   <data name="open.missing_item_message" xml:space="preserve"><value>SkyPaste n’a pas pu ouvrir ce chemin : %@</value></data>
@@ -282,4 +282,8 @@
   <data name="panel_position.cursor" xml:space="preserve"><value>Suivre le curseur</value></data>
   <data name="hotkey.register_failed" xml:space="preserve"><value>Ce raccourci est déjà utilisé par une autre application — choisissez une autre combinaison.</value></data>
   <data name="panel_position.remember" xml:space="preserve"><value>Mémoriser la dernière position</value></data>
+  <data name="menu.copy_failed" xml:space="preserve"><value>Impossible de copier dans le presse-papiers.</value></data>
+  <data name="menu.share_failed" xml:space="preserve"><value>Le partage est indisponible.</value></data>
+  <data name="menu.translate_paste" xml:space="preserve"><value>Collez le texte copié dans Microsoft Translator.</value></data>
+  <data name="settings.windows_clipboard" xml:space="preserve"><value>Paramètres du presse-papiers Windows</value></data>
 </root>

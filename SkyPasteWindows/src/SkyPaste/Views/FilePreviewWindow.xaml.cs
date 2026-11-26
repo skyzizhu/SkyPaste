@@ -6,6 +6,7 @@ using System.Windows.Media;
 using SkyPaste.Core.Localization;
 using SkyPaste.Core.Models;
 using SkyPaste.Services;
+using SkyPaste.Views.Controls;
 
 namespace SkyPaste;
 
@@ -13,10 +14,12 @@ namespace SkyPaste;
 /// File/folder preview (mac FileSystemPreviewView): details, directory contents,
 /// missing-path banner, and an image-file dual view with preview toggle.
 /// </summary>
-public partial class FilePreviewWindow : Wpf.Ui.Controls.FluentWindow
+public partial class FilePreviewWindow : Window
 {
     private readonly App _app;
     private readonly ClipboardItem _item;
+    private bool _loadingImage;
+    private bool _closed;
 
     public FilePreviewWindow(App app, ClipboardItem item)
     {
@@ -25,15 +28,17 @@ public partial class FilePreviewWindow : Wpf.Ui.Controls.FluentWindow
         _item = item;
         Title = L10n.T("preview.file_system_title");
         PreviewTitle.Text = L10n.T("preview.file_system_title");
+        PreviewSource.Text = $"{L10n.T("preview.source_label")} {item.SourceApp?.Name ?? item.DeviceName ?? L10n.T("preview.source_local")}";
         Width = 880;
         Height = 660;
         MinWidth = 700;
         MinHeight = 500;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         ShowInTaskbar = true;
-        Background = (Brush)FindResource("Window.Background");
+        SetResourceReference(BackgroundProperty, "Window.Background");
 
         CopyLabel.Text = L10n.T("menu.copy");
+        ShareLabel.Text = L10n.T("menu.share");
         SaveAsLabel.Text = L10n.T("menu.save_as");
         CopyPathLabel.Text = L10n.T("menu.copy_path");
         RevealLabel.Text = L10n.T("menu.reveal_in_explorer");
@@ -60,6 +65,12 @@ public partial class FilePreviewWindow : Wpf.Ui.Controls.FluentWindow
         };
 
         Loaded += (_, _) => BuildDetails();
+        _app.Theme.ThemeChanged += BuildDetails;
+        Closed += (_, _) =>
+        {
+            _closed = true;
+            _app.Theme.ThemeChanged -= BuildDetails;
+        };
     }
 
     private void BuildDetails()
@@ -299,56 +310,95 @@ public partial class FilePreviewWindow : Wpf.Ui.Controls.FluentWindow
 
     // ---- dual image-file view ----------------------------------------------------------
 
-    private void OnToggleImageMode(object sender, RoutedEventArgs e)
+    private async void OnToggleImageMode(object sender, RoutedEventArgs e)
     {
         var showingImage = ImageModeHost.Visibility == Visibility.Visible;
         if (!showingImage)
         {
             ImageModeHost.Visibility = Visibility.Visible;
             InfoScroll.Visibility = Visibility.Collapsed;
+            FileActions.Visibility = Visibility.Collapsed;
             ToggleImageModeLabel.Text = L10n.T("preview.file_system_show_info");
-            LoadImagePreview();
+            await LoadImagePreviewAsync();
         }
         else
         {
             ImageModeHost.Visibility = Visibility.Collapsed;
             InfoScroll.Visibility = Visibility.Visible;
+            FileActions.Visibility = Visibility.Visible;
+            FavoriteLabel.Text = _item.IsFavorite ? L10n.T("menu.unfavorite") : L10n.T("menu.favorite");
             ToggleImageModeLabel.Text = L10n.T("preview.file_system_show_image");
         }
     }
 
-    private void LoadImagePreview()
+    private async Task LoadImagePreviewAsync()
     {
-        if (_item.SingleFilePath is not { } path || !File.Exists(path))
+        if (_loadingImage || ImageModeHost.Content is ImagePreviewWorkspace || _item.SingleFilePath is not { } path)
         {
             return;
         }
-        var bitmap = ClipboardWriter.DecodeBitmap(LoadBytes(path));
-        if (bitmap is not null)
+        _loadingImage = true;
+        ImageModeHost.Content = new ProgressBar
         {
-            ImagePreview.Source = bitmap;
+            IsIndeterminate = true, Width = 160,
+            HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+        };
+        try
+        {
+            var png = await Task.Run(() =>
+            {
+                var bitmap = ClipboardWriter.DecodeBitmap(File.ReadAllBytes(path));
+                return bitmap is null ? null : ClipboardDecoder.EncodePng(bitmap);
+            });
+            if (_closed)
+            {
+                return;
+            }
+            if (png is null)
+            {
+                ShowImageUnavailable();
+                return;
+            }
+            var image = new ClipboardItem(
+                Guid.NewGuid(), _item.CreatedAt,
+                ClipboardContent.FromImage(png, Path.GetFileNameWithoutExtension(path), png.LongLength, previewOnly: false),
+                _item.Fingerprint, _item.Source, _item.SourceApp);
+            ImageModeHost.Content = new ImagePreviewWorkspace(_app, image, _item);
+        }
+        catch (Exception error)
+        {
+            App.UiLog($"Image-file preview failed: {error.GetType().Name}");
+            if (!_closed)
+            {
+                ShowImageUnavailable();
+            }
+        }
+        finally
+        {
+            _loadingImage = false;
         }
     }
 
-    private static byte[] LoadBytes(string path)
+    private void ShowImageUnavailable()
     {
-        try
+        ImageModeHost.Content = new TextBlock
         {
-            return File.ReadAllBytes(path);
-        }
-        catch (Exception)
-        {
-            return Array.Empty<byte>();
-        }
+            Text = L10n.T("preview.unavailable"),
+            HorizontalAlignment = HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center,
+            Foreground = (Brush)FindResource("Text.Secondary"),
+        };
     }
 
     // ---- actions -------------------------------------------------------------------------
 
     private void OnCopy(object sender, RoutedEventArgs e) => _app.Coordinator.CopyOnly(_item);
 
+    private void OnShare(object sender, RoutedEventArgs e) => _app.Coordinator.Share(this, _item);
+
     private void OnSaveAs(object sender, RoutedEventArgs e)
     {
-        var paths = (_item.Content.FilePaths ?? Array.Empty<string>()).Where(File.Exists).ToList();
+        var paths = _item.Content.FilePaths ?? Array.Empty<string>();
         switch (paths.Count)
         {
             case 0:

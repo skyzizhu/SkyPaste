@@ -8,7 +8,7 @@ using SkyPaste.Services;
 namespace SkyPaste;
 
 /// <summary>Pasteboard debug panel (mac PasteboardDebugPanel): formats, decoded summary, preview.</summary>
-public partial class DebugWindow : Wpf.Ui.Controls.FluentWindow
+public partial class DebugWindow : Window
 {
     private readonly App _app;
 
@@ -21,7 +21,7 @@ public partial class DebugWindow : Wpf.Ui.Controls.FluentWindow
         Height = 560;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         ShowInTaskbar = true;
-        Background = (Brush)FindResource("Window.Background");
+        SetResourceReference(BackgroundProperty, "Window.Background");
         TitleLabel.Text = L10n.T("debug.title");
         RefreshLabel.Text = L10n.T("debug.refresh");
         Loaded += (_, _) =>

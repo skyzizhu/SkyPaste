@@ -169,7 +169,7 @@
   <data name="preview.open" xml:space="preserve"><value>画像をプレビュー</value></data>
   <data name="preview.open_image" xml:space="preserve"><value>画像を開く</value></data>
   <data name="preview.drag_hint" xml:space="preserve"><value>画像をドラッグ</value></data>
-  <data name="preview.drag_zoomed_hint" xml:space="preserve"><value>Option キーを押して画像をドラッグ</value></data>
+  <data name="preview.drag_zoomed_hint" xml:space="preserve"><value>Alt キーを押して画像をドラッグ</value></data>
   <data name="preview.annotate" xml:space="preserve"><value>注釈</value></data>
   <data name="preview.annotation_done" xml:space="preserve"><value>描画を終了</value></data>
   <data name="preview.annotation_hint" xml:space="preserve"><value>画像に線を描く</value></data>
@@ -282,4 +282,8 @@
   <data name="panel_position.cursor" xml:space="preserve"><value>カーソルに追従</value></data>
   <data name="hotkey.register_failed" xml:space="preserve"><value>このショートカットは他のアプリで使用中です。別の組み合わせを選んでください。</value></data>
   <data name="panel_position.remember" xml:space="preserve"><value>前回の位置を記憶</value></data>
+  <data name="menu.copy_failed" xml:space="preserve"><value>クリップボードにコピーできませんでした。</value></data>
+  <data name="menu.share_failed" xml:space="preserve"><value>共有できません。</value></data>
+  <data name="menu.translate_paste" xml:space="preserve"><value>Microsoft Translator にコピーしたテキストを貼り付けてください。</value></data>
+  <data name="settings.windows_clipboard" xml:space="preserve"><value>Windows のクリップボード設定</value></data>
 </root>

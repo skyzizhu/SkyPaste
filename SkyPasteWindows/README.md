@@ -71,7 +71,13 @@ macOS 版 SkyPaste（v0.3.2+，需从源码构建）内置了同一套协议的�
 
 ## 从源码构建
 
-要求：.NET 8 SDK（Windows / macOS / Linux 均可构建，Windows 才能运行）
+要求：.NET 8 SDK（Windows / macOS / Linux 均可构建）。目标系统为 Windows 10 2004（Build 19041）及以上和 Windows 11。
+
+在 Windows 上安装 Inno Setup 6.3 或更新版本后，从 `SkyPasteWindows` 运行以下命令生成 x64、x86 的安装器和便携包。产物位于 `output/`。
+
+```powershell
+.\scripts\Build-Windows.ps1
+```
 
 ```bash
 cd SkyPasteWindows
@@ -114,7 +120,9 @@ SkyPasteWindows/
 | 通用剪贴板（iPhone 系统级） | 快捷指令/HTTP 推送方案 |
 | Cmd+Shift+V / Cmd+C / Cmd+1..9 | Ctrl+Shift+V / Ctrl+C / Ctrl+1..9 |
 | NSPasteboard 逐格式快照 | CF_HDROP / CF_DIB / CF_UNICODETEXT |
-| 分享面板、系统翻译 | 无系统级等价物，暂未提供 |
+| 分享面板 | 使用 Windows 系统分享面板 |
+| 系统翻译 | 从列表或文本详情复制原文并打开 Microsoft Translator，用户粘贴后翻译 |
+| 跨设备剪贴板系统设置 | 偏好设置提供 Windows 剪贴板设置入口，局域网同步独立配置 |
 | 登录自启 SMAppService | 注册表 Run 键 |
 
 ## 隐私

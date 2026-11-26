@@ -5,6 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using SkyPaste.Core.Data;
 using SkyPaste.Core.Localization;
 using SkyPaste.Core.Services;
@@ -17,10 +18,13 @@ namespace SkyPaste;
 /// Clipboard Insights (mac ClipboardStatisticsView/Charts): 5 time ranges,
 /// hand-drawn trend bars, category donut with legend, source-app ranking.
 /// </summary>
-public partial class StatisticsWindow : Wpf.Ui.Controls.FluentWindow
+public partial class StatisticsWindow : Window
 {
     private readonly App _app;
     private StatisticsPeriod _period = StatisticsPeriod.Week;
+    private int _reloadGeneration;
+    private DateTime _requestedDay;
+    private readonly DispatcherTimer _dayTimer = new() { Interval = TimeSpan.FromMinutes(1) };
 
     private enum StatisticsPeriod { Today, Week, Month, HalfYear, Year }
 
@@ -51,7 +55,7 @@ public partial class StatisticsWindow : Wpf.Ui.Controls.FluentWindow
         MinHeight = 520;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         ShowInTaskbar = true;
-        Background = (Brush)FindResource("Window.Background");
+        SetResourceReference(BackgroundProperty, "Window.Background");
 
         ApplyLocalization();
 
@@ -73,11 +77,21 @@ public partial class StatisticsWindow : Wpf.Ui.Controls.FluentWindow
         };
 
         _app.Store.StatisticsChanged += OnStatisticsChanged;
+        _app.Theme.ThemeChanged += RedrawCharts;
         L10n.LanguageChanged += ApplyLocalizationAndReload;
-        Loaded += (_, _) => Reload();
+        Loaded += (_, _) =>
+        {
+            Reload();
+            _dayTimer.Start();
+        };
+        _dayTimer.Tick += (_, _) => RefreshAfterDateChange();
+        Activated += (_, _) => RefreshAfterDateChange();
         Closed += (_, _) =>
         {
+            _dayTimer.Stop();
+            _reloadGeneration++;
             _app.Store.StatisticsChanged -= OnStatisticsChanged;
+            _app.Theme.ThemeChanged -= RedrawCharts;
             L10n.LanguageChanged -= ApplyLocalizationAndReload;
         };
     }
@@ -117,29 +131,55 @@ public partial class StatisticsWindow : Wpf.Ui.Controls.FluentWindow
 
     private Snapshot? _lastSnapshot;
 
-    private void Reload()
+    private void RefreshAfterDateChange()
     {
+        if (IsLoaded && DateTime.Today != _requestedDay)
+        {
+            Reload();
+        }
+    }
+
+    private async void Reload()
+    {
+        var generation = ++_reloadGeneration;
+        var period = _period;
+        var now = DateTime.Now;
+        _requestedDay = now.Date;
+        DrawPeriodButtons();
         try
         {
-            var snapshot = LoadSnapshot(_period);
+            var snapshot = await Task.Run(() => LoadSnapshot(period, now));
+            if (generation != _reloadGeneration)
+            {
+                return;
+            }
             _lastSnapshot = snapshot;
             TotalValue.Text = snapshot.Total.ToString("N0", CultureInfo.CurrentCulture);
             TopCategory.Text = snapshot.LeadingCategory is { } leading
                 ? L10n.T(leading.LabelKey())
                 : L10n.T("stats.no_data");
-            DrawPeriodButtons();
-            DrawTrend(snapshot);
-            DrawDonut(snapshot);
-            DrawApps(snapshot);
+            RedrawCharts();
         }
-        catch (Exception)
+        catch (Exception error)
         {
+            App.UiLog($"Failed to load clipboard statistics: {error.GetType().Name}");
         }
     }
 
-    private Snapshot LoadSnapshot(StatisticsPeriod period)
+    private void RedrawCharts()
     {
-        var nowLocal = DateTime.Now;
+        DrawPeriodButtons();
+        if (_lastSnapshot is not { } snapshot)
+        {
+            return;
+        }
+        DrawTrend(snapshot);
+        DrawDonut(snapshot);
+        DrawApps(snapshot);
+    }
+
+    private Snapshot LoadSnapshot(StatisticsPeriod period, DateTime nowLocal)
+    {
         var (startLocal, bucketMode) = period switch
         {
             StatisticsPeriod.Today => (nowLocal.Date, "hour"),
@@ -152,14 +192,9 @@ public partial class StatisticsWindow : Wpf.Ui.Controls.FluentWindow
 
         var fromBucket = StatisticsDatabase.DayBucket(startLocal);
         var toBucket = StatisticsDatabase.DayBucket(endLocal);
-        var hourlyFrom = StatisticsDatabase.HourBucket(startLocal);
-        var hourlyTo = StatisticsDatabase.HourBucket(endLocal);
-
-        var daily = _app.Statistics.DailyEntries(fromBucket, toBucket);
-        var hourly = _app.Statistics.HourlyEntries(hourlyFrom, hourlyTo);
-
-        // Mac: the Today period counts categories from hourly entries.
-        var categoryEntries = _period == StatisticsPeriod.Today ? hourly : daily;
+        var categoryEntries = period == StatisticsPeriod.Today
+            ? _app.Statistics.HourlyEntries(fromBucket, toBucket)
+            : _app.Statistics.DailyEntries(fromBucket, toBucket);
         var categories = new Dictionary<StatisticsCategory, long>();
         foreach (var entry in categoryEntries)
         {
@@ -167,21 +202,14 @@ public partial class StatisticsWindow : Wpf.Ui.Controls.FluentWindow
             categories[category] = categories.GetValueOrDefault(category) + entry.Count;
         }
 
-        // Mac fills empty buckets with 0 across the period.
-        List<(DateTime, long)> trend = bucketMode switch
+        var countsByBucket = categoryEntries
+            .GroupBy(entry => TrendBucket(DateTimeOffset.FromUnixTimeSeconds(entry.Bucket).LocalDateTime, bucketMode))
+            .ToDictionary(group => group.Key, group => group.Sum(entry => entry.Count));
+        var trend = new List<(DateTime, long)>();
+        var end = period == StatisticsPeriod.Today ? TrendBucket(nowLocal, bucketMode).AddHours(1) : endLocal;
+        for (var cursor = TrendBucket(startLocal, bucketMode); cursor < end; cursor = NextTrendBucket(cursor, bucketMode))
         {
-            "hour" => hourly.GroupBy(e => e.Bucket).Select(g => (BucketToDateTime(g.Key, "hour"), g.Sum(e => e.Count))).ToList(),
-            "day" => daily.GroupBy(e => e.Bucket).Select(g => (BucketToDateTime(g.Key, "day"), g.Sum(e => e.Count))).ToList(),
-            "week" => daily.GroupBy(e => e.Bucket).Select(g => (BucketToDateTime(g.Key, "week"), g.Sum(e => e.Count)))
-                .GroupBy(x => x.Item1).Select(g => (g.Key, g.Sum(x => x.Item2))).ToList(),
-            _ => daily.GroupBy(e => e.Bucket).Select(g => (BucketToDateTime(g.Key, "month"), g.Sum(e => e.Count)))
-                .GroupBy(x => x.Item1).Select(g => (g.Key, g.Sum(x => x.Item2))).ToList(),
-        };
-        trend = trend.OrderBy(t => t.Item1).ToList();
-        trend = FillMissingBuckets(trend, bucketMode);
-        if (trend.Count > 60)
-        {
-            trend = trend.Skip(trend.Count - 60).ToList();
+            trend.Add((cursor, countsByBucket.GetValueOrDefault(cursor)));
         }
 
         var apps = _app.Statistics.AppEntries(fromBucket, toBucket);
@@ -191,44 +219,24 @@ public partial class StatisticsWindow : Wpf.Ui.Controls.FluentWindow
             total > 0 ? leading.Key : null);
     }
 
-    private static List<(DateTime, long)> FillMissingBuckets(List<(DateTime, long)> trend, string mode)
-    {
-        if (trend.Count < 2)
+    private static DateTime TrendBucket(DateTime dateTime, string mode) =>
+        mode switch
         {
-            return trend;
-        }
-        var step = mode switch
-        {
-            "hour" => TimeSpan.FromHours(1),
-            "day" => TimeSpan.FromDays(1),
-            "week" => TimeSpan.FromDays(7),
-            _ => TimeSpan.FromDays(30),
+            "hour" => dateTime.Date.AddHours(dateTime.Hour),
+            "week" => dateTime.Date.AddDays(-((7 + (int)dateTime.DayOfWeek
+                - (int)CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek) % 7)),
+            "month" => dateTime.Date.AddDays(1 - dateTime.Day),
+            _ => dateTime.Date,
         };
-        var filled = new List<(DateTime, long)>();
-        for (var i = 0; i < trend.Count - 1; i++)
-        {
-            filled.Add(trend[i]);
-            var next = trend[i + 1].Item1;
-            var cursor = trend[i].Item1 + step;
-            while (cursor < next - TimeSpan.FromMinutes(30))
-            {
-                filled.Add((cursor, 0));
-                cursor += step;
-            }
-        }
-        filled.Add(trend[^1]);
-        return filled;
-    }
 
-    private static DateTime BucketToDateTime(long bucket, string mode)
-    {
-        var dateTime = DateTimeOffset.FromUnixTimeSeconds(bucket).LocalDateTime;
-        return mode switch
+    private static DateTime NextTrendBucket(DateTime bucket, string mode) =>
+        mode switch
         {
-            "week" => dateTime.AddDays(-(int)dateTime.DayOfWeek),
-            _ => dateTime,
+            "hour" => bucket.AddHours(1),
+            "week" => bucket.AddDays(7),
+            "month" => bucket.AddMonths(1),
+            _ => bucket.AddDays(1),
         };
-    }
 
     // ---- charts ---------------------------------------------------------------------------
 
@@ -236,9 +244,11 @@ public partial class StatisticsWindow : Wpf.Ui.Controls.FluentWindow
     {
         TrendCanvas.Children.Clear();
         const double plotHeight = 130;
-        var width = Math.Max(TrendCanvas.ActualWidth, 600);
-        TrendCanvas.Width = width;
-        TrendCanvas.Height = plotHeight;
+        var width = TrendCanvas.ActualWidth;
+        if (width <= 0)
+        {
+            return;
+        }
 
         var max = snapshot.Trend.Count > 0 ? snapshot.Trend.Max(t => t.Item2) : 0;
         var axisMaximum = AxisMaximum(max);

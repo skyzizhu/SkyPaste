@@ -1,4 +1,5 @@
 using System.IO;
+using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -29,10 +30,11 @@ public enum LanSyncStatus
 public sealed class LanSyncService : IDisposable
 {
     public const int DiscoveryPort = 26178;
-    private const int MaxBodyBytes = 32 * 1024 * 1024;
+    private static readonly JsonSerializerOptions ProtocolJson = new(JsonSerializerDefaults.Web);
 
     private readonly AppSettingsService _settings;
     private readonly ClipboardStore _store;
+    private readonly SynchronizationContext? _storeContext;
     private readonly string _deviceId = Guid.NewGuid().ToString("N")[..8];
 
     private SimpleHttpServer? _httpServer;
@@ -46,9 +48,10 @@ public sealed class LanSyncService : IDisposable
     /// <summary>Fired (any thread) when the machine's LAN IPv4 changes.</summary>
     public event Action<string>? IpChanged;
     private CancellationTokenSource? _listenerCts;
+    private int _pullInProgress;
 
     private readonly Dictionary<string, (string Name, string Host, int Port)> _peers = new();
-    private readonly Dictionary<string, DateTime> _pullCursors = new();
+    private readonly ConcurrentDictionary<string, DateTime> _pullCursors = new();
 
     public LanSyncStatus Status { get; private set; } = LanSyncStatus.Disabled;
     public string? StatusError { get; private set; }
@@ -57,10 +60,11 @@ public sealed class LanSyncService : IDisposable
     public event Action? StatusChanged;
     public event Action<string>? ReceivedFromDevice; // device display name
 
-    public LanSyncService(AppSettingsService settings, ClipboardStore store)
+    public LanSyncService(AppSettingsService settings, ClipboardStore store, SynchronizationContext? storeContext = null)
     {
         _settings = settings;
         _store = store;
+        _storeContext = storeContext;
     }
 
     /// <summary>First IPv4 address this machine would use for outbound LAN traffic.</summary>
@@ -123,16 +127,17 @@ public sealed class LanSyncService : IDisposable
         try
         {
             _listenerCts = new CancellationTokenSource();
+            var listenerToken = _listenerCts.Token;
             _httpServer = new SimpleHttpServer(_settings.LanSyncPort, HandleRequest);
-            _httpServer.Start(_listenerCts.Token);
+            _httpServer.Start(listenerToken);
 
             _beaconListener = new UdpClient(DiscoveryPort);
             _beaconListener.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
-            _ = ListenForBeacons(_listenerCts.Token);
+            _ = ListenForBeacons(listenerToken);
 
             _beaconSender = new UdpClient();
             _beaconTimer = new Timer(_ => SendBeacon(), null, TimeSpan.Zero, TimeSpan.FromSeconds(5));
-            _pullTimer = new Timer(_ => _ = PullPeersAsync(), null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(10));
+            _pullTimer = new Timer(_ => _ = PullPeersAsync(listenerToken), null, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(10));
             _advertisedIP = LocalIPv4;
             _ipMonitorTimer = new System.Threading.Timer(_ => CheckIPChange(), null, TimeSpan.FromSeconds(15), TimeSpan.FromSeconds(15));
 
@@ -167,7 +172,10 @@ public sealed class LanSyncService : IDisposable
         _beaconListener = null;
         _beaconSender = null;
         _httpServer = null;
-        _peers.Clear();
+        lock (_peers)
+        {
+            _peers.Clear();
+        }
         Status = LanSyncStatus.Disabled;
         StatusChanged?.Invoke();
     }
@@ -176,20 +184,17 @@ public sealed class LanSyncService : IDisposable
 
     // ---- HTTP endpoints ------------------------------------------------------
 
-    private (int StatusCode, string Body) HandleRequest(SimpleHttpRequest request)
+    internal (int StatusCode, string Body) HandleRequest(SimpleHttpRequest request)
     {
+        if (request.Path == "/" && request.Method == "GET")
+        {
+            return (200, WebClipboardPageBuilder.Build(_settings.DeviceName));
+        }
+
         var token = request.Header("X-SkyPaste-Token");
         if (!string.Equals(token, _settings.LanSyncToken, StringComparison.Ordinal))
         {
-            var safe = (request.Header("X-SkyPaste-Token") ?? "(none)").Replace("\\", "");
-            return (401, "{\"error\":\"unauthorized\",\"provided\":\"" + safe + "\",\"expectedLen\":" + _settings.LanSyncToken.Length + "}");
-        }
-
-        if (request.Path.TrimEnd('/') == "/" && request.Method == "GET")
-        {
-            // Web clipboard shell (public HTML); APIs below still enforce the token.
-            var html = WebClipboardPageBuilder.Build(_settings.DeviceName);
-            return (200, html);
+            return (401, "{\"error\":\"unauthorized\"}");
         }
 
         switch (request.Path.TrimEnd('/'))
@@ -206,6 +211,10 @@ public sealed class LanSyncService : IDisposable
                 return HandlePaste(request);
 
             case "/pull":
+                if (request.Method != "GET")
+                {
+                    return (405, "{\"error\":\"method not allowed\"}");
+                }
                 if (!_settings.LanSyncUploadEnabled)
                 {
                     return (403, "{\"error\":\"upload disabled\"}");
@@ -221,7 +230,7 @@ public sealed class LanSyncService : IDisposable
     {
         try
         {
-            var payload = JsonSerializer.Deserialize<PastePayload>(request.Body);
+            var payload = JsonSerializer.Deserialize<PastePayload>(request.Body, ProtocolJson);
             if (payload is null)
             {
                 return (400, "{\"error\":\"bad payload\"}");
@@ -238,7 +247,7 @@ public sealed class LanSyncService : IDisposable
                     Guid.NewGuid(), payload.CreatedAt?.ToUniversalTime() ?? DateTime.UtcNow,
                     ClipboardContent.FromText(text), Fingerprint.ForText(text),
                     ClipboardSource.LanDevice, new ClipboardSourceApp("device:" + senderName, senderName));
-                _store.AddDeviceSyncedItem(item);
+                OnStoreThread(() => _store.AddDeviceSyncedItem(item));
                 ReceivedFromDevice?.Invoke(senderName);
                 return (200, "{\"ok\":true}");
             }
@@ -268,7 +277,7 @@ public sealed class LanSyncService : IDisposable
                     ClipboardContent.FromImage(data, name, data.LongLength, previewOnly: false),
                     Fingerprint.ForImage(data),
                     ClipboardSource.LanDevice, new ClipboardSourceApp("device:" + senderName, senderName));
-                _store.AddDeviceSyncedItem(item);
+                OnStoreThread(() => _store.AddDeviceSyncedItem(item));
                 ReceivedFromDevice?.Invoke(senderName);
                 return (200, "{\"ok\":true}");
             }
@@ -285,24 +294,39 @@ public sealed class LanSyncService : IDisposable
     {
         long sinceSeconds = 0;
         var sinceRaw = request.Query("since");
-        if (long.TryParse(sinceRaw, out var parsed))
+        if (long.TryParse(sinceRaw, out var parsed)
+            && parsed >= DateTimeOffset.MinValue.ToUnixTimeSeconds()
+            && parsed <= DateTimeOffset.MaxValue.ToUnixTimeSeconds())
         {
             sinceSeconds = parsed;
         }
         var since = DateTimeOffset.FromUnixTimeSeconds(sinceSeconds).UtcDateTime;
-        var eligible = _store.ItemsEligibleForDeviceSync()
-            .Where(i => i.CreatedAt > since)
-            .OrderByDescending(i => i.CreatedAt)
-            .Take(100)
-            .Select(i => new PullItem
-            {
-                Text = i.TextValue,
-                CreatedAt = i.CreatedAt,
-                Device = _settings.DeviceName,
-            })
-            .ToList();
-        var options = new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
-        return (200, JsonSerializer.Serialize(eligible, options));
+        string body = "[]";
+        OnStoreThread(() =>
+        {
+            var eligible = _store.ItemsEligibleForDeviceSync()
+                .Where(i => i.CreatedAt > since)
+                .OrderByDescending(i => i.CreatedAt)
+                .Take(100)
+                .Select(i => new
+                {
+                    Text = i.TextValue,
+                    CreatedAt = i.CreatedAt.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss'Z'", CultureInfo.InvariantCulture),
+                    Device = _settings.DeviceName,
+                });
+            body = JsonSerializer.Serialize(eligible, ProtocolJson);
+        });
+        return (200, body);
+    }
+
+    private void OnStoreThread(Action action)
+    {
+        if (_storeContext is null || SynchronizationContext.Current == _storeContext)
+        {
+            action();
+            return;
+        }
+        _storeContext.Send(_ => action(), null);
     }
 
     // ---- discovery -----------------------------------------------------------
@@ -320,7 +344,7 @@ public sealed class LanSyncService : IDisposable
                 Id = _deviceId,
                 Name = _settings.DeviceName,
                 Port = _settings.LanSyncPort,
-            }, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            }, ProtocolJson);
             var bytes = Encoding.UTF8.GetBytes(beacon);
             var broadcastEndpoint = new IPEndPoint(IPAddress.Broadcast, DiscoveryPort);
             _beaconSender.Send(bytes, bytes.Length, broadcastEndpoint);
@@ -340,8 +364,9 @@ public sealed class LanSyncService : IDisposable
             {
                 var result = await _beaconListener.ReceiveAsync(token).ConfigureAwait(false);
                 var json = Encoding.UTF8.GetString(result.Buffer);
-                var beacon = JsonSerializer.Deserialize<Beacon>(json);
-                if (beacon is null || string.IsNullOrEmpty(beacon.Id) || beacon.Id == _deviceId)
+                var beacon = JsonSerializer.Deserialize<Beacon>(json, ProtocolJson);
+                if (beacon is null || string.IsNullOrEmpty(beacon.Id) || beacon.Id == _deviceId
+                    || beacon.Port is < 1 or > 65535)
                 {
                     continue;
                 }
@@ -364,12 +389,25 @@ public sealed class LanSyncService : IDisposable
 
     // ---- peer pull ------------------------------------------------------------
 
-    private async Task PullPeersAsync()
+    private async Task PullPeersAsync(CancellationToken token)
     {
-        if (!_settings.LanSyncEnabled || !_settings.LanSyncReceiveEnabled)
+        if (token.IsCancellationRequested || !_settings.LanSyncEnabled || !_settings.LanSyncReceiveEnabled
+            || Interlocked.Exchange(ref _pullInProgress, 1) != 0)
         {
             return;
         }
+        try
+        {
+            await PullDiscoveredPeersAsync(token).ConfigureAwait(false);
+        }
+        finally
+        {
+            Volatile.Write(ref _pullInProgress, 0);
+        }
+    }
+
+    private async Task PullDiscoveredPeersAsync(CancellationToken token)
+    {
         List<(string Id, string Name, string Host, int Port)> peers;
         lock (_peers)
         {
@@ -378,6 +416,10 @@ public sealed class LanSyncService : IDisposable
 
         foreach (var (id, name, host, port) in peers)
         {
+            if (token.IsCancellationRequested)
+            {
+                return;
+            }
             try
             {
                 var since = _pullCursors.TryGetValue(id, out var cursor)
@@ -386,13 +428,13 @@ public sealed class LanSyncService : IDisposable
                 using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(5) };
                 using var httpRequest = new HttpRequestMessage(HttpMethod.Get, $"http://{host}:{port}/pull?since={since}");
                 httpRequest.Headers.Add("X-SkyPaste-Token", _settings.LanSyncToken);
-                using var response = await http.SendAsync(httpRequest).ConfigureAwait(false);
+                using var response = await http.SendAsync(httpRequest, token).ConfigureAwait(false);
                 if (!response.IsSuccessStatusCode)
                 {
                     continue;
                 }
-                var body = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                var items = JsonSerializer.Deserialize<List<PullItem>>(body);
+                var body = await response.Content.ReadAsStringAsync(token).ConfigureAwait(false);
+                var items = JsonSerializer.Deserialize<List<PullItem>>(body, ProtocolJson);
                 if (items is null)
                 {
                     continue;
@@ -408,11 +450,19 @@ public sealed class LanSyncService : IDisposable
                         Guid.NewGuid(), createdAt,
                         ClipboardContent.FromText(pullItem.Text), Fingerprint.ForText(pullItem.Text),
                         ClipboardSource.LanDevice, new ClipboardSourceApp("device:" + name, name));
-                    _store.AddDeviceSyncedItem(item);
+                    OnStoreThread(() =>
+                    {
+                        if (!token.IsCancellationRequested && _settings.LanSyncReceiveEnabled)
+                        {
+                            _store.AddDeviceSyncedItem(item);
+                        }
+                    });
                 }
-                var maxCreated = items.Where(i => i.CreatedAt is not null).Select(i => i.CreatedAt!.Value)
-                    .DefaultIfEmpty(DateTime.UtcNow).Max();
-                _pullCursors[id] = maxCreated.ToUniversalTime();
+                var maxCreated = items.Select(i => i.CreatedAt?.ToUniversalTime()).Max();
+                if (maxCreated is DateTime newest)
+                {
+                    _pullCursors.AddOrUpdate(id, newest, (_, previous) => previous >= newest ? previous : newest);
+                }
             }
             catch (Exception)
             {
@@ -485,6 +535,8 @@ public sealed class SimpleHttpRequest
 /// </summary>
 public sealed class SimpleHttpServer : IDisposable
 {
+    private const int MaxHeaderBytes = 16 * 1024;
+    private const int MaxBodyBytes = 32 * 1024 * 1024;
     private readonly int _port;
     private readonly Func<SimpleHttpRequest, (int StatusCode, string Body)> _handler;
     private TcpListener? _listener;
@@ -502,6 +554,8 @@ public sealed class SimpleHttpServer : IDisposable
         _listener.Start();
         _ = AcceptLoop(token);
     }
+
+    internal int LocalPort => ((IPEndPoint)_listener!.LocalEndpoint).Port;
 
     private async Task AcceptLoop(CancellationToken token)
     {
@@ -530,18 +584,36 @@ public sealed class SimpleHttpServer : IDisposable
         {
             using (client)
             {
-                client.ReceiveTimeout = 10_000;
-                client.SendTimeout = 10_000;
+                using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+                timeout.CancelAfter(TimeSpan.FromSeconds(10));
+                token = timeout.Token;
                 var stream = client.GetStream();
                 var remote = (client.Client.RemoteEndPoint as IPEndPoint)?.Address.ToString() ?? "unknown";
 
-                var reader = new StreamReader(stream, Encoding.UTF8, leaveOpen: true);
-                var requestLine = await reader.ReadLineAsync(token).ConfigureAwait(false);
-                if (string.IsNullOrEmpty(requestLine))
+                var buffer = new byte[MaxHeaderBytes];
+                var buffered = 0;
+                var headerEnd = -1;
+                while (headerEnd < 0 && buffered < buffer.Length)
+                {
+                    var read = await stream.ReadAsync(buffer.AsMemory(buffered), token).ConfigureAwait(false);
+                    if (read == 0)
+                    {
+                        return;
+                    }
+                    var scanFrom = Math.Max(0, buffered - 3);
+                    buffered += read;
+                    var separator = buffer.AsSpan(scanFrom, buffered - scanFrom).IndexOf("\r\n\r\n"u8);
+                    if (separator >= 0)
+                    {
+                        headerEnd = scanFrom + separator;
+                    }
+                }
+                if (headerEnd < 0)
                 {
                     return;
                 }
-                var parts = requestLine.Split(' ');
+                var headerLines = Encoding.ASCII.GetString(buffer, 0, headerEnd).Split("\r\n");
+                var parts = headerLines[0].Split(' ');
                 if (parts.Length < 2)
                 {
                     return;
@@ -558,8 +630,7 @@ public sealed class SimpleHttpServer : IDisposable
                 }
 
                 var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-                string? headerLine;
-                while (!string.IsNullOrEmpty(headerLine = await reader.ReadLineAsync(token).ConfigureAwait(false)))
+                foreach (var headerLine in headerLines.Skip(1))
                 {
                     var colon = headerLine.IndexOf(':');
                     if (colon > 0)
@@ -569,23 +640,18 @@ public sealed class SimpleHttpServer : IDisposable
                 }
 
                 var body = string.Empty;
-                if (headers.TryGetValue("Content-Length", out var lengthRaw) && int.TryParse(lengthRaw, out var length))
+                if (headers.TryGetValue("Content-Length", out var lengthRaw))
                 {
-                    if (length is > 0 and <= 32 * 1024 * 1024)
+                    if (!int.TryParse(lengthRaw, out var length) || length < 0 || length > MaxBodyBytes)
                     {
-                        var buffer = new char[length];
-                        var read = 0;
-                        while (read < length)
-                        {
-                            var n = await reader.ReadAsync(buffer.AsMemory(read, length - read), token).ConfigureAwait(false);
-                            if (n <= 0)
-                            {
-                                break;
-                            }
-                            read += n;
-                        }
-                        body = new string(buffer, 0, read);
+                        return;
                     }
+                    var payload = new byte[length];
+                    var bodyOffset = headerEnd + 4;
+                    var prefixLength = Math.Min(length, buffered - bodyOffset);
+                    buffer.AsMemory(bodyOffset, prefixLength).CopyTo(payload);
+                    await stream.ReadExactlyAsync(payload.AsMemory(prefixLength), token).ConfigureAwait(false);
+                    body = Encoding.UTF8.GetString(payload);
                 }
 
                 var request = new SimpleHttpRequest
@@ -599,7 +665,7 @@ public sealed class SimpleHttpServer : IDisposable
                 };
 
                 var (statusCode, responseBody) = TryHandle(request);
-                var contentType = request.Path.TrimEnd('/') == "/" && statusCode == 200
+                var contentType = request.Path == "/" && statusCode == 200
                     ? "text/html; charset=utf-8"
                     : "application/json; charset=utf-8";
                 var statusText = statusCode switch

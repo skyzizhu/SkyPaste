@@ -36,6 +36,8 @@ public partial class App : Application
         _singleInstanceMutex = new Mutex(initiallyOwned: true, SingleInstanceMutexName, out var isNewInstance);
         if (!isNewInstance)
         {
+            _singleInstanceMutex.Dispose();
+            _singleInstanceMutex = null;
             Shutdown();
             return;
         }
@@ -76,7 +78,7 @@ public partial class App : Application
         Toast = new ToastService();
         Monitor = new ClipboardMonitorService(Settings);
         HotKeys = new GlobalHotKeyService(Settings);
-        LanSync = new LanSyncService(Settings, Store);
+        LanSync = new LanSyncService(Settings, Store, new System.Windows.Threading.DispatcherSynchronizationContext(Dispatcher));
         Coordinator = new AppCoordinator(this);
         TrayIcon = new TrayIconService(this);
 
@@ -113,6 +115,10 @@ public partial class App : Application
         TrayIcon.Initialize();
 
         Coordinator.PreloadMainWindow();
+        if (e.Args.Contains("--show-panel", StringComparer.OrdinalIgnoreCase))
+        {
+            Coordinator.ShowPanel();
+        }
 
         // CI smoke test hook: --uitesting[:main|settings|statistics] shows the
         // corresponding window so headless environments can screenshot it.
@@ -127,8 +133,16 @@ public partial class App : Application
             switch (scenario)
             {
                 case "settings":
-                    Coordinator.ShowSettings();
-                    target = Coordinator.SettingsWindowView;
+                    try
+                    {
+                        target = VerifySettingsWindowLifecycle();
+                    }
+                    catch (Exception error)
+                    {
+                        UiLog($"Preferences smoke test failed: {error}");
+                        Shutdown(1);
+                        return;
+                    }
                     break;
                 case "statistics":
                     Coordinator.ShowStatistics();
@@ -156,6 +170,36 @@ public partial class App : Application
             };
             smokeTimer.Start();
         }
+    }
+
+    private Window VerifySettingsWindowLifecycle()
+    {
+        var language = Settings.LanguageCode;
+        Coordinator.ShowPanel();
+        Coordinator.ShowSettings();
+        var first = Coordinator.SettingsWindowView;
+        if (first is not { IsVisible: true } || first.Owner != Coordinator.MainWindowView)
+        {
+            throw new InvalidOperationException("Preferences did not open above the main panel.");
+        }
+
+        first.WindowState = WindowState.Minimized;
+        Coordinator.ShowSettings();
+        if (first.WindowState == WindowState.Minimized || Coordinator.SettingsWindowView != first)
+        {
+            throw new InvalidOperationException("Preferences did not restore the existing window.");
+        }
+
+        first.Close();
+        Coordinator.ClosePanel();
+        Coordinator.ShowSettings();
+        var reopened = Coordinator.SettingsWindowView;
+        if (reopened is not { IsVisible: true } || reopened == first || reopened.Owner is not null
+            || Settings.LanguageCode != language)
+        {
+            throw new InvalidOperationException("Preferences did not reopen independently with the saved language.");
+        }
+        return reopened;
     }
 
     private void ApplyLaunchAtLogin() => LaunchAtLoginService.Apply(Settings.LaunchAtLogin);

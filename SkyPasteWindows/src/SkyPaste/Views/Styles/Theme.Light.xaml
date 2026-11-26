@@ -9,12 +9,16 @@
     <SolidColorBrush x:Key="AccentSoftBrush" Color="#29146BF0" />
     <SolidColorBrush x:Key="AccentBorderBrush" Color="#2E146BF0" />
 
-    <SolidColorBrush x:Key="Window.Background" Color="#F9F9F9" />
+    <SolidColorBrush x:Key="Window.Background" Color="#F3F6FB" />
+    <LinearGradientBrush x:Key="Header.Background" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#E4EEFF" Offset="0" />
+        <GradientStop Color="#F9FCFF" Offset="1" />
+    </LinearGradientBrush>
     <SolidColorBrush x:Key="Window.GradientTop" Color="#22146BF0" />
     <SolidColorBrush x:Key="Window.GradientBottom" Color="#08101018" />
     <SolidColorBrush x:Key="Card.Background" Color="#C2FFFFFF" />
-    <SolidColorBrush x:Key="Card.Border" Color="#0D101018" />
-    <SolidColorBrush x:Key="SectionCard.Background" Color="#A8FFFFFF" />
+    <SolidColorBrush x:Key="Card.Border" Color="#DCE5F1" />
+    <SolidColorBrush x:Key="SectionCard.Background" Color="#FFFFFF" />
     <SolidColorBrush x:Key="Surface.Material" Color="#66FFFFFF" />
     <SolidColorBrush x:Key="Divider" Color="#14000000" />
 
@@ -27,7 +31,7 @@
     <SolidColorBrush x:Key="Chip.Selected.Background" Color="#29146BF0" />
     <SolidColorBrush x:Key="Chip.Selected.Foreground" Color="#146BF0" />
 
-    <SolidColorBrush x:Key="Row.Hover" Color="#5CFFFFFF" />
+    <SolidColorBrush x:Key="Row.Hover" Color="#EAF1FB" />
     <SolidColorBrush x:Key="Row.Selected.Background" Color="#1C146BF0" />
     <SolidColorBrush x:Key="Row.Selected.Border" Color="#2E146BF0" />
 
@@ -55,7 +59,8 @@
         <Setter Property="BorderThickness" Value="1" />
         <Setter Property="FontSize" Value="11" />
         <Setter Property="FontWeight" Value="SemiBold" />
-        <Setter Property="Padding" Value="12,5" />
+        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="MinHeight" Value="30" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">
             <Setter.Value>
@@ -84,8 +89,8 @@
     </Style>
 
     <Style x:Key="IconIconButton" TargetType="Button">
-        <Setter Property="Width" Value="24" />
-        <Setter Property="Height" Value="24" />
+        <Setter Property="Width" Value="30" />
+        <Setter Property="Height" Value="30" />
         <Setter Property="Foreground" Value="{DynamicResource Text.Primary}" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">

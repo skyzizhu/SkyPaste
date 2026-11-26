@@ -1,7 +1,9 @@
 using System.Windows;
 using System.Windows.Interop;
+using System.Runtime.InteropServices;
 using SkyPaste.Core.Localization;
 using SkyPaste.Core.Models;
+using SkyPaste.Interop;
 using SkyPaste.Services;
 
 namespace SkyPaste;
@@ -24,7 +26,6 @@ public sealed class AppCoordinator
     {
         _app = app;
         _app.Store.ItemsChanged += OnItemsChanged;
-        _app.Store.SetSearchQuery(string.Empty);
     }
 
     private void OnItemsChanged()
@@ -73,7 +74,18 @@ public sealed class AppCoordinator
     }
 
     /// <summary>Called by windows right before they appear (mac captureFrontApp).</summary>
-    public void CaptureForeground() => _previousForegroundWindow = PasteBackService.CaptureForeground();
+    public void CaptureForeground()
+    {
+        var window = PasteBackService.CaptureForeground();
+        if (window != IntPtr.Zero)
+        {
+            NativeMethods.GetWindowThreadProcessId(window, out var processId);
+            if (processId != 0 && processId != Environment.ProcessId)
+            {
+                _previousForegroundWindow = window;
+            }
+        }
+    }
 
 
     /// <summary>Renders a window to a PNG (CI --uitesting screenshots).</summary>
@@ -109,30 +121,55 @@ public sealed class AppCoordinator
     /// <summary>Copy an item to the clipboard without closing anything.</summary>
     public void CopyOnly(ClipboardItem item)
     {
-        var full = _app.Store.RestoreFullResolutionItem(item);
-        _app.Monitor.SuppressNextCapture();
+        if (TryWriteClipboard(() => ClipboardWriter.Write(_app.Store.RestoreFullResolutionItem(item))))
+        {
+            _app.Toast.Show(L10n.T("menu.copy_success"));
+        }
+    }
+
+    public void Share(Window owner, ClipboardItem item)
+    {
         try
         {
-            ClipboardWriter.Write(full);
+            var full = _app.Store.RestoreFullResolutionItem(item);
+            if (owner is TrayPopoverWindow popover)
+            {
+                popover.ShowSystemShare(() => WindowsShareService.Show(owner, full));
+            }
+            else
+            {
+                WindowsShareService.Show(owner, full);
+            }
         }
-        catch (Exception)
+        catch (Exception error)
         {
+            App.UiLog($"Windows share failed: {error.GetType().Name}");
+            _app.Toast.Show(L10n.T("menu.share_failed"));
         }
-        _app.Toast.Show(L10n.T("menu.copy_success"));
+    }
+
+    public static bool CanTranslate(ClipboardItem item) =>
+        item.Content.Kind == ClipboardContentKind.Text
+        && !item.IsUrl && !item.IsEmail && !item.IsCode
+        && !string.IsNullOrWhiteSpace(item.TextValue);
+
+    public void OpenTranslator(ClipboardItem item)
+    {
+        if (CanTranslate(item) && TryWriteClipboard(() => ClipboardWriter.Write(item)))
+        {
+            OpenInBrowser(new Uri("https://www.bing.com/translator"));
+            _app.Toast.Show(L10n.T("menu.translate_paste"));
+        }
     }
 
     /// <summary>Primary action: copy, close panel, restore previous app, send Ctrl+V.</summary>
     public void Paste(ClipboardItem item)
     {
-        var full = _app.Store.RestoreFullResolutionItem(item);
-        _app.Monitor.SuppressNextCapture();
-        try
+        if (!TryWriteClipboard(() => ClipboardWriter.Write(_app.Store.RestoreFullResolutionItem(item))))
         {
-            ClipboardWriter.Write(full);
+            return;
         }
-        catch (Exception)
-        {
-        }
+        var clipboardSequence = NativeMethods.GetClipboardSequenceNumber();
         ClosePanel();
 
         // Focus + SendInput can block briefly and must not freeze the UI thread;
@@ -141,7 +178,7 @@ public sealed class AppCoordinator
         var previousWindow = _previousForegroundWindow;
         Task.Run(() =>
         {
-            var pasted = PasteBackService.RestoreAndPaste(previousWindow);
+            var pasted = PasteBackService.RestoreAndPaste(previousWindow, clipboardSequence);
             if (!pasted)
             {
                 _app.Dispatcher.BeginInvoke(() =>
@@ -161,9 +198,18 @@ public sealed class AppCoordinator
         }
         else
         {
-            _trayPopover = new TrayPopoverWindow(_app);
-            _trayPopover.Show();
-            _trayPopover.Activate();
+            CaptureForeground();
+            var popover = new TrayPopoverWindow(_app);
+            _trayPopover = popover;
+            popover.Closed += (_, _) =>
+            {
+                if (_trayPopover == popover)
+                {
+                    _trayPopover = null;
+                }
+            };
+            popover.Show();
+            popover.Activate();
         }
     }
 
@@ -193,27 +239,49 @@ public sealed class AppCoordinator
     private System.Windows.Window? ToolOwner =>
         _mainWindow is { Visibility: System.Windows.Visibility.Visible } ? _mainWindow : null;
 
+    public void ShowSettingsAfterMenu() =>
+        _app.Dispatcher.InvokeAsync(ShowSettings, System.Windows.Threading.DispatcherPriority.Background);
+
     public void ShowSettings()
     {
-        if (_settingsWindow is { Visibility: Visibility.Visible })
+        if (_settingsWindow is not { } window)
         {
-            _settingsWindow.Activate();
-            return;
+            window = new SettingsWindow(_app);
+            window.Closed += (_, _) =>
+            {
+                if (ReferenceEquals(_settingsWindow, window))
+                {
+                    _settingsWindow = null;
+                }
+            };
+            _settingsWindow = window;
         }
-        App.UiLog("ShowSettings: creating window");
-        _settingsWindow = new SettingsWindow(_app) { Owner = ToolOwner };
-        App.UiLog("ShowSettings: ctor ok, showing");
-        _settingsWindow.Show();
-        _settingsWindow.Activate();
-        ForceToFront(_settingsWindow);
-        App.UiLog($"ShowSettings: shown, visibility={_settingsWindow.Visibility}, isLoaded={_settingsWindow.IsLoaded}");
+        var owner = ToolOwner;
+        if (window.Owner != owner)
+        {
+            window.Owner = owner;
+        }
+        if (window.WindowState == WindowState.Minimized)
+        {
+            window.WindowState = WindowState.Normal;
+        }
+        if (!window.IsVisible)
+        {
+            window.Show();
+        }
+        window.Activate();
     }
 
     public void ShowStatistics()
     {
         if (_statisticsWindow is { Visibility: Visibility.Visible })
         {
+            if (_statisticsWindow.WindowState == WindowState.Minimized)
+            {
+                _statisticsWindow.WindowState = WindowState.Normal;
+            }
             _statisticsWindow.Activate();
+            ForceToFront(_statisticsWindow);
             return;
         }
         _statisticsWindow = new StatisticsWindow(_app) { Owner = ToolOwner };
@@ -283,13 +351,9 @@ public sealed class AppCoordinator
         {
             try
             {
-                if (System.IO.Directory.Exists(path))
+                if (DragOutService.PathExists(path))
                 {
-                    ProcessStart("explorer.exe", $"\"{path}\"");
-                }
-                else if (System.IO.File.Exists(path))
-                {
-                    ProcessStart(path, string.Empty, useShellExecute: true);
+                    OpenWithShell(path);
                 }
                 else
                 {
@@ -310,7 +374,16 @@ public sealed class AppCoordinator
             {
                 if (System.IO.File.Exists(path) || System.IO.Directory.Exists(path))
                 {
-                    ProcessStart("explorer.exe", $"/select,\"{path}\"");
+                    var result = NativeMethods.SHParseDisplayName(path, IntPtr.Zero, out var item, 0, out _);
+                    Marshal.ThrowExceptionForHR(result);
+                    try
+                    {
+                        Marshal.ThrowExceptionForHR(NativeMethods.SHOpenFolderAndSelectItems(item, 0, IntPtr.Zero, 0));
+                    }
+                    finally
+                    {
+                        Marshal.FreeCoTaskMem(item);
+                    }
                 }
                 else
                 {
@@ -325,14 +398,25 @@ public sealed class AppCoordinator
 
     public void CopyPaths(IReadOnlyList<string> paths)
     {
+        if (paths.Count > 0 && TryWriteClipboard(() => Clipboard.SetText(string.Join(Environment.NewLine, paths))))
+        {
+            _app.Toast.Show(L10n.T("menu.copy_success"));
+        }
+    }
+
+    private bool TryWriteClipboard(Action write)
+    {
         try
         {
-            Clipboard.SetText(string.Join(Environment.NewLine, paths));
+            _app.Monitor.WriteWithoutCapture(write);
+            return true;
         }
-        catch (Exception)
+        catch (Exception error)
         {
+            App.UiLog($"Clipboard write failed: {error.GetType().Name}");
+            _app.Toast.Show(L10n.T("menu.copy_failed"));
+            return false;
         }
-        _app.Toast.Show(L10n.T("menu.copy_success"));
     }
 
     public void OpenInBrowser(Uri? url)
@@ -343,7 +427,7 @@ public sealed class AppCoordinator
         }
         try
         {
-            ProcessStart(url.ToString(), string.Empty, useShellExecute: true);
+            OpenWithShell(url.ToString());
         }
         catch (Exception)
         {
@@ -358,20 +442,19 @@ public sealed class AppCoordinator
         }
         try
         {
-            ProcessStart(mailto.ToString(), string.Empty, useShellExecute: true);
+            OpenWithShell(mailto.ToString());
         }
         catch (Exception)
         {
         }
     }
 
-    private static void ProcessStart(string fileName, string arguments, bool useShellExecute = false)
+    private static void OpenWithShell(string target)
     {
         var startInfo = new System.Diagnostics.ProcessStartInfo
         {
-            FileName = fileName,
-            Arguments = arguments,
-            UseShellExecute = useShellExecute,
+            FileName = target,
+            UseShellExecute = true,
         };
         System.Diagnostics.Process.Start(startInfo);
     }

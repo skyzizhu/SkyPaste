@@ -1,74 +1,43 @@
-<ui:FluentWindow x:Class="SkyPaste.SettingsWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<Window x:Class="SkyPaste.SettingsWindow"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        Title="Preferences"
-        ExtendsContentIntoTitleBar="True"
-        WindowBackdropType="Mica">
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <ui:TitleBar Grid.Row="0" Title="{Binding RelativeSource={RelativeSource AncestorType=Window}, Path=Title}" ShowMaximize="True" ShowMinimize="True" />
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="220" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        Title="Preferences">
+    <Window.Resources>
+        <Style TargetType="GroupBox">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GroupBox">
+                        <Border Background="{DynamicResource SectionCard.Background}" BorderBrush="{DynamicResource Card.Border}"
+                                BorderThickness="1" CornerRadius="16" Padding="16">
+                            <StackPanel>
+                                <ContentPresenter ContentSource="Header" TextBlock.FontWeight="SemiBold"
+                                                  TextBlock.FontSize="15" Margin="0,0,0,8" />
+                                <ContentPresenter />
+                            </StackPanel>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel MaxWidth="720" Margin="24,20,24,24">
 
-            <!-- Left navigation (Windows Settings style) -->
-            <ListBox x:Name="NavList" Grid.Column="0" Margin="8,4,0,8"
-                     SelectionChanged="OnNavChanged"
-                     Background="Transparent" BorderThickness="0">
-                <ListBoxItem>
-                    <StackPanel Orientation="Horizontal" Margin="4,6">
-                        <TextBlock Text="&#xE713;" FontFamily="{DynamicResource GlyphFont}" FontSize="15" VerticalAlignment="Center" />
-                        <TextBlock x:Name="NavGeneral" Text="General" Margin="10,0,0,0" VerticalAlignment="Center" />
-                    </StackPanel>
-                </ListBoxItem>
-                <ListBoxItem>
-                    <StackPanel Orientation="Horizontal" Margin="4,6">
-                        <TextBlock Text="&#xE765;" FontFamily="{DynamicResource GlyphFont}" FontSize="15" VerticalAlignment="Center" />
-                        <TextBlock x:Name="NavHotkey" Text="Hotkey" Margin="10,0,0,0" VerticalAlignment="Center" />
-                    </StackPanel>
-                </ListBoxItem>
-                <ListBoxItem>
-                    <StackPanel Orientation="Horizontal" Margin="4,6">
-                        <TextBlock Text="&#xE895;" FontFamily="{DynamicResource GlyphFont}" FontSize="15" VerticalAlignment="Center" />
-                        <TextBlock x:Name="NavSync" Text="Sync &amp; Privacy" Margin="10,0,0,0" VerticalAlignment="Center" />
-                    </StackPanel>
-                </ListBoxItem>
-                <ListBoxItem>
-                    <StackPanel Orientation="Horizontal" Margin="4,6">
-                        <TextBlock Text="&#xE8F1;" FontFamily="{DynamicResource GlyphFont}" FontSize="15" VerticalAlignment="Center" />
-                        <TextBlock x:Name="NavLibrary" Text="Library" Margin="10,0,0,0" VerticalAlignment="Center" />
-                    </StackPanel>
-                </ListBoxItem>
-                <ListBoxItem>
-                    <StackPanel Orientation="Horizontal" Margin="4,6">
-                        <TextBlock Text="&#xE946;" FontFamily="{DynamicResource GlyphFont}" FontSize="15" VerticalAlignment="Center" />
-                        <TextBlock x:Name="NavAbout" Text="About" Margin="10,0,0,0" VerticalAlignment="Center" />
-                    </StackPanel>
-                </ListBoxItem>
-            </ListBox>
-
-            <!-- Right content pane -->
-            <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto" Margin="0,0,4,0">
-                <StackPanel MaxWidth="640" HorizontalAlignment="Center" Margin="4,8,4,20">
-
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                    <Border CornerRadius="18" Padding="19" Margin="0,0,0,4"
+                            Background="{DynamicResource Header.Background}" BorderBrush="{DynamicResource Card.Border}"
+                            BorderThickness="1">
+                    <StackPanel Orientation="Horizontal">
                         <Border Width="44" Height="44" CornerRadius="10" Background="{DynamicResource AccentSoftBrush}">
-                            <TextBlock Text="S" FontSize="20" FontWeight="Bold" Foreground="{DynamicResource AccentBrush}"
-                                       HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Image Source="/SkyPaste;component/Assets/icon.ico" Width="44" Height="44" />
                         </Border>
                         <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
-                            <TextBlock Text="SkyPaste" FontSize="18" FontWeight="SemiBold"
+                            <TextBlock Text="SkyPaste" FontSize="22" FontWeight="SemiBold"
                                        Foreground="{DynamicResource Text.Primary}" />
                             <TextBlock x:Name="VersionText" FontSize="11" Margin="0,2,0,0"
                                        Foreground="{DynamicResource Text.Secondary}" />
                         </StackPanel>
                     </StackPanel>
+                    </Border>
 
                     <GroupBox x:Name="SectionGeneral" Header="General" Margin="0,10,0,0" Foreground="{DynamicResource Text.Primary}">
                         <StackPanel Margin="4,6,4,4">
@@ -172,6 +141,8 @@
                                 <CheckBox x:Name="LanSyncToggle" HorizontalAlignment="Right" VerticalAlignment="Top"
                                           Checked="OnToggleChanged" Unchecked="OnToggleChanged" />
                             </Grid>
+                            <Button x:Name="WindowsClipboardSettingsButton" Click="OnOpenWindowsClipboardSettings"
+                                    Style="{DynamicResource CapsuleButton}" HorizontalAlignment="Left" Margin="0,6,0,4" />
                             <StackPanel Margin="22,4,0,4">
                                 <Grid>
                                     <TextBlock x:Name="LanSyncUploadLabel" Text="Upload local text"
@@ -261,10 +232,14 @@
                                     Click="OnOpenLicense">
                                 <TextBlock x:Name="OpenLicenseLabel" Text="View License" />
                             </Button>
+                            <Separator Margin="0,12,0,8" />
+                            <TextBlock x:Name="WenPaiTitle" FontWeight="SemiBold" />
+                            <TextBlock x:Name="WenPaiSubtitle" FontSize="11" TextWrapping="Wrap"
+                                       Foreground="{DynamicResource Text.Secondary}" />
+                            <Button x:Name="WenPaiButton" Style="{DynamicResource CapsuleButton}"
+                                    Margin="0,8,0,0" HorizontalAlignment="Left" Click="OnOpenWenPai" />
                         </StackPanel>
                     </GroupBox>
-                </StackPanel>
-            </ScrollViewer>
-        </Grid>
-    </Grid>
-</ui:FluentWindow>
+        </StackPanel>
+    </ScrollViewer>
+</Window>

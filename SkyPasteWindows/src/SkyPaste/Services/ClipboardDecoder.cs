@@ -178,7 +178,7 @@ public static class ClipboardWriter
                 var bitmap = DecodeBitmap(data);
                 if (bitmap is null)
                 {
-                    return;
+                    throw new InvalidDataException("Could not decode the clipboard image.");
                 }
                 var dataObject = new DataObject();
                 dataObject.SetImage(bitmap);
@@ -213,7 +213,7 @@ public static class ClipboardWriter
                 }
                 if (files.Count == 0)
                 {
-                    return;
+                    throw new InvalidDataException("No file paths to copy.");
                 }
                 var dataObject = new DataObject();
                 dataObject.SetFileDropList(files);

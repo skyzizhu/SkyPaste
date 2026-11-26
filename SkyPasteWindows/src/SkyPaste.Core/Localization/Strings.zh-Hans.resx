@@ -169,7 +169,7 @@
   <data name="preview.open" xml:space="preserve"><value>预览图片</value></data>
   <data name="preview.open_image" xml:space="preserve"><value>打开图片</value></data>
   <data name="preview.drag_hint" xml:space="preserve"><value>拖出图片</value></data>
-  <data name="preview.drag_zoomed_hint" xml:space="preserve"><value>按住 Option 拖出图片</value></data>
+  <data name="preview.drag_zoomed_hint" xml:space="preserve"><value>按住 Alt 拖出图片</value></data>
   <data name="preview.annotate" xml:space="preserve"><value>标注</value></data>
   <data name="preview.annotation_done" xml:space="preserve"><value>完成标注</value></data>
   <data name="preview.annotation_hint" xml:space="preserve"><value>在图片上划线</value></data>
@@ -223,7 +223,7 @@
   <data name="preview.source_label" xml:space="preserve"><value>来源：</value></data>
   <data name="preview.source_app" xml:space="preserve"><value>%@</value></data>
   <data name="preview.source_device" xml:space="preserve"><value>%@</value></data>
-  <data name="preview.source_local" xml:space="preserve"><value>本机</value></data>
+  <data name="preview.source_local" xml:space="preserve"><value>这台电脑</value></data>
   <data name="open.missing_file_title" xml:space="preserve"><value>找不到该文件</value></data>
   <data name="open.missing_folder_title" xml:space="preserve"><value>找不到该目录</value></data>
   <data name="open.missing_item_message" xml:space="preserve"><value>SkyPaste 无法打开此路径：%@</value></data>
@@ -282,4 +282,8 @@
   <data name="panel_position.cursor" xml:space="preserve"><value>跟随鼠标</value></data>
   <data name="hotkey.register_failed" xml:space="preserve"><value>该快捷键已被其他程序占用，请更换组合。</value></data>
   <data name="panel_position.remember" xml:space="preserve"><value>记住上次位置</value></data>
+  <data name="menu.copy_failed" xml:space="preserve"><value>无法复制到剪贴板。</value></data>
+  <data name="menu.share_failed" xml:space="preserve"><value>无法打开分享。</value></data>
+  <data name="menu.translate_paste" xml:space="preserve"><value>请在 Microsoft Translator 中粘贴已复制的文本。</value></data>
+  <data name="settings.windows_clipboard" xml:space="preserve"><value>Windows 剪贴板设置</value></data>
 </root>

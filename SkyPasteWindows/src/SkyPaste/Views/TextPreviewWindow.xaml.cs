@@ -10,7 +10,7 @@ using SkyPaste.Services;
 namespace SkyPaste;
 
 /// <summary>Text/URL/email/code preview (mac TextPreviewView): selectable text, copy, browser/email open.</summary>
-public partial class TextPreviewWindow : Wpf.Ui.Controls.FluentWindow
+public partial class TextPreviewWindow : Window
 {
     private readonly App _app;
     private readonly ClipboardItem _item;
@@ -25,18 +25,22 @@ public partial class TextPreviewWindow : Wpf.Ui.Controls.FluentWindow
             : item.IsCode ? L10n.T("preview.code_title")
             : L10n.T("preview.text_title");
         PreviewTitle.Text = Title;
+        PreviewSource.Text = $"{L10n.T("preview.source_label")} {item.SourceApp?.Name ?? item.DeviceName ?? L10n.T("preview.source_local")}";
         Width = 960;
         Height = 680;
         MinWidth = 700;
         MinHeight = 480;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
         ShowInTaskbar = true;
-        Background = (Brush)FindResource("Window.Background");
+        SetResourceReference(BackgroundProperty, "Window.Background");
 
         CopyLabel.Text = item.IsUrl ? L10n.T("menu.copy_link") : L10n.T("menu.copy");
         FavoriteLabel.Text = item.IsFavorite ? L10n.T("menu.unfavorite") : L10n.T("menu.favorite");
         EmailLabel.Text = L10n.T("menu.open_email");
         BrowserLabel.Text = L10n.T("menu.open_in_browser");
+        ShareLabel.Text = L10n.T("menu.share");
+        TranslateLabel.Text = L10n.T("menu.translate");
+        TranslateButton.Visibility = AppCoordinator.CanTranslate(item) ? Visibility.Visible : Visibility.Collapsed;
 
         var text = item.TextValue ?? string.Empty;
         PreviewText.Text = text;
@@ -59,6 +63,10 @@ public partial class TextPreviewWindow : Wpf.Ui.Controls.FluentWindow
     }
 
     private void OnCopy(object sender, RoutedEventArgs e) => _app.Coordinator.CopyOnly(_item);
+
+    private void OnShare(object sender, RoutedEventArgs e) => _app.Coordinator.Share(this, _item);
+
+    private void OnTranslate(object sender, RoutedEventArgs e) => _app.Coordinator.OpenTranslator(_item);
 
     private void OnOpenBrowser(object sender, RoutedEventArgs e) =>
         _app.Coordinator.OpenInBrowser(_item.BrowserUrl);

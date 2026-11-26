@@ -1,6 +1,7 @@
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -30,11 +31,12 @@ public partial class ClipboardListPanel : UserControl
     private Guid? _selectedItemId;
     private bool _batchMode;
     private readonly HashSet<Guid> _batchSelection = new();
-    private string _searchText = string.Empty;
+    private SearchQuery _query = new(string.Empty);
     private DispatcherTimer? _searchDebounce;
     private DispatcherTimer? _pendingPrimaryAction;
     private bool _suppressSearchCallback;
-    private bool _suppressClick;
+    [DllImport("user32.dll")]
+    private static extern uint GetDoubleClickTime();
 
     private static System.Windows.Media.FontFamily GlyphFont =>
         (System.Windows.Media.FontFamily)System.Windows.Application.Current.TryFindResource("GlyphFont");
@@ -58,11 +60,12 @@ public partial class ClipboardListPanel : UserControl
         CloseToggle.Visibility = Visibility.Collapsed;
         StatsToggle.Visibility = popoverMode ? Visibility.Visible : Visibility.Collapsed;
         // Popover has no TitleBar: keep the brand block visible.
-        BrandLogo.Visibility = popoverMode ? Visibility.Visible : Visibility.Collapsed;
-        HeaderTitle.Visibility = popoverMode ? Visibility.Visible : Visibility.Collapsed;
+        BrandLogo.Visibility = Visibility.Visible;
+        HeaderTitle.Visibility = Visibility.Visible;
 
         _app.Settings.FilterOrderSettingsChanged += RebuildChips;
         L10n.LanguageChanged += RefreshLocalization;
+        _app.Theme.ThemeChanged += RefreshTheme;
         Loaded += (_, _) => { RefreshLocalization(); RebuildChips(); Rebuild(); ShowStartupNotice(); };
         Unloaded += (_, _) => _pendingPrimaryAction?.Stop();
     }
@@ -71,9 +74,27 @@ public partial class ClipboardListPanel : UserControl
 
     public void OnStoreChanged() => Dispatcher.BeginInvoke(Rebuild);
 
+    internal bool IsSearchFocused => SearchBox.IsKeyboardFocusWithin;
+
+    internal void ReleaseSubscriptions()
+    {
+        _app.Settings.FilterOrderSettingsChanged -= RebuildChips;
+        L10n.LanguageChanged -= RefreshLocalization;
+        _app.Theme.ThemeChanged -= RefreshTheme;
+        CancelPendingPrimaryAction();
+        _searchDebounce?.Stop();
+        _batchBannerTimer?.Stop();
+        _rebuildGeneration++;
+    }
+
     public void RefreshLocalization()
     {
         HeaderTitle.Text = "SkyPaste";
+        SetIconLabel(SearchToggle, "menu.search");
+        SetIconLabel(BatchToggle, "panel.batch_select");
+        SetIconLabel(StatsToggle, "stats.title");
+        SetIconLabel(SearchClear, "panel.clear_search");
+        UpdateSourceMenuLabel();
         HeaderHint.Text = _popoverMode
             ? L10n.T("menu.clipboard_manager")
             : (_app.Settings.AutoPasteEnabled
@@ -83,9 +104,28 @@ public partial class ClipboardListPanel : UserControl
         Rebuild();
     }
 
+    private void RefreshTheme()
+    {
+        if (IsVisible)
+        {
+            RefreshLocalization();
+        }
+    }
+
+    private static void SetIconLabel(Button button, string key)
+    {
+        var label = L10n.T(key);
+        button.ToolTip = label;
+        System.Windows.Automation.AutomationProperties.SetName(button, label);
+    }
+
     /// <summary>Central keyboard handler; returns true when the key was consumed.</summary>
     public bool HandleKeyDown(Key key, ModifierKeys modifiers)
     {
+        if (IsSearchFocused)
+        {
+            return false;
+        }
         switch (key)
         {
             case Key.Escape when !_popoverMode:
@@ -158,7 +198,7 @@ public partial class ClipboardListPanel : UserControl
 
     private IReadOnlyList<ClipboardItem> CurrentItems =>
         _app.Store.FilteredItemsByFilter.TryGetValue(_selectedFilter, out var items)
-            ? items
+            ? items.Where(item => _sourceSelection.Matches(item) && _query.Matches(item)).ToList()
             : Array.Empty<ClipboardItem>();
 
     // ---- rebuild --------------------------------------------------------------------
@@ -177,6 +217,7 @@ public partial class ClipboardListPanel : UserControl
         var generation = Interlocked.Increment(ref _rebuildGeneration);
         try
         {
+            ValidateSourceSelection();
             var items = CurrentItems;
             if (_popoverMode && _selectedFilter != ClipboardFilter.Favorites)
             {
@@ -221,7 +262,7 @@ public partial class ClipboardListPanel : UserControl
                 AddEmptyState();
             }
 
-            ValidateSourceSelection();
+            _batchSelection.IntersectWith(_flatRows.Select(row => row.Item.Id));
             RestoreSelectionBaseline();
 
             UpdateFooter();
@@ -273,18 +314,21 @@ public partial class ClipboardListPanel : UserControl
         {
             CornerRadius = new CornerRadius(16),
             Background = (Brush)FindResource("SectionCard.Background"),
-            Padding = new Thickness(6),
+            BorderBrush = (Brush)FindResource("Card.Border"),
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(7),
             Margin = new Thickness(0, 0, 0, 12),
         };
         var stack = new StackPanel();
 
-        var header = new Grid { Margin = new Thickness(8, 4, 8, 6) };
+        var header = new Grid { Margin = new Thickness(9, 4, 8, 6), MinHeight = 30 };
         header.Children.Add(new TextBlock
         {
             Text = title,
-            FontSize = 12,
+            FontSize = 11,
             FontWeight = FontWeights.SemiBold,
             Foreground = (Brush)FindResource("Text.Secondary"),
+            VerticalAlignment = VerticalAlignment.Center,
         });
         if (allowDayDelete)
         {
@@ -295,7 +339,6 @@ public partial class ClipboardListPanel : UserControl
                 Content = new TextBlock { Text = "\uE74D", FontSize = 11, FontFamily = GlyphFont },
                 ToolTip = L10n.T("menu.delete"),
             };
-            var day = items.Count > 0 ? items[0].CreatedAt.ToLocalTime().Date : DateTime.Today;
             deleteDay.Click += (_, _) => ShowDeleteDayConfirm(items);
             header.Children.Add(deleteDay);
         }
@@ -403,7 +446,7 @@ public partial class ClipboardListPanel : UserControl
         var titleBlock = new TextBlock
         {
             Text = row.Title,
-            FontSize = 12,
+            FontSize = 13,
             FontWeight = FontWeights.SemiBold,
             Foreground = (Brush)FindResource("Text.Primary"),
             TextTrimming = TextTrimming.CharacterEllipsis,
@@ -420,7 +463,7 @@ public partial class ClipboardListPanel : UserControl
         metaStack.Children.Add(new TextBlock
         {
             Text = row.Subtitle + "  ·  " + row.Time,
-            FontSize = 10,
+            FontSize = 11,
             Foreground = (Brush)FindResource("Text.Secondary"),
             VerticalAlignment = VerticalAlignment.Center,
         });
@@ -516,48 +559,73 @@ public partial class ClipboardListPanel : UserControl
             }
         };
         border.MouseLeave += (_, _) => UpdateRowVisual(item.Id);
-        border.MouseDown += (_, e) =>
+        Point? dragOrigin = null;
+        var suppressRelease = false;
+        border.PreviewMouseLeftButtonDown += (_, e) =>
         {
-            if (e.ChangedButton == MouseButton.Left)
+            CancelPendingPrimaryAction();
+            suppressRelease = e.ClickCount > 1;
+            if (suppressRelease)
+            {
+                dragOrigin = null;
+                if (!_batchMode && e.ClickCount == 2)
+                {
+                    SelectRow(item.Id);
+                    _app.Coordinator.OpenPreview(item);
+                }
+                return;
+            }
+            SelectRow(item.Id);
+            dragOrigin = DragOutService.CanDrag(item) ? e.GetPosition(border) : null;
+        };
+        border.PreviewMouseRightButtonDown += (_, _) =>
+        {
+            CancelPendingPrimaryAction();
+            if (!_batchMode)
             {
                 SelectRow(item.Id);
             }
         };
-        border.MouseUp += (_, e) =>
+        border.PreviewMouseLeftButtonUp += (_, _) =>
         {
-            if (e.ChangedButton == MouseButton.Left && !_batchMode)
+            dragOrigin = null;
+            if (!suppressRelease && !_batchMode)
             {
-                if (_suppressClick)
-                {
-                    // Second release of a double-click: preview already opened.
-                    _suppressClick = false;
-                    return;
-                }
                 SchedulePendingPrimaryAction(item);
             }
         };
-        border.MouseLeftButtonDown += (_, e) =>
-        {
-            if (e.ClickCount == 2 && !_batchMode)
-            {
-                CancelPendingPrimaryAction();
-                _suppressClick = true;
-                _app.Coordinator.OpenPreview(item);
-            }
-        };
-        border.MouseLeave += (_, _) => { /* drag handled via system DragDrop below */ };
         border.PreviewMouseMove += (_, e) =>
         {
-            if (e.LeftButton == MouseButtonState.Pressed && !_batchMode && DragOutService.CanDrag(item))
+            if (e.LeftButton != MouseButtonState.Pressed)
             {
-                var data = DragOutService.BuildDataObject(item);
-                if (data is not null)
-                {
-                    CancelPendingPrimaryAction();
-                    DragPreviewService.AttachPreview(item, data);
-                    DragOutService.StartDrag(border, data);
-                }
+                dragOrigin = null;
+                return;
             }
+            if (_batchMode || dragOrigin is not Point origin)
+            {
+                return;
+            }
+            var position = e.GetPosition(border);
+            if (Math.Abs(position.X - origin.X) < SystemParameters.MinimumHorizontalDragDistance
+                && Math.Abs(position.Y - origin.Y) < SystemParameters.MinimumVerticalDragDistance)
+            {
+                return;
+            }
+            dragOrigin = null;
+            suppressRelease = true;
+            CancelPendingPrimaryAction();
+            var full = item.IsImage ? _app.Store.RestoreFullResolutionItem(item) : item;
+            var missing = DragOutService.MissingFiles(full);
+            var data = missing.Count == 0 ? DragOutService.BuildDataObject(full) : null;
+            if (data is null)
+            {
+                _app.Toast.Show(missing.Count > 0
+                    ? L10n.Format("drag.missing_item_message", missing[0])
+                    : L10n.T("preview.unavailable_message"));
+                return;
+            }
+            DragPreviewService.AttachPreview(full, data);
+            DragOutService.StartDrag(border, data);
         };
 
         row.Border = border;
@@ -618,12 +686,12 @@ public partial class ClipboardListPanel : UserControl
     {
         // Mac semantics: single click (autoPaste=on) copies ONLY after the
         // double-click window - the panel stays open. Popover copies too.
-        if (!_app.Settings.AutoPasteEnabled && !_popoverMode)
+        if (!_app.Settings.AutoPasteEnabled)
         {
             return; // autoPaste=off: click only selects
         }
         CancelPendingPrimaryAction();
-        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(180) };
+        var timer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(GetDoubleClickTime()) };
         timer.Tick += (_, _) =>
         {
             timer.Stop();
@@ -645,7 +713,11 @@ public partial class ClipboardListPanel : UserControl
 
     private void RunPrimaryAction(ClipboardItem item)
     {
-        if (_app.Settings.AutoPasteEnabled && !_popoverMode)
+        if (_popoverMode)
+        {
+            _app.Coordinator.CopyOnly(item);
+        }
+        else if (_app.Settings.AutoPasteEnabled)
         {
             _app.Coordinator.Paste(item);
         }
@@ -733,7 +805,7 @@ public partial class ClipboardListPanel : UserControl
 
     private void AddEmptyState()
     {
-        var searching = _searchText.Length > 0;
+        var searching = !_query.IsEmpty;
         var card = new Border
         {
             CornerRadius = new CornerRadius(16),
@@ -1083,11 +1155,8 @@ public partial class ClipboardListPanel : UserControl
     private void SelectFilter(ClipboardFilter filter)
     {
         _selectedFilter = filter;
+        ValidateSourceSelection();
         SelectFirstRowBaseline();
-        // Mac: batch selection is intersected with the newly visible items.
-        var visible = _app.Store.FilteredItemsByFilter.TryGetValue(filter, out var items)
-            ? items.Select(i => i.Id).ToHashSet() : new HashSet<Guid>();
-        _batchSelection.IntersectWith(visible);
         RebuildChips();
         Rebuild();
         UpdateSourceMenuLabel();
@@ -1106,9 +1175,11 @@ public partial class ClipboardListPanel : UserControl
                 : L10n.T("filter.source_label"),
             _ => L10n.T("filter.source_all"),
         };
+        SourceMenuButton.ToolTip = SourceMenuLabel.Text;
+        System.Windows.Automation.AutomationProperties.SetName(SourceMenuButton, SourceMenuLabel.Text);
         SourceMenuGlyph.Text = _sourceSelection.Kind switch
         {
-            ClipboardSourceSelection.SelectionKind.Device => "\uD83D\uDCF1",
+            ClipboardSourceSelection.SelectionKind.Device => "\uE717",
             ClipboardSourceSelection.SelectionKind.App => "\uE77B",
             _ => "\uE8A9",
         };
@@ -1122,7 +1193,7 @@ public partial class ClipboardListPanel : UserControl
 
         var allApps = NewSourceMenuItem(L10n.T("filter.source_all"), "\uE8A9",
             ClipboardSourceSelection.AllApps);
-        var devices = NewSourceMenuItem(L10n.T("filter.source_device"), "\uD83D\uDCF1",
+        var devices = NewSourceMenuItem(L10n.T("filter.source_device"), "\uE717",
             ClipboardSourceSelection.Device);
         devices.IsEnabled = _app.Store.Items.Any(i => i.Source.IsDeviceSynced());
         menu.Items.Add(allApps);
@@ -1176,8 +1247,8 @@ public partial class ClipboardListPanel : UserControl
             _suppressSearchCallback = true;
             SearchBox.Text = string.Empty;
             _suppressSearchCallback = false;
-            _searchText = string.Empty;
-            _app.Store.SetSearchQuery(string.Empty);
+            _searchDebounce?.Stop();
+            _query = new SearchQuery(string.Empty);
             Dispatcher.BeginInvoke(Rebuild);
         }
     }
@@ -1194,9 +1265,8 @@ public partial class ClipboardListPanel : UserControl
         _searchDebounce.Tick += (_, _) =>
         {
             _searchDebounce?.Stop();
-            _searchText = SearchBox.Text.Trim();
-            _app.Store.SetSearchQuery(_searchText);
-            Dispatcher.BeginInvoke(Rebuild);
+            _query = new SearchQuery(SearchBox.Text);
+            Rebuild();
         };
         _searchDebounce.Start();
     }
@@ -1317,13 +1387,6 @@ public partial class ClipboardListPanel : UserControl
                     RunPrimaryAction(row.Item);
                 }
             }));
-            FooterNormal.Children.Add(NewFooterButton(L10n.T("menu.copy"), () =>
-            {
-                if (SelectedRow is { } row)
-                {
-                    _app.Coordinator.CopyOnly(row.Item);
-                }
-            }));
             if (_popoverMode)
             {
                 FooterNormal.Children.Add(NewFooterButton(L10n.T("menu.open_panel"), () =>
@@ -1334,9 +1397,19 @@ public partial class ClipboardListPanel : UserControl
                 FooterNormal.Children.Add(NewFooterButton(L10n.T("menu.preferences"), () =>
                 {
                     CloseRequested?.Invoke();
-                    _app.Coordinator.ShowSettings();
+                    _app.Coordinator.ShowSettingsAfterMenu();
                 }));
                 FooterNormal.Children.Add(NewFooterButton(L10n.T("menu.quit"), () => _app.Quit()));
+            }
+            else
+            {
+                FooterNormal.Children.Add(NewFooterButton(L10n.T("menu.copy"), () =>
+                {
+                    if (SelectedRow is { } row)
+                    {
+                        _app.Coordinator.CopyOnly(row.Item);
+                    }
+                }));
             }
         }
     }
@@ -1347,7 +1420,7 @@ public partial class ClipboardListPanel : UserControl
         {
             Style = (Style)FindResource("CapsuleButton"),
             Content = text,
-            Margin = new Thickness(0, 0, 8, 0),
+            Margin = new Thickness(0, 0, 7, 4),
         };
         if (danger)
         {
@@ -1359,7 +1432,14 @@ public partial class ClipboardListPanel : UserControl
 
     // ---- header buttons -------------------------------------------------------------------------
 
-    private void OnStatsClick(object sender, RoutedEventArgs e) => _app.Coordinator.ShowStatistics();
+    private void OnStatsClick(object sender, RoutedEventArgs e)
+    {
+        if (_popoverMode)
+        {
+            CloseRequested?.Invoke();
+        }
+        _app.Coordinator.ShowStatistics();
+    }
     private void OnCloseClick(object sender, RoutedEventArgs e)
     {
         CancelPendingPrimaryAction();
@@ -1372,6 +1452,17 @@ public partial class ClipboardListPanel : UserControl
     {
         var menu = new ContextMenu();
         AddMenuItem(menu, "\uE8C8", L10n.T("menu.copy"), () => _app.Coordinator.CopyOnly(item));
+        AddMenuItem(menu, "\uE72D", L10n.T("menu.share"), () =>
+        {
+            if (Window.GetWindow(this) is { } owner)
+            {
+                _app.Coordinator.Share(owner, item);
+            }
+        });
+        if (item.IsFileCollection || item.IsImage)
+        {
+            AddMenuItem(menu, "\uE74E", L10n.T("menu.save_as"), () => RunSaveAs(item));
+        }
 
         if (item.IsFileCollection)
         {
@@ -1383,14 +1474,12 @@ public partial class ClipboardListPanel : UserControl
             }
             AddMenuItem(menu, "\uE8C4", L10n.T("menu.copy_path"), () =>
                 _app.Coordinator.CopyPaths(item.Content.FilePaths ?? Array.Empty<string>()));
-            AddMenuItem(menu, "\uE74E", L10n.T("menu.save_as"), () => RunSaveAs(item));
         }
 
         if (item.IsUrl)
         {
             AddMenuItem(menu, "\uE774", L10n.T("menu.open_in_browser"), () =>
                 _app.Coordinator.OpenInBrowser(item.BrowserUrl));
-            AddMenuItem(menu, "\uE8C4", L10n.T("menu.copy_link"), () => _app.Coordinator.CopyOnly(item));
         }
 
         if (item.IsEmail)
@@ -1401,13 +1490,16 @@ public partial class ClipboardListPanel : UserControl
 
         if (item.IsImage)
         {
-            AddMenuItem(menu, "\uE91B", L10n.T("preview.open_image"), () => _app.Coordinator.OpenPreview(item));
-            AddMenuItem(menu, "\uE74E", L10n.T("menu.save_as"), () => RunSaveAs(item));
+            AddMenuItem(menu, "\uE91B", L10n.T("preview.open"), () => _app.Coordinator.OpenPreview(item));
         }
 
         if (item.SupportsTextPreview)
         {
-            AddMenuItem(menu, "\uE90F", L10n.T("preview.text_title"), () => _app.Coordinator.OpenPreview(item));
+            AddMenuItem(menu, "\uE90F", L10n.T("preview.text_open"), () => _app.Coordinator.OpenPreview(item));
+        }
+        if (AppCoordinator.CanTranslate(item))
+        {
+            AddMenuItem(menu, "\uE8C1", L10n.T("menu.translate"), () => _app.Coordinator.OpenTranslator(item));
         }
 
         AddMenuItem(menu,
@@ -1424,17 +1516,29 @@ public partial class ClipboardListPanel : UserControl
 
     private void RunSaveAs(ClipboardItem item)
     {
-        if (item.IsImage)
+        var owner = Window.GetWindow(this);
+        void Save()
         {
-            SaveAsService.SaveImage(null, item);
+            if (item.IsImage)
+            {
+                SaveAsService.SaveImage(owner, _app.Store.RestoreFullResolutionItem(item));
+            }
+            else if (item.Content.FilePaths is { Count: 1 } single)
+            {
+                SaveAsService.SaveSingleFile(owner, single[0]);
+            }
+            else if (item.Content.FilePaths is { Count: > 1 } many)
+            {
+                SaveAsService.SaveMultipleFiles(owner, many);
+            }
         }
-        else if (item.Content.FilePaths is { Count: 1 } single)
+        if (owner is TrayPopoverWindow popover)
         {
-            SaveAsService.SaveSingleFile(null, single[0]);
+            popover.RunDialog(Save);
         }
-        else if (item.Content.FilePaths is { Count: > 1 } many)
+        else
         {
-            SaveAsService.SaveMultipleFiles(null, many);
+            Save();
         }
     }
 

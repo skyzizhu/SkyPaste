@@ -133,7 +133,7 @@ public static class PasteBackService
     /// case nothing is sent so the paste never lands in the wrong window.
     /// Call from a background thread; sleeps while waiting for focus.
     /// </summary>
-    public static bool RestoreAndPaste(IntPtr previousWindow, int delayMs = 80)
+    public static bool RestoreAndPaste(IntPtr previousWindow, uint clipboardSequence, int delayMs = 80)
     {
         var foregroundRestored = false;
         if (previousWindow != IntPtr.Zero)
@@ -156,11 +156,12 @@ public static class PasteBackService
         }
 
         Thread.Sleep(delayMs);
-        SendCtrlV();
-        return true;
+        return NativeMethods.GetForegroundWindow() == previousWindow
+            && NativeMethods.GetClipboardSequenceNumber() == clipboardSequence
+            && SendCtrlV();
     }
 
-    public static void SendCtrlV()
+    private static bool SendCtrlV()
     {
         var inputs = new NativeMethods.INPUT[4];
         const ushort VK_CONTROL = 0x11;
@@ -180,6 +181,6 @@ public static class PasteBackService
         inputs[3].U.ki.wVk = VK_CONTROL;
         inputs[3].U.ki.dwFlags = NativeMethods.KEYEVENTF_KEYUP;
 
-        NativeMethods.SendInput((uint)inputs.Length, inputs, NativeMethods.INPUT.Size);
+        return NativeMethods.SendInput((uint)inputs.Length, inputs, NativeMethods.INPUT.Size) == inputs.Length;
     }
 }

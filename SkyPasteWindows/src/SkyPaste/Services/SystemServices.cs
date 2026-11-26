@@ -31,7 +31,7 @@ public static class DragOutService
             return CreateFileDropObject(new[] { path });
         }
 
-        var files = (item.Content.FilePaths ?? Array.Empty<string>()).Where(File.Exists).ToList();
+        var files = (item.Content.FilePaths ?? Array.Empty<string>()).Where(PathExists).ToList();
         if (files.Count == 0)
         {
             return null;
@@ -41,7 +41,9 @@ public static class DragOutService
 
     /// <summary>Returns the list of missing paths for the warning sheet.</summary>
     public static IReadOnlyList<string> MissingFiles(ClipboardItem item) =>
-        (item.Content.FilePaths ?? Array.Empty<string>()).Where(p => !File.Exists(p)).ToList();
+        (item.Content.FilePaths ?? Array.Empty<string>()).Where(p => !PathExists(p)).ToList();
+
+    internal static bool PathExists(string path) => File.Exists(path) || Directory.Exists(path);
 
     public static DragDropEffects StartDrag(DependencyObject dragSource, DataObject data) =>
         System.Windows.DragDrop.DoDragDrop(dragSource, data, DragDropEffects.Copy);
@@ -72,7 +74,7 @@ public static class DragOutService
     private static string TempDirectory =>
         Path.Combine(Path.GetTempPath(), "SkyPasteDragItems");
 
-    private static string? MaterializeImage(ClipboardItem item)
+    internal static string? MaterializeImage(ClipboardItem item)
     {
         try
         {
@@ -126,7 +128,7 @@ public static class SaveAsService
         {
             Title = L10n.T("save_as.title"),
             FileName = SuggestImageName(item),
-            Filter = "PNG|*.png|JPEG|*.jpg;*.jpeg",
+            Filter = "PNG|*.png",
             AddExtension = true,
         };
         if (dialog.ShowDialog(owner) != true)
@@ -136,7 +138,9 @@ public static class SaveAsService
         try
         {
             var data = item.Content.ImageData ?? Array.Empty<byte>();
-            File.WriteAllBytes(dialog.FileName, data);
+            var bitmap = ClipboardWriter.DecodeBitmap(data)
+                ?? throw new InvalidDataException("Could not decode the clipboard image.");
+            File.WriteAllBytes(dialog.FileName, ClipboardDecoder.EncodePng(bitmap));
             return true;
         }
         catch (Exception)
@@ -148,6 +152,10 @@ public static class SaveAsService
 
     public static bool SaveSingleFile(Window? owner, string sourcePath)
     {
+        if (Directory.Exists(sourcePath))
+        {
+            return SaveMultipleFiles(owner, new[] { sourcePath });
+        }
         var dialog = new Microsoft.Win32.SaveFileDialog
         {
             Title = L10n.T("save_as.title"),
@@ -172,22 +180,34 @@ public static class SaveAsService
 
     public static bool SaveMultipleFiles(Window? owner, IReadOnlyList<string> sourcePaths)
     {
-        using var dialog = new System.Windows.Forms.FolderBrowserDialog
+        var dialog = new Microsoft.Win32.OpenFolderDialog
         {
-            Description = L10n.T("save_as.title"),
-            ShowNewFolderButton = true,
+            Title = L10n.T("save_as.title"),
         };
-        if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+        if (dialog.ShowDialog(owner) != true)
         {
             return false;
         }
         try
         {
-            foreach (var source in sourcePaths.Where(File.Exists))
+            foreach (var source in sourcePaths)
             {
-                var destination = Path.Combine(dialog.SelectedPath, Path.GetFileName(source));
-                destination = EnsureUnique(destination);
-                File.Copy(source, destination, overwrite: false);
+                var name = Path.GetFileName(Path.TrimEndingDirectorySeparator(source));
+                var destination = EnsureUnique(Path.Combine(dialog.FolderName, name));
+                if (Directory.Exists(source))
+                {
+                    var relativeDestination = Path.GetRelativePath(source, destination);
+                    if (!Path.IsPathRooted(relativeDestination) && relativeDestination != ".."
+                        && !relativeDestination.StartsWith("..\\", StringComparison.Ordinal))
+                    {
+                        throw new IOException("Cannot copy a folder into itself.");
+                    }
+                    Microsoft.VisualBasic.FileIO.FileSystem.CopyDirectory(source, destination, overwrite: false);
+                }
+                else
+                {
+                    File.Copy(source, destination, overwrite: false);
+                }
             }
             return true;
         }
@@ -201,11 +221,7 @@ public static class SaveAsService
     private static string SuggestImageName(ClipboardItem item)
     {
         var name = item.Content.ImageName;
-        if (string.IsNullOrWhiteSpace(name) || !Path.HasExtension(name))
-        {
-            name = (name is { Length: > 0 } ? name : "image") + ".png";
-        }
-        return SanitizeFileNameForSave(name);
+        return SanitizeFileNameForSave(Path.ChangeExtension(string.IsNullOrWhiteSpace(name) ? "image" : name, ".png"));
     }
 
     private static string SanitizeFileNameForSave(string name)
@@ -216,7 +232,7 @@ public static class SaveAsService
 
     private static string EnsureUnique(string path)
     {
-        if (!File.Exists(path))
+        if (!DragOutService.PathExists(path))
         {
             return path;
         }
@@ -226,7 +242,7 @@ public static class SaveAsService
         for (var i = 1; i < 1000; i++)
         {
             var candidate = Path.Combine(directory, $"{name} copy {i}{extension}");
-            if (!File.Exists(candidate))
+            if (!DragOutService.PathExists(candidate))
             {
                 return candidate;
             }

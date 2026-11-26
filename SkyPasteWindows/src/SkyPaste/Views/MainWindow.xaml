@@ -1,16 +1,8 @@
-<ui:FluentWindow x:Class="SkyPaste.MainWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<Window x:Class="SkyPaste.MainWindow"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:ui="http://schemas.lepo.co/wpfui/2022/xaml"
-        Title="SkyPaste"
-        ExtendsContentIntoTitleBar="True"
-        WindowBackdropType="Mica">
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        Title="SkyPaste" Background="{DynamicResource Window.Background}">
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <ui:TitleBar Grid.Row="0" Title="SkyPaste" ShowMaximize="True" ShowMinimize="True" />
-        <ContentControl Grid.Row="1" x:Name="PanelHost" />
+        <ContentControl x:Name="PanelHost" />
     </Grid>
-</ui:FluentWindow>
+</Window>

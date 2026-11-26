@@ -169,7 +169,7 @@
   <data name="preview.open" xml:space="preserve"><value>이미지 미리보기</value></data>
   <data name="preview.open_image" xml:space="preserve"><value>이미지 열기</value></data>
   <data name="preview.drag_hint" xml:space="preserve"><value>이미지 드래그</value></data>
-  <data name="preview.drag_zoomed_hint" xml:space="preserve"><value>Option 키를 누른 채 이미지 드래그</value></data>
+  <data name="preview.drag_zoomed_hint" xml:space="preserve"><value>Alt 키를 누른 채 이미지 드래그</value></data>
   <data name="preview.annotate" xml:space="preserve"><value>주석</value></data>
   <data name="preview.annotation_done" xml:space="preserve"><value>그리기 완료</value></data>
   <data name="preview.annotation_hint" xml:space="preserve"><value>이미지에 선 그리기</value></data>
@@ -223,7 +223,7 @@
   <data name="preview.source_label" xml:space="preserve"><value>출처:</value></data>
   <data name="preview.source_app" xml:space="preserve"><value>%@</value></data>
   <data name="preview.source_device" xml:space="preserve"><value>%@</value></data>
-  <data name="preview.source_local" xml:space="preserve"><value>이 Mac</value></data>
+  <data name="preview.source_local" xml:space="preserve"><value>이 PC</value></data>
   <data name="open.missing_file_title" xml:space="preserve"><value>파일을 찾을 수 없음</value></data>
   <data name="open.missing_folder_title" xml:space="preserve"><value>폴더를 찾을 수 없음</value></data>
   <data name="open.missing_item_message" xml:space="preserve"><value>SkyPaste가 이 경로를 열 수 없습니다: %@</value></data>
@@ -282,4 +282,8 @@
   <data name="panel_position.cursor" xml:space="preserve"><value>커서 따라가기</value></data>
   <data name="hotkey.register_failed" xml:space="preserve"><value>이 단축키는 다른 프로그램이 사용 중입니다. 다른 조합을 선택하세요.</value></data>
   <data name="panel_position.remember" xml:space="preserve"><value>마지막 위치 기억</value></data>
+  <data name="menu.copy_failed" xml:space="preserve"><value>클립보드에 복사할 수 없습니다.</value></data>
+  <data name="menu.share_failed" xml:space="preserve"><value>공유할 수 없습니다.</value></data>
+  <data name="menu.translate_paste" xml:space="preserve"><value>Microsoft Translator에 복사한 텍스트를 붙여넣으세요.</value></data>
+  <data name="settings.windows_clipboard" xml:space="preserve"><value>Windows 클립보드 설정</value></data>
 </root>
