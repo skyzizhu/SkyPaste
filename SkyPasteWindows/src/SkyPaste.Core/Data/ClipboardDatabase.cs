@@ -17,12 +17,15 @@ public sealed class ClipboardDatabase
     public ClipboardDatabase(string path)
     {
         _path = path;
+        RecoveryBackupDirectory = RecoverIfCorrupted(path);
         using var connection = Open();
         Initialize(connection);
     }
 
     /// <summary>Absolute path of the backing SQLite file.</summary>
     public string DatabasePath => _path;
+
+    public string? RecoveryBackupDirectory { get; }
 
     public static string DefaultPath =>
         Path.Combine(Services.AppSettingsService.DefaultDirectory, "history.sqlite");
@@ -60,16 +63,27 @@ public sealed class ClipboardDatabase
                 is_snippet INTEGER NOT NULL DEFAULT 0,
                 source_kind INTEGER NOT NULL DEFAULT 0,
                 source_app_bundle_id TEXT,
-                source_app_name TEXT
+                source_app_name TEXT,
+                source_app_executable_path TEXT
             );
             CREATE INDEX IF NOT EXISTS idx_clipboard_created_at ON clipboard_items(created_at DESC);
             """;
         command.ExecuteNonQuery();
+
+        using var migration = connection.BeginTransaction();
+        command.Transaction = migration;
+        command.CommandText = "SELECT count(*) FROM pragma_table_info('clipboard_items') WHERE name = 'source_app_executable_path'";
+        if ((long)command.ExecuteScalar()! == 0)
+        {
+            command.CommandText = "ALTER TABLE clipboard_items ADD COLUMN source_app_executable_path TEXT";
+            command.ExecuteNonQuery();
+        }
+        migration.Commit();
     }
 
     // ---- read -------------------------------------------------------------
 
-    public List<ClipboardItem> LoadVisibleItems(int historyLimit)
+    public List<ClipboardItem> LoadVisibleItems(int historyLimit, Func<ClipboardItem, ClipboardItem>? optimize = null)
     {
         using var connection = Open();
         using var command = connection.CreateCommand();
@@ -86,7 +100,7 @@ public sealed class ClipboardDatabase
             """;
         command.Parameters.AddWithValue("$limit", historyLimit);
         using var reader = command.ExecuteReader();
-        return DecodeRows(reader);
+        return DecodeRows(reader, optimize);
     }
 
     public ClipboardItem? LoadItem(Guid id)
@@ -99,7 +113,7 @@ public sealed class ClipboardDatabase
         return DecodeRows(reader).FirstOrDefault();
     }
 
-    private static List<ClipboardItem> DecodeRows(SqliteDataReader reader)
+    private static List<ClipboardItem> DecodeRows(SqliteDataReader reader, Func<ClipboardItem, ClipboardItem>? optimize = null)
     {
         var items = new List<ClipboardItem>();
         while (reader.Read())
@@ -109,7 +123,7 @@ public sealed class ClipboardDatabase
                 var item = DecodeRow(reader);
                 if (item is not null)
                 {
-                    items.Add(item);
+                    items.Add(optimize?.Invoke(item) ?? item);
                 }
             }
             catch (Exception)
@@ -183,7 +197,9 @@ public sealed class ClipboardDatabase
         ClipboardSourceApp? sourceApp = null;
         if (sourceKind == ClipboardSource.Local && !string.IsNullOrEmpty(bundleId) && !string.IsNullOrEmpty(appName))
         {
-            sourceApp = new ClipboardSourceApp(bundleId, appName);
+            var pathColumn = reader.GetOrdinal("source_app_executable_path");
+            var executablePath = reader.IsDBNull(pathColumn) ? null : reader.GetString(pathColumn);
+            sourceApp = new ClipboardSourceApp(bundleId, appName, executablePath);
         }
 
         return new ClipboardItem(guid, createdAt, content, fingerprint, sourceKind, sourceApp, favorite);
@@ -220,11 +236,11 @@ public sealed class ClipboardDatabase
             INSERT INTO clipboard_items
                 (id, created_at, kind, text_value, blob_value, image_name, file_urls_json,
                  pasteboard_payload, fingerprint, is_favorite, is_snippet, source_kind,
-                 source_app_bundle_id, source_app_name)
+                 source_app_bundle_id, source_app_name, source_app_executable_path)
             VALUES
                 ($id, $created_at, $kind, $text_value, $blob_value, $image_name, $file_urls_json,
                  NULL, $fingerprint, $is_favorite, $is_snippet, $source_kind,
-                 $source_app_bundle_id, $source_app_name)
+                 $source_app_bundle_id, $source_app_name, $source_app_executable_path)
             """;
         command.Parameters.AddWithValue("$id", item.Id.ToString());
         command.Parameters.AddWithValue(
@@ -235,6 +251,7 @@ public sealed class ClipboardDatabase
         command.Parameters.AddWithValue("$is_favorite", item.IsFavorite ? 1L : 0L);
         command.Parameters.AddWithValue("$is_snippet", 0L);
         command.Parameters.AddWithValue("$source_kind", (long)item.Source);
+        command.Parameters.AddWithValue("$source_app_executable_path", (object?)item.SourceApp?.ExecutablePath ?? DBNull.Value);
 
         switch (item.Content.Kind)
         {
@@ -417,14 +434,8 @@ public sealed class ClipboardDatabase
 
     // ---- corruption -------------------------------------------------------
 
-    public static bool LooksLikeCorruption(Exception exception)
-    {
-        var message = exception.Message.ToLowerInvariant();
-        return message.Contains("database disk image is malformed")
-               || message.Contains("not a database")
-               || message.Contains("corrupt")
-               || message.Contains("malformed");
-    }
+    public static bool LooksLikeCorruption(Exception exception) =>
+        exception is SqliteException { SqliteErrorCode: 11 or 26 }; // SQLITE_CORRUPT or SQLITE_NOTADB
 
     /// <summary>
     /// Port of macOS recoverCorruptedDatabaseIfNeeded: quick_check, and when it
@@ -450,7 +461,7 @@ public sealed class ClipboardDatabase
             using var command = connection.CreateCommand();
             command.CommandText = "PRAGMA quick_check(1)";
             var result = command.ExecuteScalar() as string;
-            if (result == "ok")
+            if (string.IsNullOrEmpty(result) || result == "ok")
             {
                 return null;
             }
@@ -467,16 +478,28 @@ public sealed class ClipboardDatabase
         var backupDir = Path.Combine(
             Path.GetDirectoryName(path) ?? ".", "RecoveredDatabases");
         Directory.CreateDirectory(backupDir);
-        var stamp = DateTime.Now.ToString("yyyyMMdd-HHmmss");
-        foreach (var suffix in new[] { "", "-wal", "-shm" })
+        var stamp = $"{DateTime.UtcNow:yyyyMMdd-HHmmss}-{Guid.NewGuid():N}";
+        var moved = new Stack<(string Source, string Backup)>();
+        try
         {
-            var source = path + suffix;
-            if (File.Exists(source))
+            foreach (var suffix in new[] { "-wal", "-shm", "" })
             {
-                var destination = Path.Combine(
-                    backupDir, Path.GetFileName(source) + $".{stamp}.bak");
-                File.Move(source, destination);
+                var source = path + suffix;
+                if (File.Exists(source))
+                {
+                    var destination = Path.Combine(backupDir, Path.GetFileName(source) + $".{stamp}.bak");
+                    File.Move(source, destination);
+                    moved.Push((source, destination));
+                }
             }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            foreach (var (source, backup) in moved)
+            {
+                File.Move(backup, source);
+            }
+            throw;
         }
         return backupDir;
     }

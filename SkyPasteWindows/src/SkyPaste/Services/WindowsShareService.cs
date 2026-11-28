@@ -108,10 +108,14 @@ internal static class WindowsShareService
                     {
                         files.Add(await StorageFolder.GetFolderFromPathAsync(path));
                     }
-                    else
+                    else if (System.IO.File.Exists(path))
                     {
                         files.Add(await StorageFile.GetFileFromPathAsync(path));
                     }
+                }
+                if (files.Count == 0)
+                {
+                    throw new System.IO.FileNotFoundException();
                 }
                 data.SetStorageItems(files);
                 break;

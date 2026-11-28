@@ -57,7 +57,8 @@
   <data name="settings.lan_sync_status_synced" xml:space="preserve"><value>局域网同步已开启。</value></data>
   <data name="settings.lan_sync_status_error" xml:space="preserve"><value>同步失败：%@</value></data>
   <data name="settings.auto_paste" xml:space="preserve"><value>选中后自动复制</value></data>
-  <data name="settings.auto_paste_hint" xml:space="preserve"><value>启用后，点选列表中的内容时会自动复制到剪贴板。</value></data>
+  <data name="settings.auto_paste_hint" xml:space="preserve"><value>启用后，单击列表项即可复制。在主面板按 Enter 可粘贴到先前的窗口。</value></data>
+  <data name="hotkey.requires_modifier" xml:space="preserve"><value>请为快捷键添加至少一个修饰键。</value></data>
   <data name="settings.privacy_filter" xml:space="preserve"><value>隐私内容过滤</value></data>
   <data name="settings.privacy_filter_hint" xml:space="preserve"><value>启用后，SkyPaste 会尽量忽略密码、验证码、银行卡号以及密钥 / Token 等敏感文本内容。</value></data>
   <data name="settings.ignore_apps" xml:space="preserve"><value>忽略应用</value></data>

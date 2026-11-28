@@ -33,7 +33,7 @@ public sealed class ClipboardMonitorService : IDisposable
     private const int MaxDecodeRetries = 2;
     private static readonly TimeSpan DecodeRetryDelay = TimeSpan.FromMilliseconds(300);
 
-    public void WriteWithoutCapture(Action write)
+    public uint WriteWithoutCapture(Action write)
     {
         var before = NativeMethods.GetClipboardSequenceNumber();
         _writeDepth++;
@@ -47,6 +47,7 @@ public sealed class ClipboardMonitorService : IDisposable
                 _decodeRetries = 0;
                 _decodeRetryTimer?.Stop();
             }
+            return after;
         }
         finally
         {
@@ -228,7 +229,7 @@ public sealed class ClipboardMonitorService : IDisposable
             {
                 return null; // our own writes
             }
-            return new ClipboardSourceApp(exeName.ToLowerInvariant(), friendlyName);
+            return new ClipboardSourceApp(exeName.ToLowerInvariant(), friendlyName, processName);
         }
         catch (Exception)
         {

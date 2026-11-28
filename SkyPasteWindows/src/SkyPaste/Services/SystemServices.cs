@@ -1,4 +1,3 @@
-using System.Collections.Specialized;
 using System.ComponentModel;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -28,7 +27,7 @@ public static class DragOutService
             {
                 return null;
             }
-            return CreateFileDropObject(new[] { path });
+            return ClipboardWriter.CreateFileDropObject(new[] { path });
         }
 
         var files = (item.Content.FilePaths ?? Array.Empty<string>()).Where(PathExists).ToList();
@@ -36,7 +35,7 @@ public static class DragOutService
         {
             return null;
         }
-        return CreateFileDropObject(files);
+        return ClipboardWriter.CreateFileDropObject(files);
     }
 
     /// <summary>Returns the list of missing paths for the warning sheet.</summary>
@@ -89,6 +88,15 @@ public static class DragOutService
                 : item.Content.ImageName!);
             var fileName = $"{baseName}-{Guid.NewGuid():N}.png";
             var path = Path.Combine(TempDirectory, fileName);
+            if (!ClipboardDecoder.HasPngSignature(data))
+            {
+                var bitmap = ClipboardWriter.DecodeBitmap(data);
+                if (bitmap is null)
+                {
+                    return null;
+                }
+                data = ClipboardDecoder.EncodePng(bitmap);
+            }
             File.WriteAllBytes(path, data);
             return path;
         }
@@ -105,18 +113,6 @@ public static class DragOutService
         return clean.Length == 0 ? "image" : clean;
     }
 
-    private static DataObject CreateFileDropObject(IReadOnlyList<string> paths)
-    {
-        var files = new StringCollection();
-        foreach (var path in paths)
-        {
-            files.Add(path);
-        }
-        var dataObject = new DataObject();
-        dataObject.SetFileDropList(files);
-        dataObject.SetData("Preferred DropEffect", BitConverter.GetBytes(2));
-        return dataObject;
-    }
 }
 
 /// <summary>Save As / choose-folder dialogs (NSSavePanel equivalents).</summary>
@@ -140,7 +136,8 @@ public static class SaveAsService
             var data = item.Content.ImageData ?? Array.Empty<byte>();
             var bitmap = ClipboardWriter.DecodeBitmap(data)
                 ?? throw new InvalidDataException("Could not decode the clipboard image.");
-            File.WriteAllBytes(dialog.FileName, ClipboardDecoder.EncodePng(bitmap));
+            File.WriteAllBytes(dialog.FileName,
+                ClipboardDecoder.HasPngSignature(data) ? data : ClipboardDecoder.EncodePng(bitmap));
             return true;
         }
         catch (Exception)
@@ -155,6 +152,11 @@ public static class SaveAsService
         if (Directory.Exists(sourcePath))
         {
             return SaveMultipleFiles(owner, new[] { sourcePath });
+        }
+        if (!File.Exists(sourcePath))
+        {
+            WarnSaveFailed();
+            return false;
         }
         var dialog = new Microsoft.Win32.SaveFileDialog
         {
@@ -180,6 +182,11 @@ public static class SaveAsService
 
     public static bool SaveMultipleFiles(Window? owner, IReadOnlyList<string> sourcePaths)
     {
+        if (sourcePaths.Count == 0 || sourcePaths.Any(path => !DragOutService.PathExists(path)))
+        {
+            WarnSaveFailed();
+            return false;
+        }
         var dialog = new Microsoft.Win32.OpenFolderDialog
         {
             Title = L10n.T("save_as.title"),

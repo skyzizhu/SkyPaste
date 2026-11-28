@@ -1,9 +1,24 @@
 <Window x:Class="SkyPaste.FilePreviewWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Item Details">
-    <Grid>
-        <Grid Grid.Row="1">
+        Title="Item Details" UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
+    <Window.Resources>
+        <DataTemplate x:Key="FileEntryTemplate">
+            <Grid Margin="3,4">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="24" />
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Text="{Binding IconGlyph}" FontFamily="{DynamicResource GlyphFont}"
+                           Foreground="{DynamicResource Text.Secondary}" />
+                <TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis"
+                           ToolTip="{Binding Path}" Foreground="{DynamicResource Text.Primary}" />
+                <TextBlock Grid.Column="2" Text="{Binding DisplaySize}" Margin="10,0,0,0"
+                           Foreground="{DynamicResource Text.Secondary}" />
+            </Grid>
+        </DataTemplate>
+    </Window.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -19,7 +34,7 @@
                     <TextBlock x:Name="ToggleImageModeLabel" Text="Preview Image" />
                 </Button>
             </StackPanel>
-            <TextBlock x:Name="PreviewSource" FontSize="11" Margin="0,4,0,0" Foreground="{DynamicResource Text.Secondary}" />
+            <ContentControl x:Name="PreviewSource" Margin="0,4,0,0" HorizontalContentAlignment="Stretch" />
             <WrapPanel x:Name="FileActions" Margin="0,8,0,0">
                 <Button Style="{DynamicResource CapsuleButton}" Click="OnShare" Margin="0,0,8,4">
                     <TextBlock x:Name="ShareLabel" />
@@ -46,11 +61,11 @@
         </StackPanel>
 
         <ScrollViewer x:Name="InfoScroll" Grid.Row="1" Margin="14,10,14,12" VerticalScrollBarVisibility="Auto">
-            <StackPanel x:Name="InfoHost" />
+            <StackPanel x:Name="InfoHost">
+                <TextBlock x:Name="LoadingDetails" Margin="16" Foreground="{DynamicResource Text.Secondary}" />
+            </StackPanel>
         </ScrollViewer>
 
         <ContentControl x:Name="ImageModeHost" Grid.Row="1" Visibility="Collapsed" />
-    </Grid>
-        </Grid>
     </Grid>
 </Window>

@@ -21,7 +21,7 @@ public static class ImageOptimizerService
         }
         var original = item.Content.ImageData ?? Array.Empty<byte>();
         var thumbnail = CreateThumbnail(original, PreviewMaxDimension);
-        return thumbnail is not null
+        return thumbnail is not null && thumbnail.Length < original.Length
             ? item.Content.WithPreviewOnly(thumbnail).RebuildItem(item)
             : item;
     }
@@ -29,23 +29,37 @@ public static class ImageOptimizerService
     /// <summary>Decode downsampled to maxDimension on the longest edge; returns PNG bytes.</summary>
     public static byte[]? CreateThumbnail(byte[] data, int maxDimension)
     {
-        if (data.Length == 0)
+        if (data.Length == 0 || maxDimension <= 0)
         {
             return null;
         }
         try
         {
-            var image = new BitmapImage();
             using var stream = new MemoryStream(data);
+            var frame = BitmapDecoder.Create(stream, BitmapCreateOptions.DelayCreation, BitmapCacheOption.OnDemand).Frames[0];
+            var width = frame.PixelWidth;
+            var height = frame.PixelHeight;
+            if (Math.Max(width, height) <= maxDimension)
+            {
+                return ClipboardDecoder.HasPngSignature(data) ? data : ClipboardDecoder.EncodePng(frame);
+            }
+
+            var image = new BitmapImage();
+            using var decodeStream = new MemoryStream(data);
             image.BeginInit();
             image.CacheOption = BitmapCacheOption.OnLoad;
-            image.DecodePixelWidth = maxDimension;
-            image.DecodePixelHeight = maxDimension;
-            image.StreamSource = stream;
+            if (width >= height)
+            {
+                image.DecodePixelWidth = maxDimension;
+            }
+            else
+            {
+                image.DecodePixelHeight = maxDimension;
+            }
+            image.StreamSource = decodeStream;
             image.EndInit();
             image.Freeze();
 
-            // DecodePixelWidth/Height keep aspect ratio; encode the thumbnail back to PNG.
             return ClipboardDecoder.EncodePng(image);
         }
         catch (Exception)

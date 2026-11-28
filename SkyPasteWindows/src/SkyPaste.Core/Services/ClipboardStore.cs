@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
+using Microsoft.Data.Sqlite;
 using SkyPaste.Core.Core;
 using SkyPaste.Core.Data;
 using SkyPaste.Core.Models;
@@ -30,11 +32,13 @@ public sealed class ClipboardStore
     /// <summary>Raised every time a statistic is recorded (statistics view reloads).</summary>
     public event Action? StatisticsChanged;
 
-    public ClipboardStore(ClipboardDatabase database, StatisticsDatabase statistics, AppSettingsService settings)
+    public ClipboardStore(ClipboardDatabase database, StatisticsDatabase statistics, AppSettingsService settings,
+        Func<ClipboardItem, ClipboardItem>? memoryOptimizer = null)
     {
         _database = database;
         _statistics = statistics;
         _settings = settings;
+        MemoryOptimizer = memoryOptimizer;
         _settings.HistoryLimitChanged += ApplyHistoryLimit;
 
         LoadInitial();
@@ -44,16 +48,14 @@ public sealed class ClipboardStore
 
     private void LoadInitial()
     {
-        var backup = ClipboardDatabase.RecoverIfCorrupted(_database.DatabasePath);
-        if (backup is not null)
+        if (_database.RecoveryBackupDirectory is not null)
         {
             StartupNotice = Localization.L10n.T("notice.database_recovered");
         }
 
         try
         {
-            var loaded = _database.LoadVisibleItems(_settings.HistoryLimit);
-            Items = loaded.Select(i => MemoryOptimizer?.Invoke(i) ?? i).ToList();
+            Items = _database.LoadVisibleItems(_settings.HistoryLimit, MemoryOptimizer);
         }
         catch (Exception)
         {
@@ -91,7 +93,7 @@ public sealed class ClipboardStore
 
         // Inherit favorite state from an existing item with the same fingerprint.
         var existingFavorite = Items.FirstOrDefault(i => i.Fingerprint == rawItem.Fingerprint)?.IsFavorite
-                               ?? _database.FavoriteStateForFingerprint(rawItem.Fingerprint);
+                               ?? ReadStoredFavorite(rawItem.Fingerprint);
         if (existingFavorite is not null)
         {
             rawItem.IsFavorite = existingFavorite.Value;
@@ -107,8 +109,7 @@ public sealed class ClipboardStore
             // Mac semantics: the refreshed copy is a NEW item (new id) persisted
             // WITHOUT recording statistics again, and it still notifies upload.
             var refreshed = RecreateWithTimestamp(rawItem, DateTime.UtcNow);
-            PersistWithoutStatistic(refreshed);
-            ReplaceTop(refreshed);
+            ReplaceTop(OptimizePersistedItem(refreshed, PersistWithoutStatistic(refreshed)));
             if (refreshed.Source == ClipboardSource.Local)
             {
                 OnLocalItemAdded?.Invoke(refreshed);
@@ -118,8 +119,7 @@ public sealed class ClipboardStore
 
         // Mac order: persist the ORIGINAL first, then keep the memory-optimized
         // copy in the list (full resolution lives in SQLite).
-        Persist(rawItem);
-        var memoryItem = MemoryOptimizer?.Invoke(rawItem) ?? rawItem;
+        var memoryItem = OptimizePersistedItem(rawItem, Persist(rawItem));
         Items.RemoveAll(i => i.Fingerprint == memoryItem.Fingerprint);
         Items.Insert(0, memoryItem);
         EnforceHistoryLimit();
@@ -128,7 +128,6 @@ public sealed class ClipboardStore
         {
             OnLocalItemAdded?.Invoke(rawItem);
         }
-        ItemsChanged?.Invoke();
     }
 
     /// <summary>Device/phone ingest: last-write-wins by createdAt, inserted chronologically.</summary>
@@ -143,18 +142,17 @@ public sealed class ClipboardStore
         {
             return; // incoming is not newer -> ignore
         }
-        if (existing is not null)
-        {
-            Items.Remove(existing);
-        }
-        var existingFavorite = Items.FirstOrDefault(i => i.Fingerprint == incoming.Fingerprint)?.IsFavorite
-                               ?? _database.FavoriteStateForFingerprint(incoming.Fingerprint);
+        var existingFavorite = existing?.IsFavorite
+                               ?? ReadStoredFavorite(incoming.Fingerprint);
         if (existingFavorite is not null)
         {
             incoming.IsFavorite = existingFavorite.Value;
         }
-        Persist(incoming);
-        var item = MemoryOptimizer?.Invoke(incoming) ?? incoming;
+        var item = OptimizePersistedItem(incoming, Persist(incoming));
+        if (existing is not null)
+        {
+            Items.Remove(existing);
+        }
 
         var index = Items.FindIndex(i => i.CreatedAt < item.CreatedAt);
         if (index < 0)
@@ -167,12 +165,12 @@ public sealed class ClipboardStore
         }
         EnforceHistoryLimit();
         UpdateFilteredItemsSync();
-        StatisticsChanged?.Invoke();
-        ItemsChanged?.Invoke();
     }
 
     private static bool ShouldRefreshTopItem(ClipboardItem oldItem, ClipboardItem newItem) =>
         oldItem.Source != newItem.Source
+        || oldItem.SourceApp != newItem.SourceApp
+        || oldItem.DeviceName != newItem.DeviceName
         || oldItem.Title != newItem.Title
         || oldItem.Subtitle != newItem.Subtitle
         || oldItem.IsFavorite != newItem.IsFavorite;
@@ -186,30 +184,51 @@ public sealed class ClipboardStore
         return replacement;
     }
 
-    private void Persist(ClipboardItem item)
+    private bool? ReadStoredFavorite(string fingerprint)
     {
         try
         {
-            _database.Save(item, _settings.HistoryLimit);
+            return _database.FavoriteStateForFingerprint(fingerprint);
         }
-        catch (Exception)
+        catch (SqliteException error)
         {
-            // Persist failures must not break the in-memory history.
+            Debug.WriteLine($"Clipboard favorite lookup failed: {error.SqliteErrorCode}");
+            return null;
         }
-        _statistics.Record(item);
-        StatisticsChanged?.Invoke();
     }
 
-    private void PersistWithoutStatistic(ClipboardItem item)
+    private bool Persist(ClipboardItem item)
+    {
+        var saved = PersistWithoutStatistic(item);
+        try
+        {
+            _statistics.Record(item);
+        }
+        catch (SqliteException error)
+        {
+            Debug.WriteLine($"Clipboard statistics write failed: {error.SqliteErrorCode}");
+            return saved;
+        }
+        StatisticsChanged?.Invoke();
+        return saved;
+    }
+
+    private bool PersistWithoutStatistic(ClipboardItem item)
     {
         try
         {
             _database.Save(item, _settings.HistoryLimit);
+            return true;
         }
-        catch (Exception)
+        catch (SqliteException error)
         {
+            Debug.WriteLine($"Clipboard history write failed: {error.SqliteErrorCode}");
+            return false;
         }
     }
+
+    private ClipboardItem OptimizePersistedItem(ClipboardItem item, bool saved) =>
+        saved ? MemoryOptimizer?.Invoke(item) ?? item : item;
 
     // ---- list management ---------------------------------------------------
 
@@ -217,7 +236,6 @@ public sealed class ClipboardStore
     {
         Items[0] = item;
         UpdateFilteredItemsSync();
-        ItemsChanged?.Invoke();
     }
 
     /// <summary>Favorites always survive; newest N non-favorites are kept (0 -> favorites only).</summary>
@@ -232,7 +250,6 @@ public sealed class ClipboardStore
         {
         }
         UpdateFilteredItemsSync();
-        ItemsChanged?.Invoke();
     }
 
     public static IEnumerable<ClipboardItem> ApplyingHistoryLimit(IEnumerable<ClipboardItem> items, int limit)
@@ -338,9 +355,10 @@ public sealed class ClipboardStore
             var options = items
                 .Where(i => i.SourceApp is not null)
                 .Select(i => i.SourceApp!)
-                .DistinctBy(app => app.ProcessId)
+                .GroupBy(app => app.ProcessId, StringComparer.OrdinalIgnoreCase)
+                .Select(group => group.FirstOrDefault(app => app.ExecutablePath is not null) ?? group.First())
                 .OrderBy(app => app.Name, StringComparer.CurrentCultureIgnoreCase)
-                .Select(app => new ClipboardSourceAppOption(app.ProcessId, app.Name))
+                .Select(app => new ClipboardSourceAppOption(app.ProcessId, app.Name, app.ExecutablePath))
                 .ToList();
             result[filter] = options;
         }
@@ -380,6 +398,9 @@ public sealed class ClipboardStore
     }
 
     // ---- favorites -----------------------------------------------------------
+
+    public bool IsFavorite(ClipboardItem item) =>
+        Items.FirstOrDefault(candidate => candidate.Id == item.Id)?.IsFavorite ?? item.IsFavorite;
 
     public void SetFavorite(ClipboardItem item, bool favorite)
     {

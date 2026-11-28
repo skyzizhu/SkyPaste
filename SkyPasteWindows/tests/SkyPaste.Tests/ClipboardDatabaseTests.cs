@@ -186,20 +186,21 @@ public class ClipboardDatabaseTests : IDisposable
     }
 
     [Fact]
-    public void CorruptionRecoveryBacksUp()
+    public void OpeningCorruptHistoryBacksItUpAndCreatesAUsableDatabase()
     {
-        // Write garbage that is not a database.
-        File.WriteAllBytes(_fixture.HistoryPath, new byte[] { 0x11, 0x22, 0x33, 0x44, 0x55 });
+        var corruptBytes = new byte[] { 0x11, 0x22, 0x33, 0x44, 0x55 };
+        File.WriteAllBytes(_fixture.HistoryPath, corruptBytes);
 
-        var backupDir = ClipboardDatabase.RecoverIfCorrupted(_fixture.HistoryPath);
-        Assert.NotNull(backupDir);
-        Assert.False(File.Exists(_fixture.HistoryPath)); // originals moved away
-        var backups = Directory.GetFiles(backupDir!);
-        Assert.NotEmpty(backups);
-
-        // Healthy db returns null.
         var db = new ClipboardDatabase(_fixture.HistoryPath);
-        Assert.Null(ClipboardDatabase.RecoverIfCorrupted(_fixture.HistoryPath));
+        Assert.NotNull(db.RecoveryBackupDirectory);
+        var backup = Assert.Single(Directory.GetFiles(db.RecoveryBackupDirectory));
+        Assert.Equal(corruptBytes, File.ReadAllBytes(backup));
+        Assert.Empty(db.LoadVisibleItems(20));
+
+        db.Save(TestItems.Text("after recovery"), 20);
+        var reopened = new ClipboardDatabase(_fixture.HistoryPath);
+        Assert.Null(reopened.RecoveryBackupDirectory);
+        Assert.Equal("after recovery", Assert.Single(reopened.LoadVisibleItems(20)).TextValue);
     }
 }
 
@@ -256,9 +257,9 @@ public class StatisticsDatabaseTests : IDisposable
     public void AppCountsAggregate()
     {
         var db = new StatisticsDatabase(_fixture.StatisticsPath);
-        var app = new ClipboardSourceApp("notepad.exe", "Notepad");
+        var app = new ClipboardSourceApp("notepad.exe", "Notepad", @"C:\Windows\notepad.exe");
         db.Record(TestItems.Text("a", DateTime.UtcNow, app: app));
-        db.Record(TestItems.Text("b", DateTime.UtcNow, app: app));
+        db.Record(TestItems.Text("b", DateTime.UtcNow, app: app with { ExecutablePath = null }));
         db.Record(TestItems.Text("c", DateTime.UtcNow, app: new ClipboardSourceApp("code.exe", "VS Code")));
 
         var from = StatisticsDatabase.DayBucket(DateTime.Now.AddHours(-1));
@@ -267,6 +268,8 @@ public class StatisticsDatabaseTests : IDisposable
         Assert.Equal(2, apps.Count);
         Assert.Equal(2, apps[0].Count); // ordered by count desc
         Assert.Equal("notepad.exe", apps[0].ProcessId);
+        Assert.Equal(app.ExecutablePath, apps[0].ExecutablePath);
+        Assert.Null(apps[1].ExecutablePath);
     }
 
     [Fact]
@@ -288,5 +291,22 @@ public class StatisticsDatabaseTests : IDisposable
         // Seeding again must not double-count.
         db.SeedRetainedHistoryIfNeeded(items);
         Assert.Equal(2, db.DailyEntries(from, to).Sum(e => e.Count));
+    }
+
+    [Fact]
+    public void CorruptStatisticsAreBackedUpAndSeededFromRetainedHistory()
+    {
+        var corruptBytes = new byte[] { 0x11, 0x22, 0x33, 0x44, 0x55 };
+        File.WriteAllBytes(_fixture.StatisticsPath, corruptBytes);
+
+        var database = new StatisticsDatabase(_fixture.StatisticsPath);
+        Assert.NotNull(database.RecoveryBackupDirectory);
+        var backup = Assert.Single(Directory.GetFiles(database.RecoveryBackupDirectory));
+        Assert.Equal(corruptBytes, File.ReadAllBytes(backup));
+
+        var now = DateTime.Now;
+        var today = StatisticsDatabase.DayBucket(now);
+        database.SeedRetainedHistoryIfNeeded([TestItems.Text("retained", now.ToUniversalTime())]);
+        Assert.Equal(1, Assert.Single(database.DailyEntries(today, today + 86400)).Count);
     }
 }

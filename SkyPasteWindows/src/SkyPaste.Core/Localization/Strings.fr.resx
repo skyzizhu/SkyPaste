@@ -57,7 +57,8 @@
   <data name="settings.lan_sync_status_synced" xml:space="preserve"><value>La synchronisation LAN est activée.</value></data>
   <data name="settings.lan_sync_status_error" xml:space="preserve"><value>Echec de la synchronisation : %@</value></data>
   <data name="settings.auto_paste" xml:space="preserve"><value>Copie automatique à la sélection</value></data>
-  <data name="settings.auto_paste_hint" xml:space="preserve"><value>Lorsque cette option est activée, cliquer sur un élément de la liste le copie automatiquement dans le presse-papiers.</value></data>
+  <data name="settings.auto_paste_hint" xml:space="preserve"><value>Cliquez sur un élément pour le copier. Dans le panneau principal, Entrée colle dans la fenêtre précédente.</value></data>
+  <data name="hotkey.requires_modifier" xml:space="preserve"><value>Ajoutez au moins une touche de modification au raccourci.</value></data>
   <data name="settings.privacy_filter" xml:space="preserve"><value>Filtrage du contenu sensible</value></data>
   <data name="settings.privacy_filter_hint" xml:space="preserve"><value>Lorsque cette option est activée, SkyPaste essaie d’ignorer les mots de passe, codes de vérification, numéros de carte bancaire et textes sensibles de type clé / jeton.</value></data>
   <data name="settings.ignore_apps" xml:space="preserve"><value>Applications ignorées</value></data>

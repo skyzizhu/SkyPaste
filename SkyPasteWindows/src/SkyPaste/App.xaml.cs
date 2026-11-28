@@ -68,11 +68,11 @@ public partial class App : Application
 
         var database = new ClipboardDatabase(ClipboardDatabase.DefaultPath);
         Statistics = new StatisticsDatabase(StatisticsDatabase.DefaultPath);
-        Store = new ClipboardStore(database, Statistics, Settings)
+        if (Statistics.RecoveryBackupDirectory is { } statisticsBackup)
         {
-            // Swap full images for <=240px thumbnails in memory.
-            MemoryOptimizer = ImageOptimizerService.MemoryOptimize,
-        };
+            UiLog($"The statistics database was rebuilt. Backup directory: {statisticsBackup}");
+        }
+        Store = new ClipboardStore(database, Statistics, Settings, ImageOptimizerService.MemoryOptimize);
 
         Theme = new ThemeService(Settings);
         Toast = new ToastService();
@@ -95,7 +95,7 @@ public partial class App : Application
         {
             if (!HotKeys.IsRegistered)
             {
-                Toast.Show(L10n.T("hotkey.register_failed"));
+                Toast.Show(L10n.T(Settings.HasHotKeyModifier ? "hotkey.register_failed" : "hotkey.requires_modifier"));
             }
         };
         Monitor.Start();

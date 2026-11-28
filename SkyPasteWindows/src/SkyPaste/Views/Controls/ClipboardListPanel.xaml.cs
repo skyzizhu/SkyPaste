@@ -12,6 +12,7 @@ using System.Windows.Threading;
 using SkyPaste.Core.Core;
 using SkyPaste.Core.Localization;
 using SkyPaste.Core.Models;
+using SkyPaste.Core.Services;
 using SkyPaste.Services;
 
 namespace SkyPaste.Views.Controls;
@@ -28,6 +29,8 @@ public partial class ClipboardListPanel : UserControl
 
     private ClipboardFilter _selectedFilter = ClipboardFilter.All;
     private ClipboardSourceSelection _sourceSelection = ClipboardSourceSelection.AllApps;
+    private ClipboardSourceAppOption? _displayedSourceApp;
+    private string? _displayedSourceGlyph;
     private Guid? _selectedItemId;
     private bool _batchMode;
     private readonly HashSet<Guid> _batchSelection = new();
@@ -54,20 +57,21 @@ public partial class ClipboardListPanel : UserControl
         _app = app;
         _popoverMode = popoverMode;
 
-        // No in-header close button on any surface: the main panel closes via
-        // its TitleBar X / Esc, the popover via Esc / outside click / tray.
+        // Both windows provide the system close button in the title bar.
         BatchToggle.Visibility = popoverMode ? Visibility.Collapsed : Visibility.Visible;
         CloseToggle.Visibility = Visibility.Collapsed;
         StatsToggle.Visibility = popoverMode ? Visibility.Visible : Visibility.Collapsed;
-        // Popover has no TitleBar: keep the brand block visible.
-        BrandLogo.Visibility = Visibility.Visible;
-        HeaderTitle.Visibility = Visibility.Visible;
+        if (popoverMode)
+        {
+            PanelHeader.Visibility = Visibility.Collapsed;
+        }
 
         _app.Settings.FilterOrderSettingsChanged += RebuildChips;
+        _app.Settings.PropertyChanged += OnSettingsChanged;
         L10n.LanguageChanged += RefreshLocalization;
         _app.Theme.ThemeChanged += RefreshTheme;
-        Loaded += (_, _) => { RefreshLocalization(); RebuildChips(); Rebuild(); ShowStartupNotice(); };
-        Unloaded += (_, _) => _pendingPrimaryAction?.Stop();
+        Loaded += (_, _) => { RefreshLocalization(); ShowStartupNotice(); };
+        Unloaded += (_, _) => CancelPendingPrimaryAction();
     }
 
     // ---- public API -------------------------------------------------------------
@@ -76,9 +80,16 @@ public partial class ClipboardListPanel : UserControl
 
     internal bool IsSearchFocused => SearchBox.IsKeyboardFocusWithin;
 
+    internal StackPanel DetachHeaderActions()
+    {
+        PanelHeader.Children.Remove(HeaderActions);
+        return HeaderActions;
+    }
+
     internal void ReleaseSubscriptions()
     {
         _app.Settings.FilterOrderSettingsChanged -= RebuildChips;
+        _app.Settings.PropertyChanged -= OnSettingsChanged;
         L10n.LanguageChanged -= RefreshLocalization;
         _app.Theme.ThemeChanged -= RefreshTheme;
         CancelPendingPrimaryAction();
@@ -95,13 +106,29 @@ public partial class ClipboardListPanel : UserControl
         SetIconLabel(StatsToggle, "stats.title");
         SetIconLabel(SearchClear, "panel.clear_search");
         UpdateSourceMenuLabel();
+        UpdateShortcutHint();
+        RebuildChips();
+        Rebuild();
+    }
+
+    private void UpdateShortcutHint() =>
         HeaderHint.Text = _popoverMode
             ? L10n.T("menu.clipboard_manager")
             : (_app.Settings.AutoPasteEnabled
                 ? L10n.T("panel.shortcut_hint")
                 : L10n.T("panel.shortcut_hint_copy_only"));
-        RebuildChips();
-        Rebuild();
+
+    private void OnSettingsChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(AppSettingsService.AutoPasteEnabled))
+        {
+            CancelPendingPrimaryAction();
+            UpdateShortcutHint();
+            if (IsLoaded)
+            {
+                UpdateFooter();
+            }
+        }
     }
 
     private void RefreshTheme()
@@ -132,7 +159,7 @@ public partial class ClipboardListPanel : UserControl
                 CancelPendingPrimaryAction();
                 CloseRequested?.Invoke();
                 return true;
-            case Key.Enter:
+            case Key.Enter when !_batchMode:
                 CancelPendingPrimaryAction();
                 var selected = SelectedRow;
                 if (selected is not null)
@@ -140,7 +167,7 @@ public partial class ClipboardListPanel : UserControl
                     RunPrimaryAction(selected.Item);
                 }
                 return true;
-            case Key.C when modifiers.HasFlag(ModifierKeys.Control):
+            case Key.C when !_batchMode && modifiers.HasFlag(ModifierKeys.Control):
                 CancelPendingPrimaryAction();
                 if (SelectedRow is { } copyRow)
                 {
@@ -155,15 +182,14 @@ public partial class ClipboardListPanel : UserControl
                 return true;
         }
 
-        if (modifiers.HasFlag(ModifierKeys.Control) && key is >= Key.D1 and <= Key.D9)
+        if (!_batchMode && modifiers.HasFlag(ModifierKeys.Control) && key is >= Key.D1 and <= Key.D9)
         {
             var index = key - Key.D1;
             if (index < _flatRows.Count)
             {
                 CancelPendingPrimaryAction();
                 var row = _flatRows[index];
-                _selectedItemId = row.Item.Id;
-                Rebuild();
+                SelectRow(row.Item.Id);
                 _app.Coordinator.CopyOnly(row.Item);
                 return true;
             }
@@ -185,6 +211,7 @@ public partial class ClipboardListPanel : UserControl
         public required Brush IconBrush { get; init; }
         public required string? IconBackground { get; init; }
         public Border? Border { get; set; }
+        internal TextBlock? CopyHint { get; set; }
         public bool IsFavorite => Item.IsFavorite;
         public bool ShowThumbnail => Item.IsImage || Item.IsSingleImageFile;
         public byte[]? ThumbBytes;
@@ -284,12 +311,11 @@ public partial class ClipboardListPanel : UserControl
     private void ValidateSourceSelection()
     {
         if (_sourceSelection.Kind == ClipboardSourceSelection.SelectionKind.App
-            && _app.Store.SourceAppOptionsByFilter.TryGetValue(_selectedFilter, out var options)
-            && options.All(o => o.ProcessId != _sourceSelection.ProcessId))
+            && SelectedSourceApp() is null)
         {
             _sourceSelection = ClipboardSourceSelection.AllApps;
-            UpdateSourceMenuLabel();
         }
+        UpdateSourceMenuLabel();
     }
 
     /// <summary>Mac keeps a valid selection baseline (defaults to the first row).</summary>
@@ -317,11 +343,15 @@ public partial class ClipboardListPanel : UserControl
             BorderBrush = (Brush)FindResource("Card.Border"),
             BorderThickness = new Thickness(1),
             Padding = new Thickness(7),
-            Margin = new Thickness(0, 0, 0, 12),
+            Margin = new Thickness(0, 0, 0, _popoverMode ? 8 : 12),
         };
         var stack = new StackPanel();
 
-        var header = new Grid { Margin = new Thickness(9, 4, 8, 6), MinHeight = 30 };
+        var header = new Grid
+        {
+            Margin = _popoverMode ? new Thickness(9, 2, 8, 3) : new Thickness(9, 4, 8, 6),
+            MinHeight = _popoverMode ? 26 : 30,
+        };
         header.Children.Add(new TextBlock
         {
             Text = title,
@@ -490,29 +520,18 @@ public partial class ClipboardListPanel : UserControl
             VerticalAlignment = VerticalAlignment.Center,
             Margin = new Thickness(8, 0, 0, 0),
         };
-        if (!_batchMode && _selectedItemId == item.Id)
+        if (!_batchMode)
         {
-            // Mac: selected rows carry a small 'ctrl+c copy' hint.
-            tailStack.Children.Add(new TextBlock
+            row.CopyHint = new TextBlock
             {
                 Text = L10n.T("menu.command_c_copy"),
                 FontSize = 8.5,
-                Foreground = (System.Windows.Media.Brush)FindResource("Text.Secondary"),
+                Foreground = (Brush)FindResource("Text.Secondary"),
                 VerticalAlignment = VerticalAlignment.Bottom,
                 Margin = new Thickness(0, 0, 6, 0),
-            });
-        }
-        if (!_batchMode && _selectedItemId == item.Id)
-        {
-            // Mac: selected rows carry a small 'ctrl+c copy' hint.
-            tailStack.Children.Add(new TextBlock
-            {
-                Text = L10n.T("menu.command_c_copy"),
-                FontSize = 8.5,
-                Foreground = (System.Windows.Media.Brush)FindResource("Text.Secondary"),
-                VerticalAlignment = VerticalAlignment.Bottom,
-                Margin = new Thickness(0, 0, 6, 0),
-            });
+                Visibility = Visibility.Collapsed,
+            };
+            tailStack.Children.Add(row.CopyHint);
         }
         if (_batchMode)
         {
@@ -571,6 +590,10 @@ public partial class ClipboardListPanel : UserControl
                 if (!_batchMode && e.ClickCount == 2)
                 {
                     SelectRow(item.Id);
+                    if (_popoverMode)
+                    {
+                        CloseRequested?.Invoke();
+                    }
                     _app.Coordinator.OpenPreview(item);
                 }
                 return;
@@ -695,7 +718,8 @@ public partial class ClipboardListPanel : UserControl
         timer.Tick += (_, _) =>
         {
             timer.Stop();
-            if (_selectedItemId != item.Id)
+            _pendingPrimaryAction = null;
+            if (!_app.Settings.AutoPasteEnabled || _batchMode || _selectedItemId != item.Id)
             {
                 return;
             }
@@ -721,11 +745,8 @@ public partial class ClipboardListPanel : UserControl
         {
             _app.Coordinator.Paste(item);
         }
-        else
+        else if (_app.Coordinator.CopyOnly(item))
         {
-            // Mac: copy then CLOSE the panel (both autoPaste states close it
-            // when autoPaste is off).
-            _app.Coordinator.CopyOnly(item);
             CloseRequested?.Invoke();
         }
     }
@@ -766,6 +787,10 @@ public partial class ClipboardListPanel : UserControl
             return;
         }
         var isSelected = _selectedItemId == itemId;
+        if (border.Tag is ValueTuple<RowModel, int> rowTag && rowTag.Item1.CopyHint is { } copyHint)
+        {
+            copyHint.Visibility = isSelected && !_batchMode ? Visibility.Visible : Visibility.Collapsed;
+        }
         var inBatch = _batchSelection.Contains(itemId);
         border.Background = _batchMode && inBatch
             ? (Brush)FindResource("Row.Selected.Background")
@@ -924,19 +949,20 @@ public partial class ClipboardListPanel : UserControl
 
     private FrameworkElement BuildConfirmDialog(string title, string message, string confirmText, Action onConfirm)
     {
-        var root = new Grid();
+        var root = new Grid { UseLayoutRounding = true, SnapsToDevicePixels = true };
         var scrim = new Border { Background = (Brush)FindResource("Overlay.Scrim") };
         scrim.MouseLeftButtonDown += (_, _) => HideOverlay();
 
         var dialog = new Border
         {
-            Width = 340,
-            CornerRadius = new CornerRadius(18),
+            MaxWidth = 340,
+            Margin = new Thickness(12),
+            CornerRadius = new CornerRadius(14),
             Background = (Brush)FindResource("Dialog.Background"),
-            Padding = new Thickness(22),
-            HorizontalAlignment = HorizontalAlignment.Center,
+            BorderBrush = (Brush)FindResource("Card.Border"),
+            BorderThickness = new Thickness(1),
+            Padding = new Thickness(20),
             VerticalAlignment = VerticalAlignment.Center,
-            Effect = (System.Windows.Media.Effects.Effect)FindResource("Card.Shadow"),
             Child = new StackPanel
             {
                 Children =
@@ -944,15 +970,17 @@ public partial class ClipboardListPanel : UserControl
                     new TextBlock
                     {
                         Text = title,
-                        FontSize = 15,
+                        FontSize = 17,
                         FontWeight = FontWeights.SemiBold,
+                        TextWrapping = TextWrapping.Wrap,
                         Foreground = (Brush)FindResource("Text.Primary"),
                     },
                     new TextBlock
                     {
                         Text = message,
-                        FontSize = 12,
+                        FontSize = 14,
                         TextWrapping = TextWrapping.Wrap,
+                        LineHeight = 21,
                         Foreground = (Brush)FindResource("Text.Secondary"),
                         Margin = new Thickness(0, 8, 0, 0),
                     },
@@ -974,6 +1002,8 @@ public partial class ClipboardListPanel : UserControl
                 },
             },
         };
+        TextOptions.SetTextFormattingMode(dialog, TextFormattingMode.Display);
+        RenderOptions.SetClearTypeHint(dialog, ClearTypeHint.Enabled);
         root.Children.Add(scrim);
         root.Children.Add(dialog);
         return root;
@@ -1158,66 +1188,104 @@ public partial class ClipboardListPanel : UserControl
         ValidateSourceSelection();
         SelectFirstRowBaseline();
         RebuildChips();
+        if (_popoverMode)
+        {
+            Dispatcher.BeginInvoke(DispatcherPriority.Loaded, CenterSelectedFilter);
+        }
         Rebuild();
         UpdateSourceMenuLabel();
     }
 
+    private void CenterSelectedFilter()
+    {
+        if (FilterScroll.ScrollableWidth <= 0)
+        {
+            return;
+        }
+
+        var chip = FilterChips.Children.OfType<Border>()
+            .FirstOrDefault(child => Equals(child.Tag, _selectedFilter));
+        if (chip is not null)
+        {
+            var center = chip.TranslatePoint(new Point(chip.ActualWidth / 2, 0), FilterChips).X;
+            var offset = Math.Clamp(center - FilterScroll.ViewportWidth / 2, 0, FilterScroll.ScrollableWidth);
+            FilterScroll.ScrollToHorizontalOffset(offset);
+        }
+    }
+
+    private ClipboardSourceAppOption? SelectedSourceApp() =>
+        _sourceSelection.Kind == ClipboardSourceSelection.SelectionKind.App
+        && _app.Store.SourceAppOptionsByFilter.TryGetValue(_selectedFilter, out var options)
+            ? options.FirstOrDefault(option => option.ProcessId == _sourceSelection.ProcessId)
+            : null;
+
     private void UpdateSourceMenuLabel()
     {
-        SourceMenuLabel.Visibility = Visibility.Collapsed; // icon-only button
-        SourceMenuLabel.Text = _sourceSelection.Kind switch
+        var app = SelectedSourceApp();
+        var label = _sourceSelection.Kind switch
         {
             ClipboardSourceSelection.SelectionKind.Device => L10n.T("filter.source_device"),
-            ClipboardSourceSelection.SelectionKind.App => _sourceSelection.ProcessId is { } pid
-                ? (_app.Store.SourceAppOptionsByFilter.TryGetValue(_selectedFilter, out var options)
-                    ? options.FirstOrDefault(o => o.ProcessId == pid)?.Name ?? L10n.T("filter.source_label")
-                    : L10n.T("filter.source_label"))
-                : L10n.T("filter.source_label"),
+            ClipboardSourceSelection.SelectionKind.App => app?.Name ?? L10n.T("filter.source_label"),
             _ => L10n.T("filter.source_all"),
         };
-        SourceMenuButton.ToolTip = SourceMenuLabel.Text;
-        System.Windows.Automation.AutomationProperties.SetName(SourceMenuButton, SourceMenuLabel.Text);
-        SourceMenuGlyph.Text = _sourceSelection.Kind switch
+        SourceMenuButton.ToolTip = label;
+        System.Windows.Automation.AutomationProperties.SetName(SourceMenuButton, label);
+        var glyph = _sourceSelection.Kind switch
         {
-            ClipboardSourceSelection.SelectionKind.Device => "\uE717",
-            ClipboardSourceSelection.SelectionKind.App => "\uE77B",
-            _ => "\uE8A9",
+            ClipboardSourceSelection.SelectionKind.Device => SourceIcon.DeviceGlyph,
+            ClipboardSourceSelection.SelectionKind.App => "\uE7F4",
+            _ => SourceIcon.AllAppsGlyph,
         };
+        if (app != _displayedSourceApp || glyph != _displayedSourceGlyph)
+        {
+            _displayedSourceApp = app;
+            _displayedSourceGlyph = glyph;
+            SourceMenuButton.Content = SourceIcon.Create(app, 16, glyph);
+        }
     }
 
     // ---- source menu ---------------------------------------------------------------------
 
     private void OnSourceMenuClick(object sender, RoutedEventArgs e)
     {
-        var menu = new ContextMenu { PlacementTarget = SourceMenuButton, Placement = PlacementMode.Bottom };
+        var menu = new ContextMenu
+        {
+            Style = (Style)FindResource("ListMenu"),
+            PlacementTarget = SourceMenuButton,
+            Placement = PlacementMode.Bottom,
+            MaxHeight = 420,
+        };
+        var separatorStyle = (Style)FindResource("ListMenuSeparator");
 
-        var allApps = NewSourceMenuItem(L10n.T("filter.source_all"), "\uE8A9",
+        var allApps = NewSourceMenuItem(L10n.T("filter.source_all"), SourceIcon.AllAppsGlyph,
             ClipboardSourceSelection.AllApps);
-        var devices = NewSourceMenuItem(L10n.T("filter.source_device"), "\uE717",
+        var devices = NewSourceMenuItem(L10n.T("filter.source_device"), SourceIcon.DeviceGlyph,
             ClipboardSourceSelection.Device);
         devices.IsEnabled = _app.Store.Items.Any(i => i.Source.IsDeviceSynced());
         menu.Items.Add(allApps);
-        menu.Items.Add(new Separator());
+        menu.Items.Add(new Separator { Style = separatorStyle });
         menu.Items.Add(devices);
-        menu.Items.Add(new Separator());
 
-        if (_app.Store.SourceAppOptionsByFilter.TryGetValue(_selectedFilter, out var options))
+        if (_app.Store.SourceAppOptionsByFilter.TryGetValue(_selectedFilter, out var options) && options.Count > 0)
         {
+            menu.Items.Add(new Separator { Style = separatorStyle });
             foreach (var option in options)
             {
-                menu.Items.Add(NewSourceMenuItem(option.Name, "\uE77B",
-                    ClipboardSourceSelection.ForApp(option.ProcessId)));
+                menu.Items.Add(NewSourceMenuItem(option.Name, "\uE7F4",
+                    ClipboardSourceSelection.ForApp(option.ProcessId), option));
             }
         }
         menu.IsOpen = true;
     }
 
-    private MenuItem NewSourceMenuItem(string header, string glyph, ClipboardSourceSelection selection)
+    private MenuItem NewSourceMenuItem(string header, string glyph, ClipboardSourceSelection selection,
+        ClipboardSourceAppOption? app = null)
     {
         var item = new MenuItem
         {
+            Style = (Style)FindResource("ListMenuEntry"),
             Header = header,
-            Icon = new TextBlock { Text = glyph, FontSize = 11, FontFamily = GlyphFont },
+            Icon = SourceIcon.Create(app, 18, glyph),
             IsChecked = _sourceSelection.Equals(selection),
         };
         item.Click += (_, _) =>
@@ -1318,8 +1386,10 @@ public partial class ClipboardListPanel : UserControl
     private void UpdateFooter()
     {
         FooterNormal.Children.Clear();
+        TrayFooter.Children.Clear();
         FooterBatch.Children.Clear();
-        FooterNormal.Visibility = _batchMode ? Visibility.Collapsed : Visibility.Visible;
+        FooterNormal.Visibility = !_batchMode && !_popoverMode ? Visibility.Visible : Visibility.Collapsed;
+        TrayFooter.Visibility = !_batchMode && _popoverMode ? Visibility.Visible : Visibility.Collapsed;
         FooterBatch.Visibility = _batchMode ? Visibility.Visible : Visibility.Collapsed;
 
         if (_batchMode)
@@ -1380,29 +1450,43 @@ public partial class ClipboardListPanel : UserControl
                 : _app.Settings.AutoPasteEnabled
                     ? L10n.T("panel.paste_selected")
                     : L10n.T("menu.copy_selected");
-            FooterNormal.Children.Add(NewFooterButton(primaryLabel, () =>
+            var primaryButton = NewFooterButton(primaryLabel, () =>
             {
                 if (SelectedRow is { } row)
                 {
                     RunPrimaryAction(row.Item);
                 }
-            }));
+            });
             if (_popoverMode)
             {
-                FooterNormal.Children.Add(NewFooterButton(L10n.T("menu.open_panel"), () =>
+                TrayFooter.Children.Add(primaryButton);
+                TrayFooter.Children.Add(NewFooterButton(L10n.T("menu.open_panel"), () =>
                 {
                     CloseRequested?.Invoke();
                     _app.Coordinator.ShowPanel();
                 }));
-                FooterNormal.Children.Add(NewFooterButton(L10n.T("menu.preferences"), () =>
+                TrayFooter.Children.Add(NewFooterButton(L10n.T("menu.preferences"), () =>
                 {
                     CloseRequested?.Invoke();
                     _app.Coordinator.ShowSettingsAfterMenu();
                 }));
-                FooterNormal.Children.Add(NewFooterButton(L10n.T("menu.quit"), () => _app.Quit()));
+                TrayFooter.Children.Add(NewFooterButton(L10n.T("menu.quit"), () => _app.Quit()));
+                for (var i = 0; i < TrayFooter.Children.Count; i++)
+                {
+                    var button = (Button)TrayFooter.Children[i];
+                    button.Margin = new Thickness(0, 0, i == TrayFooter.Children.Count - 1 ? 0 : 6, 4);
+                    button.Padding = new Thickness(5, 6, 5, 6);
+                    button.Content = new TextBlock
+                    {
+                        Text = (string)button.Content,
+                        TextAlignment = TextAlignment.Center,
+                        TextWrapping = TextWrapping.Wrap,
+                    };
+                }
             }
             else
             {
+                FooterNormal.Children.Add(primaryButton);
                 FooterNormal.Children.Add(NewFooterButton(L10n.T("menu.copy"), () =>
                 {
                     if (SelectedRow is { } row)
@@ -1451,6 +1535,10 @@ public partial class ClipboardListPanel : UserControl
     private ContextMenu BuildRowContextMenu(ClipboardItem item)
     {
         var menu = new ContextMenu();
+        if (_popoverMode)
+        {
+            menu.Style = (Style)FindResource("ListMenu");
+        }
         AddMenuItem(menu, "\uE8C8", L10n.T("menu.copy"), () => _app.Coordinator.CopyOnly(item));
         AddMenuItem(menu, "\uE72D", L10n.T("menu.share"), () =>
         {
@@ -1495,7 +1583,7 @@ public partial class ClipboardListPanel : UserControl
 
         if (item.SupportsTextPreview)
         {
-            AddMenuItem(menu, "\uE90F", L10n.T("preview.text_open"), () => _app.Coordinator.OpenPreview(item));
+            AddMenuItem(menu, "\uE8A5", L10n.T("preview.text_open"), () => _app.Coordinator.OpenPreview(item));
         }
         if (AppCoordinator.CanTranslate(item))
         {
@@ -1507,6 +1595,10 @@ public partial class ClipboardListPanel : UserControl
             item.IsFavorite ? L10n.T("menu.unfavorite") : L10n.T("menu.favorite"),
             () => _app.Store.SetFavorite(item, !item.IsFavorite));
 
+        if (_popoverMode)
+        {
+            menu.Items.Add(new Separator { Style = (Style)FindResource("ListMenuSeparator") });
+        }
         AddMenuItem(menu, "\uE74D", L10n.T("menu.delete"), () => _app.Store.DeleteItem(item), danger: true);
         return menu;
     }
@@ -1542,14 +1634,21 @@ public partial class ClipboardListPanel : UserControl
         }
     }
 
-    private static void AddMenuItem(ContextMenu menu, string glyph, string header, Action onClick, bool danger = false)
+    private void AddMenuItem(ContextMenu menu, string glyph, string header, Action onClick, bool danger = false)
     {
         var item = new MenuItem
         {
             Header = header,
-            Icon = new TextBlock { Text = glyph, FontSize = 11, FontFamily = GlyphFont },
-            Foreground = danger ? new SolidColorBrush(Color.FromRgb(0xE0, 0x45, 0x3A)) : null,
+            Icon = new TextBlock { Text = glyph, FontSize = _popoverMode ? 14 : 11, FontFamily = GlyphFont },
         };
+        if (_popoverMode)
+        {
+            item.Style = (Style)FindResource("ListMenuEntry");
+        }
+        if (danger)
+        {
+            item.SetResourceReference(Control.ForegroundProperty, "Danger");
+        }
         item.Click += (_, _) => onClick();
         menu.Items.Add(item);
     }

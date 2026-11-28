@@ -184,7 +184,7 @@ public sealed class SearchQuery
 }
 
 /// <summary>Source-app dropdown option (mirrors ClipboardSourceAppOption).</summary>
-public sealed record ClipboardSourceAppOption(string ProcessId, string Name);
+public sealed record ClipboardSourceAppOption(string ProcessId, string Name, string? ExecutablePath = null);
 
 /// <summary>
 /// Selected source scope for filtering (mirrors ClipboardSourceSelection:

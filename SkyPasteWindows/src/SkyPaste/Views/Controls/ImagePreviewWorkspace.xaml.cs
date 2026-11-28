@@ -1,9 +1,10 @@
-using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Ink;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using SkyPaste.Core.Core;
 using SkyPaste.Core.Localization;
 using SkyPaste.Core.Models;
 using SkyPaste.Services;
@@ -20,18 +21,17 @@ public partial class ImagePreviewWorkspace : UserControl
     private readonly App _app;
     private readonly ClipboardItem _item;
     private readonly ClipboardItem _favoriteTarget;
-    private BitmapSource _source = null!;
+    private BitmapSource? _source;
     private bool _annotating;
-    private readonly List<AnnotationStroke> _strokes = new();
-    private AnnotationStroke? _activeStroke;
+    private double _fitScale = 1.0;
     private double _zoom = 1.0;
     private AnnotationColor _color = AnnotationColor.Red;
     private double _penWidth = 4;
     private Point? _dragStart;
     private Point? _panPoint;
     private bool _dragImageOut;
+    private byte[]? _annotatedPng;
 
-    private sealed record AnnotationStroke(AnnotationColor Color, double WidthFraction, IReadOnlyList<Point> Points);
     private enum AnnotationColor { Black, Red, Yellow, Blue, Green }
 
     private static Color StrokeColor(AnnotationColor color) => color switch
@@ -43,14 +43,30 @@ public partial class ImagePreviewWorkspace : UserControl
         _ => Color.FromRgb(0x11, 0x11, 0x11),
     };
 
-    public ImagePreviewWorkspace(App app, ClipboardItem item, ClipboardItem? fileItem = null)
+    public ImagePreviewWorkspace(App app, ClipboardItem item, ClipboardItem? fileItem = null, BitmapSource? bitmap = null)
     {
         InitializeComponent();
         _app = app;
         _item = item;
         _favoriteTarget = fileItem ?? item;
         WorkspaceHeading.Visibility = fileItem is null ? Visibility.Visible : Visibility.Collapsed;
+        if (fileItem is not null)
+        {
+            foreach (var button in ImageActions.Children.OfType<Button>())
+            {
+                if (button != AnnotateButton)
+                {
+                    button.Visibility = Visibility.Collapsed;
+                }
+            }
+            AnnotateButton.Margin = new Thickness(0);
+        }
         PreviewTitle.Text = L10n.T("preview.title");
+        if (fileItem is null)
+        {
+            PreviewSubtitle.Text = $"{Math.Max(1, _item.Content.OriginalByteCount / 1024)} KB ·";
+            PreviewSource.Content = SourceIcon.CreatePreviewLabel(_item);
+        }
         CopyButtonLabel.Text = L10n.T("menu.copy");
         ShareLabel.Text = L10n.T("menu.share");
         OpenImageLabel.Text = L10n.T("preview.open_image");
@@ -63,7 +79,15 @@ public partial class ImagePreviewWorkspace : UserControl
 
         AnnotationHintLabel.Text = L10n.T("preview.annotation_hint");
         PenWidthLabel.Text = L10n.T("preview.annotation_width");
-        LoadImage();
+        AnnotationCanvas.DefaultDrawingAttributes.IgnorePressure = true;
+        AnnotationCanvas.Strokes.StrokesChanged += (_, _) =>
+        {
+            _annotatedPng = null;
+            var hasStrokes = AnnotationCanvas.Strokes.Count > 0;
+            UndoButton.IsEnabled = hasStrokes;
+            ClearButton.IsEnabled = hasStrokes;
+        };
+        LoadImage(bitmap ?? ClipboardWriter.DecodeBitmap(_item.Content.ImageData ?? Array.Empty<byte>()));
         PreviewScroll.ScrollChanged += (_, args) =>
         {
             if (args.ViewportWidthChange != 0 || args.ViewportHeightChange != 0)
@@ -71,25 +95,26 @@ public partial class ImagePreviewWorkspace : UserControl
                 FitImageToViewport();
             }
         };
-        AnnotationHost.SizeChanged += (_, _) => RedrawStrokes();
     }
 
-    private void LoadImage()
+    private void LoadImage(BitmapSource? bitmap)
     {
-        var bitmap = ClipboardWriter.DecodeBitmap(_item.Content.ImageData ?? Array.Empty<byte>());
         if (bitmap is null)
         {
             PreviewText.Text = L10n.T("preview.unavailable");
             PreviewText.Visibility = Visibility.Visible;
+            AnnotateButton.IsEnabled = false;
             return;
         }
         _source = bitmap;
         PreviewImage.Source = _source;
+        // InkCanvas uses source pixels as its coordinates. The preview and ink
+        // scale together, so strokes do not move when the viewport changes.
+        AnnotationHost.Width = bitmap.PixelWidth;
+        AnnotationHost.Height = bitmap.PixelHeight;
         FitImageToViewport();
         ZoomText.Text = L10n.T("preview.fit");
 
-        var sourceApp = _item.SourceApp?.Name ?? _item.DeviceName ?? L10n.T("preview.source_local");
-        PreviewSubtitle.Text = $"{Math.Max(1, _item.Content.OriginalByteCount / 1024)} KB · {L10n.T("preview.source_label")} {sourceApp}";
     }
 
     // ---- zoom & pan ------------------------------------------------------------------
@@ -100,9 +125,15 @@ public partial class ImagePreviewWorkspace : UserControl
         {
             return;
         }
-        var scale = Math.Min(PreviewScroll.ViewportWidth / _source.Width, PreviewScroll.ViewportHeight / _source.Height);
-        PreviewImage.Width = _source.Width * Math.Min(scale, 1);
-        PreviewImage.Height = _source.Height * Math.Min(scale, 1);
+        _fitScale = Math.Min(1, Math.Min(PreviewScroll.ViewportWidth / _source.PixelWidth,
+            PreviewScroll.ViewportHeight / _source.PixelHeight));
+        UpdateImageScale();
+    }
+
+    private void UpdateImageScale()
+    {
+        ImageScale.ScaleX = ImageScale.ScaleY = _fitScale * _zoom;
+        UpdatePen();
     }
 
     private void ApplyZoom(double newZoom, Point? anchor = null)
@@ -110,20 +141,14 @@ public partial class ImagePreviewWorkspace : UserControl
         var before = anchor is Point point && AnnotationHost.ActualWidth > 0 && AnnotationHost.ActualHeight > 0
             ? PreviewScroll.TranslatePoint(point, AnnotationHost)
             : (Point?)null;
-        var oldWidth = AnnotationHost.ActualWidth;
-        var oldHeight = AnnotationHost.ActualHeight;
         _zoom = Math.Clamp(newZoom, 0.4, 5.0);
-        var transform = (ScaleTransform)PreviewImage.LayoutTransform;
-        transform.ScaleX = _zoom;
-        transform.ScaleY = _zoom;
+        UpdateImageScale();
         ZoomText.Text = Math.Abs(_zoom - 1.0) < 0.01 ? L10n.T("preview.fit") : $"{(int)Math.Round(_zoom * 100)}%";
         UpdateDragHint();
         if (before is Point imagePoint && anchor is Point target)
         {
             PreviewScroll.UpdateLayout();
-            var newImagePoint = new Point(imagePoint.X / oldWidth * AnnotationHost.ActualWidth,
-                imagePoint.Y / oldHeight * AnnotationHost.ActualHeight);
-            var current = AnnotationHost.TranslatePoint(newImagePoint, PreviewScroll);
+            var current = AnnotationHost.TranslatePoint(imagePoint, PreviewScroll);
             PreviewScroll.ScrollToHorizontalOffset(PreviewScroll.HorizontalOffset + current.X - target.X);
             PreviewScroll.ScrollToVerticalOffset(PreviewScroll.VerticalOffset + current.Y - target.Y);
         }
@@ -158,10 +183,6 @@ public partial class ImagePreviewWorkspace : UserControl
     {
         if (_annotating)
         {
-            if (e.LeftButton == MouseButtonState.Pressed && _activeStroke is not null)
-            {
-                AddStrokePoint(e.GetPosition(AnnotationHost));
-            }
             return;
         }
         if (e.LeftButton == MouseButtonState.Pressed && _dragStart is Point start)
@@ -176,9 +197,11 @@ public partial class ImagePreviewWorkspace : UserControl
                     return;
                 }
                 _dragStart = null;
-                if (ImageForExport() is { } item && DragOutService.BuildDataObject(item) is { } data)
+                var dragItem = _favoriteTarget.IsFileCollection && AnnotationCanvas.Strokes.Count == 0
+                    ? _favoriteTarget : ImageForExport();
+                if (dragItem is not null && DragOutService.BuildDataObject(dragItem) is { } data)
                 {
-                    DragPreviewService.AttachPreview(item, data);
+                    DragPreviewService.AttachPreview(dragItem, data);
                     DragOutService.StartDrag(PreviewImage, data);
                 }
                 return;
@@ -196,19 +219,6 @@ public partial class ImagePreviewWorkspace : UserControl
     {
         if (_annotating)
         {
-            if (e.ChangedButton == MouseButton.Left && PreviewImage.IsMouseOver)
-            {
-                var minDimension = Math.Min(AnnotationHost.ActualWidth, AnnotationHost.ActualHeight);
-                if (minDimension <= 0)
-                {
-                    return;
-                }
-                _activeStroke = new AnnotationStroke(_color, _penWidth / minDimension, new List<Point>());
-                _strokes.Add(_activeStroke);
-                AddStrokePoint(e.GetPosition(AnnotationHost));
-                PreviewScroll.CaptureMouse();
-                e.Handled = true;
-            }
             return;
         }
         if (e.ChangedButton == MouseButton.Left && e.ClickCount == 1 && PreviewImage.IsMouseOver)
@@ -221,98 +231,35 @@ public partial class ImagePreviewWorkspace : UserControl
 
     private void OnPreviewMouseUp(object sender, MouseButtonEventArgs e)
     {
-        _activeStroke = null;
-        if (PreviewScroll.IsMouseCaptured)
-        {
-            PreviewScroll.ReleaseMouseCapture();
-        }
         _dragStart = null;
         _panPoint = null;
     }
 
     // ---- annotation ---------------------------------------------------------------------
 
-    private void AddStrokePoint(Point normalizedPoint)
+    private void UpdatePen()
     {
-        if (AnnotationHost.ActualWidth is <= 0 or double.NaN || AnnotationHost.ActualHeight is <= 0 or double.NaN)
-        {
-            return;
-        }
-        var normalized = new Point(
-            Math.Clamp(normalizedPoint.X / AnnotationHost.ActualWidth, 0, 1),
-            Math.Clamp(normalizedPoint.Y / AnnotationHost.ActualHeight, 0, 1));
-        var points = (List<Point>)_strokes[^1].Points;
-        if (points.Count > 0)
-        {
-            var last = points[^1];
-            if (Math.Abs(last.X - normalized.X) < 0.001 && Math.Abs(last.Y - normalized.Y) < 0.001)
-            {
-                return;
-            }
-        }
-        points.Add(normalized);
-        RedrawStrokes();
+        var width = Math.Clamp(_penWidth / (_fitScale * _zoom), DrawingAttributes.MinWidth, DrawingAttributes.MaxWidth);
+        var pen = AnnotationCanvas.DefaultDrawingAttributes;
+        pen.Color = StrokeColor(_color);
+        pen.Width = width;
+        pen.Height = width;
     }
-
-    private void RedrawStrokes()
-    {
-        AnnotationCanvas.Children.Clear();
-        if (AnnotationHost.ActualWidth <= 0)
-        {
-            return;
-        }
-        foreach (var stroke in _strokes)
-        {
-            if (stroke.Points.Count == 0)
-            {
-                continue;
-            }
-            var geometry = new StreamGeometry();
-            var thickness = Math.Max(1, Math.Min(AnnotationHost.ActualWidth, AnnotationHost.ActualHeight) * stroke.WidthFraction);
-            if (stroke.Points.Count == 1)
-            {
-                AnnotationCanvas.Children.Add(new System.Windows.Shapes.Path
-                {
-                    Data = new EllipseGeometry(ToPixel(stroke.Points[0]), thickness / 2, thickness / 2),
-                    Fill = new SolidColorBrush(StrokeColor(stroke.Color)),
-                });
-                continue;
-            }
-            using (var context = geometry.Open())
-            {
-                var first = ToPixel(stroke.Points[0]);
-                context.BeginFigure(first, false, stroke.Points.Count == 1);
-                if (stroke.Points.Count > 1)
-                {
-                    context.PolyLineTo(stroke.Points.Skip(1).Select(ToPixel).ToList(), true, true);
-                }
-            }
-            geometry.Freeze();
-            AnnotationCanvas.Children.Add(new System.Windows.Shapes.Path
-            {
-                Data = geometry,
-                Stroke = new SolidColorBrush(StrokeColor(stroke.Color)),
-                StrokeThickness = thickness,
-                StrokeStartLineCap = PenLineCap.Round,
-                StrokeEndLineCap = PenLineCap.Round,
-                StrokeLineJoin = PenLineJoin.Round,
-                IsHitTestVisible = false,
-            });
-        }
-    }
-
-    private Point ToPixel(Point normalized) => new(normalized.X * AnnotationHost.ActualWidth, normalized.Y * AnnotationHost.ActualHeight);
 
     private void OnToggleAnnotate(object sender, RoutedEventArgs e)
     {
+        if (_source is null)
+        {
+            return;
+        }
         _annotating = !_annotating;
+        _dragStart = null;
+        _panPoint = null;
+        AnnotationCanvas.IsHitTestVisible = _annotating;
+        AnnotationCanvas.EditingMode = _annotating ? InkCanvasEditingMode.Ink : InkCanvasEditingMode.None;
         AnnotationToolbar.Visibility = _annotating ? Visibility.Visible : Visibility.Collapsed;
         AnnotateButtonLabel.Text = _annotating ? L10n.T("preview.annotation_done") : L10n.T("preview.annotate");
         UpdateDragHint();
-        if (!_annotating)
-        {
-            RedrawStrokes();
-        }
     }
 
     private void UpdateDragHint() => DragHint.Text = L10n.T(_annotating
@@ -324,6 +271,7 @@ public partial class ImagePreviewWorkspace : UserControl
         if (sender is System.Windows.Controls.Border { Tag: string raw } && Enum.TryParse(raw, out AnnotationColor color))
         {
             _color = color;
+            UpdatePen();
             foreach (var child in ColorHost.Children.OfType<System.Windows.Controls.Border>())
             {
                 child.Opacity = child.Tag as string == raw ? 1.0 : 0.45;
@@ -334,27 +282,31 @@ public partial class ImagePreviewWorkspace : UserControl
     private void OnPenWidthChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
     {
         _penWidth = e.NewValue;
+        UpdatePen();
     }
 
     private void OnUndoStroke(object sender, RoutedEventArgs e)
     {
-        if (_strokes.Count > 0)
+        var strokes = AnnotationCanvas.Strokes;
+        if (strokes.Count > 0)
         {
-            _strokes.RemoveAt(_strokes.Count - 1);
-            RedrawStrokes();
+            strokes.RemoveAt(strokes.Count - 1);
         }
     }
 
     private void OnClearStrokes(object sender, RoutedEventArgs e)
     {
-        _strokes.Clear();
-        RedrawStrokes();
+        AnnotationCanvas.Strokes.Clear();
     }
 
     // ---- actions ---------------------------------------------------------------------------
 
     private ClipboardItem? ImageForExport()
     {
+        if (AnnotationCanvas.Strokes.Count == 0)
+        {
+            return _source is null ? null : _item;
+        }
         var exportBytes = RenderAnnotatedPng();
         if (exportBytes is null)
         {
@@ -363,7 +315,7 @@ public partial class ImagePreviewWorkspace : UserControl
         return new ClipboardItem(
             Guid.NewGuid(), DateTime.UtcNow,
             ClipboardContent.FromImage(exportBytes, _item.Content.ImageName, exportBytes.LongLength, previewOnly: false),
-            _item.Fingerprint, ClipboardSource.Local, null);
+            Fingerprint.ForImage(exportBytes), ClipboardSource.Local, null);
     }
 
     private void OnCopy(object sender, RoutedEventArgs e)
@@ -408,19 +360,24 @@ public partial class ImagePreviewWorkspace : UserControl
 
     private void OnFavorite(object sender, RoutedEventArgs e)
     {
-        _app.Store.SetFavorite(_favoriteTarget, !_favoriteTarget.IsFavorite);
-        FavoriteButtonLabel.Text = _favoriteTarget.IsFavorite ? L10n.T("menu.unfavorite") : L10n.T("menu.favorite");
+        _app.Store.SetFavorite(_favoriteTarget, !_app.Store.IsFavorite(_favoriteTarget));
+        FavoriteButtonLabel.Text = _app.Store.IsFavorite(_favoriteTarget) ? L10n.T("menu.unfavorite") : L10n.T("menu.favorite");
     }
 
     /// <summary>
     /// Port of ImageAnnotationRenderer.pngData: re-render the original image plus
-    /// normalized strokes at full resolution (no layer screenshots).
+    /// original-pixel strokes at full resolution.
     /// </summary>
     private byte[]? RenderAnnotatedPng()
     {
-        if (_strokes.Count == 0 || _source is null)
+        var strokes = AnnotationCanvas.Strokes;
+        if (strokes.Count == 0 || _source is null)
         {
             return _item.Content.ImageData;
+        }
+        if (_annotatedPng is not null)
+        {
+            return _annotatedPng;
         }
         try
         {
@@ -430,44 +387,11 @@ public partial class ImagePreviewWorkspace : UserControl
             using (var context = visual.RenderOpen())
             {
                 context.DrawImage(_source, new Rect(0, 0, width, height));
-                var minDimension = Math.Min(width, height);
-                foreach (var stroke in _strokes)
-                {
-                    if (stroke.Points.Count == 0)
-                    {
-                        continue;
-                    }
-                    var brush = new SolidColorBrush(StrokeColor(stroke.Color));
-                    var thickness = Math.Max(1, minDimension * stroke.WidthFraction);
-                    var first = new Point(stroke.Points[0].X * width, stroke.Points[0].Y * height);
-                    if (stroke.Points.Count == 1)
-                    {
-                        context.DrawEllipse(brush, null, first, thickness / 2, thickness / 2);
-                        continue;
-                    }
-                    var geometry = new StreamGeometry();
-                    using (var g = geometry.Open())
-                    {
-                        g.BeginFigure(first, false, false);
-                        if (stroke.Points.Count > 1)
-                        {
-                            g.PolyLineTo(
-                                stroke.Points.Skip(1).Select(p => new Point(p.X * width, p.Y * height)).ToList(),
-                                true, true);
-                        }
-                    }
-                    geometry.Freeze();
-                    context.DrawGeometry(null, new Pen(brush, thickness)
-                    {
-                        StartLineCap = PenLineCap.Round,
-                        EndLineCap = PenLineCap.Round,
-                        LineJoin = PenLineJoin.Round,
-                    }, geometry);
-                }
+                strokes.Draw(context);
             }
             var renderer = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
             renderer.Render(visual);
-            return ClipboardDecoder.EncodePng(renderer);
+            return _annotatedPng = ClipboardDecoder.EncodePng(renderer);
         }
         catch (Exception)
         {

@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Controls;
+using SkyPaste.Views.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using SkyPaste.Core.Localization;
@@ -25,7 +26,7 @@ public partial class TextPreviewWindow : Window
             : item.IsCode ? L10n.T("preview.code_title")
             : L10n.T("preview.text_title");
         PreviewTitle.Text = Title;
-        PreviewSource.Text = $"{L10n.T("preview.source_label")} {item.SourceApp?.Name ?? item.DeviceName ?? L10n.T("preview.source_local")}";
+        PreviewSource.Content = SourceIcon.CreatePreviewLabel(item);
         Width = 960;
         Height = 680;
         MinWidth = 700;
@@ -46,13 +47,15 @@ public partial class TextPreviewWindow : Window
         PreviewText.Text = text;
         if (item.IsCode)
         {
-            PreviewText.FontFamily = new FontFamily("Consolas, Menlo, monospace");
+            PreviewText.FontFamily = new FontFamily("Cascadia Mono, Consolas");
+            PreviewText.FontSize = 13;
         }
 
-        BrowserButton.Visibility = item.IsUrl ? Visibility.Visible : Visibility.Collapsed;
-        EmailButton.Visibility = item.IsEmail ? Visibility.Visible : Visibility.Collapsed;
+        BrowserButton.Visibility = item.BrowserUrl is not null ? Visibility.Visible : Visibility.Collapsed;
+        EmailButton.Visibility = item.MailtoUrl is not null ? Visibility.Visible : Visibility.Collapsed;
 
         Loaded += (_, _) => WindowEffectsService.EnableRoundedCorners(this);
+        Activated += (_, _) => UpdateFavoriteLabel();
         PreviewKeyDown += (_, e) =>
         {
             if (e.Key == Key.Escape)
@@ -76,7 +79,10 @@ public partial class TextPreviewWindow : Window
 
     private void OnFavorite(object sender, RoutedEventArgs e)
     {
-        _app.Store.SetFavorite(_item, !_item.IsFavorite);
-        FavoriteLabel.Text = _item.IsFavorite ? L10n.T("menu.unfavorite") : L10n.T("menu.favorite");
+        _app.Store.SetFavorite(_item, !_app.Store.IsFavorite(_item));
+        UpdateFavoriteLabel();
     }
+
+    private void UpdateFavoriteLabel() =>
+        FavoriteLabel.Text = _app.Store.IsFavorite(_item) ? L10n.T("menu.unfavorite") : L10n.T("menu.favorite");
 }

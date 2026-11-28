@@ -17,16 +17,17 @@ public sealed class ToastService
     private Window? _window;
     private DispatcherTimer? _hideTimer;
 
-    public void Show(string message)
+    public void Show(string message, bool compact = false)
     {
-        var dispatcher = System.Windows.Application.Current?.Dispatcher;
-        if (dispatcher is null)
+        var app = System.Windows.Application.Current;
+        if (app is null)
         {
             return;
         }
+        var dispatcher = app.Dispatcher;
         if (!dispatcher.CheckAccess())
         {
-            dispatcher.BeginInvoke(() => Show(message));
+            dispatcher.BeginInvoke(() => Show(message, compact));
             return;
         }
 
@@ -34,7 +35,9 @@ public sealed class ToastService
 
         var window = new Window
         {
+            Style = null,
             WindowStyle = WindowStyle.None,
+            ResizeMode = ResizeMode.NoResize,
             AllowsTransparency = true,
             Background = Brushes.Transparent,
             ShowInTaskbar = false,
@@ -48,17 +51,24 @@ public sealed class ToastService
 
         var pill = new Border
         {
-            CornerRadius = new CornerRadius(16),
-            Padding = new Thickness(18, 9, 18, 9),
-            Background = (Brush)System.Windows.Application.Current.Resources["Toast.Background"],
+            CornerRadius = new CornerRadius(compact ? 12 : 16),
+            Padding = compact ? new Thickness(16, 8, 16, 8) : new Thickness(18, 9, 18, 9),
+            MinWidth = compact ? 108 : 0,
+            MinHeight = compact ? 36 : 0,
+            // The HWND can be larger than its content at the system minimum size.
+            HorizontalAlignment = compact ? HorizontalAlignment.Center : HorizontalAlignment.Stretch,
+            VerticalAlignment = compact ? VerticalAlignment.Center : VerticalAlignment.Stretch,
+            Background = (Brush)app.Resources["Toast.Background"],
             Child = new TextBlock
             {
                 Text = message,
-                FontSize = 13,
+                FontSize = compact ? 14 : 13,
                 FontWeight = FontWeights.Medium,
-                MaxWidth = 360,
+                MaxWidth = compact ? 220 : 360,
+                TextAlignment = compact ? TextAlignment.Center : TextAlignment.Left,
+                VerticalAlignment = compact ? VerticalAlignment.Center : VerticalAlignment.Stretch,
                 TextWrapping = TextWrapping.Wrap,
-                Foreground = (Brush)System.Windows.Application.Current.Resources["Toast.Foreground"],
+                Foreground = (Brush)app.Resources["Toast.Foreground"],
             },
         };
         window.Content = pill;

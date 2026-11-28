@@ -66,8 +66,9 @@ public sealed class GlobalHotKeyService : IDisposable
             return;
         }
         Unregister();
-        if (!TryGetVirtualKey(_settings.HotKeyKey, out var virtualKey))
+        if (!_settings.HasHotKeyModifier || !TryGetVirtualKey(_settings.HotKeyKey, out var virtualKey))
         {
+            RegistrationChanged?.Invoke();
             return;
         }
         var modifiers = NativeMethods.MOD_NOREPEAT;
@@ -113,6 +114,7 @@ public sealed class GlobalHotKeyService : IDisposable
 
     public void Dispose()
     {
+        _settings.HotKeySettingsChanged -= ApplyCurrentSetting;
         Unregister();
         _hwndSource?.Dispose();
         _hwndSource = null;
@@ -135,6 +137,10 @@ public static class PasteBackService
     /// </summary>
     public static bool RestoreAndPaste(IntPtr previousWindow, uint clipboardSequence, int delayMs = 80)
     {
+        if (clipboardSequence == 0 || NativeMethods.GetClipboardSequenceNumber() != clipboardSequence)
+        {
+            return false;
+        }
         var foregroundRestored = false;
         if (previousWindow != IntPtr.Zero)
         {

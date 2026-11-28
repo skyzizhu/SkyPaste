@@ -1,7 +1,9 @@
 <Window x:Class="SkyPaste.MainWindow"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        Title="SkyPaste" Background="{DynamicResource Window.Background}">
+        Title="SkyPaste"
+        Icon="pack://application:,,,/SkyPaste;component/Assets/icon.png"
+        Background="{DynamicResource Window.Background}">
     <Grid>
         <ContentControl x:Name="PanelHost" />
     </Grid>

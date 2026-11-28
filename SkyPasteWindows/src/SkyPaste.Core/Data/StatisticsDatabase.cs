@@ -73,7 +73,7 @@ public static class StatisticsCategoryExtensions
 }
 
 public sealed record StatisticsCategoryEntry(long Bucket, int Category, long Count);
-public sealed record StatisticsAppEntry(string ProcessId, string Name, long Count);
+public sealed record StatisticsAppEntry(string ProcessId, string Name, long Count, string? ExecutablePath = null);
 
 /// <summary>
 /// Port of macOS ClipboardStatisticsStore: a separate SQLite file with three
@@ -91,16 +91,35 @@ public sealed class StatisticsDatabase
     public StatisticsDatabase(string path)
     {
         _path = path;
-        using var connection = Open();
-        Initialize(connection);
+        try
+        {
+            using var connection = Open(pooling: false);
+            Initialize(connection);
+        }
+        catch (SqliteException error) when (ClipboardDatabase.LooksLikeCorruption(error))
+        {
+            RecoveryBackupDirectory = ClipboardDatabase.RecoverIfCorrupted(path);
+            if (RecoveryBackupDirectory is null)
+            {
+                throw;
+            }
+            using var connection = Open(pooling: false);
+            Initialize(connection);
+        }
     }
+
+    public string? RecoveryBackupDirectory { get; }
 
     public static string DefaultPath =>
         Path.Combine(Services.AppSettingsService.DefaultDirectory, "statistics.sqlite");
 
-    private SqliteConnection Open()
+    private SqliteConnection Open(bool pooling = true)
     {
-        var connection = new SqliteConnection($"Data Source={_path}");
+        var connection = new SqliteConnection(new SqliteConnectionStringBuilder
+        {
+            DataSource = _path,
+            Pooling = pooling,
+        }.ToString());
         connection.Open();
         return connection;
     }
@@ -127,6 +146,7 @@ public sealed class StatisticsDatabase
                 bucket INTEGER NOT NULL,
                 bundle_id TEXT NOT NULL,
                 name TEXT NOT NULL,
+                executable_path TEXT,
                 count INTEGER NOT NULL,
                 PRIMARY KEY (bucket, bundle_id)
             );
@@ -136,6 +156,16 @@ public sealed class StatisticsDatabase
             );
             """;
         command.ExecuteNonQuery();
+
+        using var migration = connection.BeginTransaction();
+        command.Transaction = migration;
+        command.CommandText = "SELECT count(*) FROM pragma_table_info('daily_app_counts') WHERE name = 'executable_path'";
+        if ((long)command.ExecuteScalar()! == 0)
+        {
+            command.CommandText = "ALTER TABLE daily_app_counts ADD COLUMN executable_path TEXT";
+            command.ExecuteNonQuery();
+        }
+        migration.Commit();
     }
 
     public static long DayBucket(DateTime local) =>
@@ -169,20 +199,28 @@ public sealed class StatisticsDatabase
 
         if (item.SourceApp is { } app)
         {
-            using var appCommand = connection.CreateCommand();
-            appCommand.Transaction = transaction;
-            appCommand.CommandText = """
-                INSERT INTO daily_app_counts (bucket, bundle_id, name, count)
-                VALUES ($bucket, $bundle_id, $name, 1)
-                ON CONFLICT (bucket, bundle_id) DO UPDATE SET
-                    name = excluded.name, count = count + 1
-                """;
-            appCommand.Parameters.AddWithValue("$bucket", dayBucket);
-            appCommand.Parameters.AddWithValue("$bundle_id", app.ProcessId);
-            appCommand.Parameters.AddWithValue("$name", app.Name);
-            appCommand.ExecuteNonQuery();
+            UpsertApp(connection, transaction, dayBucket, app);
         }
         transaction.Commit();
+    }
+
+    private static void UpsertApp(SqliteConnection connection, SqliteTransaction transaction, long bucket, ClipboardSourceApp app)
+    {
+        using var command = connection.CreateCommand();
+        command.Transaction = transaction;
+        command.CommandText = """
+            INSERT INTO daily_app_counts (bucket, bundle_id, name, executable_path, count)
+            VALUES ($bucket, $bundle_id, $name, $path, 1)
+            ON CONFLICT (bucket, bundle_id) DO UPDATE SET
+                name = excluded.name,
+                executable_path = COALESCE(excluded.executable_path, executable_path),
+                count = count + 1
+            """;
+        command.Parameters.AddWithValue("$bucket", bucket);
+        command.Parameters.AddWithValue("$bundle_id", app.ProcessId);
+        command.Parameters.AddWithValue("$name", app.Name);
+        command.Parameters.AddWithValue("$path", string.IsNullOrWhiteSpace(app.ExecutablePath) ? DBNull.Value : app.ExecutablePath);
+        command.ExecuteNonQuery();
     }
 
     private static void Upsert(SqliteConnection connection, SqliteTransaction transaction, string table, long bucket, long category)
@@ -254,17 +292,7 @@ public sealed class StatisticsDatabase
                     var dayBucket = DayBucket(local);
                     if (firstAppDay is null || dayBucket < firstAppDay)
                     {
-                        using var appCommand = connection.CreateCommand();
-                        appCommand.Transaction = transaction;
-                        appCommand.CommandText = """
-                            INSERT INTO daily_app_counts (bucket, bundle_id, name, count)
-                            VALUES ($bucket, $bundle_id, $name, 1)
-                            ON CONFLICT (bucket, bundle_id) DO UPDATE SET count = count + 1
-                            """;
-                        appCommand.Parameters.AddWithValue("$bucket", dayBucket);
-                        appCommand.Parameters.AddWithValue("$bundle_id", app.ProcessId);
-                        appCommand.Parameters.AddWithValue("$name", app.Name);
-                        appCommand.ExecuteNonQuery();
+                        UpsertApp(connection, transaction, dayBucket, app);
                     }
                 }
                 transaction.Commit();
@@ -341,7 +369,7 @@ public sealed class StatisticsDatabase
         using var connection = Open();
         using var command = connection.CreateCommand();
         command.CommandText = """
-            SELECT bundle_id, MAX(name), SUM(count) FROM daily_app_counts
+            SELECT bundle_id, MAX(name), SUM(count), MAX(executable_path) FROM daily_app_counts
             WHERE bucket >= $from AND bucket < $to
             GROUP BY bundle_id
             ORDER BY SUM(count) DESC, bundle_id
@@ -353,7 +381,8 @@ public sealed class StatisticsDatabase
         while (reader.Read())
         {
             entries.Add(new StatisticsAppEntry(
-                reader.GetString(0), reader.GetString(1), reader.GetInt64(2)));
+                reader.GetString(0), reader.GetString(1), reader.GetInt64(2),
+                reader.IsDBNull(3) ? null : reader.GetString(3)));
         }
         return entries;
     }

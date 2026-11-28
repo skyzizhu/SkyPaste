@@ -139,43 +139,13 @@ public static class DragPreviewService
                     continue;
                 }
             }
-            var icon = ExtractFileIcon(path);
+            var icon = FileIconProvider.Extract(path);
             if (icon is not null)
             {
                 sources.Add(icon);
             }
         }
         return sources;
-    }
-
-    private static BitmapSource? ExtractFileIcon(string path)
-    {
-        try
-        {
-            using var icon = System.Drawing.Icon.ExtractAssociatedIcon(path);
-            if (icon is null)
-            {
-                return null;
-            }
-            var bitmap = icon.ToBitmap();
-            var handle = bitmap.GetHbitmap();
-            try
-            {
-                var source = System.Windows.Interop.Imaging.CreateBitmapSourceFromHBitmap(
-                    handle, IntPtr.Zero, Int32Rect.Empty, BitmapSizeOptions.FromEmptyOptions());
-                source.Freeze();
-                return source;
-            }
-            finally
-            {
-                DeleteObject(handle);
-                bitmap.Dispose();
-            }
-        }
-        catch (Exception)
-        {
-            return null;
-        }
     }
 
     private static byte[] ToPremultipliedBgra(RenderTargetBitmap bitmap)
@@ -255,6 +225,4 @@ public static class DragPreviewService
         public int y;
     }
 
-    [DllImport("gdi32.dll")]
-    private static extern bool DeleteObject(IntPtr hObject);
 }

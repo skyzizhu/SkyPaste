@@ -50,6 +50,47 @@ public class ClipboardStoreTests : IDisposable
     }
 
     [Fact]
+    public void ReCopyFromAnotherAppRefreshesTheSourceOnce()
+    {
+        var (store, _) = MakeStore();
+        var listChanges = 0;
+        var statisticsChanges = 0;
+        store.ItemsChanged += () => listChanges++;
+        store.StatisticsChanged += () => statisticsChanges++;
+
+        store.Add(TestItems.Text("same text", app: new ClipboardSourceApp("first.exe", "First")));
+        var latestApp = new ClipboardSourceApp("second.exe", "Second");
+        store.Add(TestItems.Text("same text", app: latestApp));
+
+        Assert.Equal(latestApp, Assert.Single(store.Items).SourceApp);
+        var database = new ClipboardDatabase(_fixture.HistoryPath);
+        Assert.Equal(latestApp, Assert.Single(database.LoadVisibleItems(20)).SourceApp);
+        Assert.Equal(2, listChanges);
+        Assert.Equal(1, statisticsChanges);
+    }
+
+    [Fact]
+    public void ReopenedImageHistoryKeepsPreviewsAndRestoresOriginalsOnDemand()
+    {
+        var (store, settings) = MakeStore();
+        var original = new byte[] { 1, 2, 3, 4 };
+        var preview = new byte[] { 5, 6 };
+        store.Add(TestItems.Image(original));
+
+        var reopened = new ClipboardStore(
+            new ClipboardDatabase(_fixture.HistoryPath),
+            new StatisticsDatabase(_fixture.StatisticsPath),
+            settings,
+            item => new ClipboardItem(item.Id, item.CreatedAt, item.Content.WithPreviewOnly(preview),
+                item.Fingerprint, item.Source, item.SourceApp, item.IsFavorite));
+
+        var listed = Assert.Single(reopened.Items);
+        Assert.True(listed.Content.PreviewOnly);
+        Assert.Equal(preview, listed.Content.ImageData);
+        Assert.Equal(original, reopened.RestoreFullResolutionItem(listed).Content.ImageData);
+    }
+
+    [Fact]
     public void FavoriteStateInheritedOnRecopy()
     {
         var (store, _) = MakeStore();

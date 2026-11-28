@@ -106,7 +106,7 @@ public sealed class AppSettingsService : INotifyPropertyChanged
         set => SetAndSave(ref _launchAtLogin, value, nameof(LaunchAtLogin));
     }
 
-    private bool _autoPasteEnabled = true;
+    private bool _autoPasteEnabled;
     public bool AutoPasteEnabled
     {
         get => _autoPasteEnabled;
@@ -184,6 +184,15 @@ public sealed class AppSettingsService : INotifyPropertyChanged
         set => SetAndSave(ref _panelPosition, NormalizePanelPosition(value), nameof(PanelPosition));
     }
 
+    public sealed record PanelLocation(int X, int Y);
+
+    private PanelLocation? _lastPanelLocation;
+    public PanelLocation? LastPanelLocation
+    {
+        get => _lastPanelLocation;
+        set => SetAndSave(ref _lastPanelLocation, value, nameof(LastPanelLocation));
+    }
+
     private bool _lanSyncHintShown;
     public bool LanSyncHintShown
     {
@@ -256,6 +265,8 @@ public sealed class AppSettingsService : INotifyPropertyChanged
             .Select(s => s.Trim().ToLowerInvariant())
             .Where(s => s.Length > 0)
             .ToHashSet();
+
+    public bool HasHotKeyModifier => HotKeyCtrl || HotKeyShift || HotKeyAlt || HotKeyWin;
 
     public string HotKeyDisplayText
     {
@@ -349,6 +360,7 @@ public sealed class AppSettingsService : INotifyPropertyChanged
             _languageCode = NormalizeLanguage(doc.LanguageCode);
             _appearanceMode = NormalizeAppearance(doc.AppearanceMode);
             _panelPosition = NormalizePanelPosition(doc.PanelPosition);
+            _lastPanelLocation = doc.LastPanelLocation;
             _lanSyncHintShown = doc.LanSyncHintShown;
             _filterOrder = (doc.FilterOrder ?? new List<string>()).ToList();
         }
@@ -385,11 +397,16 @@ public sealed class AppSettingsService : INotifyPropertyChanged
                     LanguageCode = _languageCode,
                     AppearanceMode = _appearanceMode,
                     PanelPosition = _panelPosition,
+                    LastPanelLocation = _lastPanelLocation,
                     LanSyncHintShown = _lanSyncHintShown,
                     FilterOrder = _filterOrder,
                 };
-                using var stream = File.Create(FilePath);
-                JsonSerializer.Serialize(stream, dto, SerializerOptions);
+                var temporaryPath = FilePath + ".tmp";
+                using (var stream = File.Create(temporaryPath))
+                {
+                    JsonSerializer.Serialize(stream, dto, SerializerOptions);
+                }
+                File.Move(temporaryPath, FilePath, overwrite: true);
             }
             catch (IOException)
             {
@@ -408,7 +425,7 @@ public sealed class AppSettingsService : INotifyPropertyChanged
         public bool HotKeyWin { get; set; }
         public string? IgnoredAppsInput { get; set; }
         public bool LaunchAtLogin { get; set; } = true;
-        public bool AutoPasteEnabled { get; set; } = true;
+        public bool AutoPasteEnabled { get; set; }
         public bool PrivacyFilteringEnabled { get; set; }
         public bool LanSyncEnabled { get; set; }
         public bool LanSyncUploadEnabled { get; set; } = true;
@@ -419,6 +436,7 @@ public sealed class AppSettingsService : INotifyPropertyChanged
         public string LanguageCode { get; set; } = "system";
         public string AppearanceMode { get; set; } = "system";
         public string PanelPosition { get; set; } = "center";
+        public PanelLocation? LastPanelLocation { get; set; }
         public bool LanSyncHintShown { get; set; }
         public List<string>? FilterOrder { get; set; }
     }

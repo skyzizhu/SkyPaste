@@ -22,7 +22,7 @@ public class AppSettingsServiceTests : IDisposable
     }
 
     [Fact]
-    public void DefaultsMatchMacApp()
+    public void DefaultsMatchWindowsApp()
     {
         var settings = MakeSettings();
         Assert.Equal(200, settings.HistoryLimit);
@@ -31,7 +31,7 @@ public class AppSettingsServiceTests : IDisposable
         Assert.True(settings.HotKeyShift);
         Assert.False(settings.HotKeyAlt);
         Assert.True(settings.LaunchAtLogin);
-        Assert.True(settings.AutoPasteEnabled); // direct-distribution default (Mac parity)
+        Assert.False(settings.AutoPasteEnabled);
         Assert.False(settings.PrivacyFilteringEnabled);
         Assert.False(settings.LanSyncEnabled);
         Assert.True(settings.LanSyncUploadEnabled);
@@ -39,6 +39,17 @@ public class AppSettingsServiceTests : IDisposable
         Assert.Equal("system", settings.LanguageCode);
         Assert.Equal("system", settings.AppearanceMode);
         Assert.Equal("center", settings.PanelPosition);
+    }
+
+    [Fact]
+    public void MissingAutoPasteSettingDefaultsToOff()
+    {
+        Directory.CreateDirectory(_directory);
+        File.WriteAllText(Path.Combine(_directory, "settings.json"), """{"HistoryLimit":80}""");
+
+        var settings = MakeSettings();
+        Assert.Equal(80, settings.HistoryLimit);
+        Assert.False(settings.AutoPasteEnabled);
     }
 
     [Fact]
@@ -70,6 +81,7 @@ public class AppSettingsServiceTests : IDisposable
         settings.PanelPosition = "cursor";
         settings.LanguageCode = "zh-Hans";
         settings.AppearanceMode = "dark";
+        settings.AutoPasteEnabled = true;
         settings.LanSyncEnabled = true;
         settings.LanSyncPort = 27000;
         settings.HotKeyKey = "P";
@@ -83,6 +95,7 @@ public class AppSettingsServiceTests : IDisposable
         Assert.Equal("cursor", reopened.PanelPosition);
         Assert.Equal("zh-Hans", reopened.LanguageCode);
         Assert.Equal("dark", reopened.AppearanceMode);
+        Assert.True(reopened.AutoPasteEnabled);
         Assert.True(reopened.LanSyncEnabled);
         Assert.Equal(27000, reopened.LanSyncPort);
         Assert.Equal("P", reopened.HotKeyKey);

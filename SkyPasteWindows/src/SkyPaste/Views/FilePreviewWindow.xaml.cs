@@ -18,6 +18,8 @@ public partial class FilePreviewWindow : Window
 {
     private readonly App _app;
     private readonly ClipboardItem _item;
+    private readonly CancellationTokenSource _detailsCancellation = new();
+    private FilePreviewSnapshot? _snapshot;
     private bool _loadingImage;
     private bool _closed;
 
@@ -28,7 +30,7 @@ public partial class FilePreviewWindow : Window
         _item = item;
         Title = L10n.T("preview.file_system_title");
         PreviewTitle.Text = L10n.T("preview.file_system_title");
-        PreviewSource.Text = $"{L10n.T("preview.source_label")} {item.SourceApp?.Name ?? item.DeviceName ?? L10n.T("preview.source_local")}";
+        PreviewSource.Content = SourceIcon.CreatePreviewLabel(item);
         Width = 880;
         Height = 660;
         MinWidth = 700;
@@ -44,6 +46,7 @@ public partial class FilePreviewWindow : Window
         RevealLabel.Text = L10n.T("menu.reveal_in_explorer");
         OpenLabel.Text = item.OpenActionTitle;
         FavoriteLabel.Text = item.IsFavorite ? L10n.T("menu.unfavorite") : L10n.T("menu.favorite");
+        LoadingDetails.Text = L10n.T("preview.file_system_loading");
 
         if (item.IsSingleImageFile)
         {
@@ -64,106 +67,96 @@ public partial class FilePreviewWindow : Window
             }
         };
 
-        Loaded += (_, _) => BuildDetails();
+        Loaded += async (_, _) => await LoadDetailsAsync();
+        Activated += (_, _) => UpdateFavoriteLabel();
         _app.Theme.ThemeChanged += BuildDetails;
         Closed += (_, _) =>
         {
             _closed = true;
+            _detailsCancellation.Cancel();
+            _detailsCancellation.Dispose();
             _app.Theme.ThemeChanged -= BuildDetails;
         };
     }
 
+    private async Task LoadDetailsAsync()
+    {
+        var paths = _item.FilePaths ?? Array.Empty<string>();
+        var token = _detailsCancellation.Token;
+        try
+        {
+            var snapshot = await Task.Run(() => FilePreviewSnapshot.Build(paths, token), token);
+            await Dispatcher.InvokeAsync(() =>
+            {
+                if (!token.IsCancellationRequested)
+                {
+                    _snapshot = snapshot;
+                    BuildDetails();
+                }
+            });
+        }
+        catch (OperationCanceledException) when (token.IsCancellationRequested)
+        {
+        }
+    }
+
     private void BuildDetails()
     {
+        if (_snapshot is not { } snapshot)
+        {
+            return;
+        }
+
         InfoHost.Children.Clear();
-        var paths = _item.Content.FilePaths ?? Array.Empty<string>();
-        var missing = paths.Where(p => !File.Exists(p) && !Directory.Exists(p)).ToList();
-
-        if (missing.Count > 0)
+        var missing = snapshot.Selection.Where(entry => !entry.Exists).Select(entry => entry.Path).ToArray();
+        if (missing.Length != 0)
         {
-            var banner = new Border
+            InfoHost.Children.Add(WrapCard(new TextBlock
             {
-                Background = new SolidColorBrush(Color.FromArgb(40, 0xE0, 0xA3, 0x29)),
-                CornerRadius = new CornerRadius(10),
-                Padding = new Thickness(12, 8, 12, 8),
-                Margin = new Thickness(0, 0, 0, 12),
-                Child = new StackPanel
-                {
-                    Children =
-                    {
-                        new TextBlock
-                        {
-                            Text = L10n.T("preview.file_system_not_found"),
-                            FontSize = 12,
-                            FontWeight = FontWeights.SemiBold,
-                            Foreground = (Brush)FindResource("Text.Primary"),
-                        },
-                        new TextBlock
-                        {
-                            Text = string.Join("\n", missing),
-                            FontSize = 11,
-                            FontFamily = new FontFamily("Cascadia Mono, Consolas"),
-                            Foreground = (Brush)FindResource("Text.Secondary"),
-                            TextWrapping = TextWrapping.Wrap,
-                            Margin = new Thickness(0, 4, 0, 0),
-                        },
-                    },
-                },
-            };
-            InfoHost.Children.Add(banner);
+                Text = L10n.T("preview.file_system_not_found") + "\n" + string.Join("\n", missing),
+                FontSize = 12,
+                Foreground = (Brush)FindResource("Text.Primary"),
+                TextWrapping = TextWrapping.Wrap,
+            }, new SolidColorBrush(Color.FromArgb(40, 0xE0, 0xA3, 0x29))));
         }
 
-        foreach (var path in paths.Where(p => File.Exists(p) || Directory.Exists(p)))
+        var single = snapshot.Selection.Count == 1 ? snapshot.Selection[0] : null;
+        var files = snapshot.Selection.Count(entry => !entry.IsFolder);
+        var size = snapshot.Selection.Where(entry => entry.Size.HasValue).Select(entry => entry.Size!.Value).ToArray();
+        var type = files == 0 ? "folder" : files == snapshot.Selection.Count ? "file" : "mixed";
+        var rows = new List<(string Label, string Value)>
         {
-            var info = new DirectoryInfo(path) switch
-            {
-                _ when Directory.Exists(path) => CollectDirectoryInfo(path),
-                _ => CollectFileInfo(path),
-            };
-            InfoHost.Children.Add(BuildInfoCard(info));
-            if (Directory.Exists(path))
-            {
-                InfoHost.Children.Add(BuildContentsCard(path));
-            }
-        }
-    }
-
-    private List<(string Label, string Value)> CollectFileInfo(string path)
-    {
-        var file = new FileInfo(path);
-        var rows = new List<(string, string)>
-        {
-            (L10n.T("preview.file_system_label_name"), file.Name),
-            (L10n.T("preview.file_system_label_type"), L10n.T("preview.file_system_type_file")),
+            (L10n.T("preview.file_system_label_name"), single?.Name ?? _item.Title),
+            (L10n.T("preview.file_system_label_type"), L10n.T($"preview.file_system_type_{type}")),
         };
-        var ext = file.Extension.TrimStart('.');
-        if (ext.Length > 0)
+        if (single is { IsFolder: false } && Path.GetExtension(single.Name) is { Length: > 1 } extension)
         {
-            rows.Add((L10n.T("preview.file_system_label_extension"), ext.ToUpperInvariant()));
+            rows.Add((L10n.T("preview.file_system_label_extension"), extension[1..].ToUpperInvariant()));
         }
-        rows.Add((L10n.T("preview.file_system_label_size"), FormatBytes(file.Length)));
-        rows.Add((L10n.T("preview.file_system_label_modified"), file.LastWriteTime.ToString("yyyy-MM-dd HH:mm")));
-        rows.Add((L10n.T("preview.file_system_label_path"), path));
-        return rows;
-    }
 
-    private List<(string Label, string Value)> CollectDirectoryInfo(string path)
-    {
-        var directory = new DirectoryInfo(path);
-        var entries = directory.EnumerateFileSystemInfos().ToList();
-        var files = entries.Count(e => e is FileInfo);
-        var folders = entries.Count - files;
-        var rows = new List<(string, string)>
+        rows.Add((L10n.T("preview.file_system_label_size"), size.Length > 0
+            ? FilePreviewSnapshot.FormatSize(size.Sum()) : L10n.T("preview.file_system_unavailable")));
+        if (single?.Modified is DateTime modified)
         {
-            (L10n.T("preview.file_system_label_name"), directory.Name),
-            (L10n.T("preview.file_system_label_type"), L10n.T("preview.file_system_type_folder")),
-            (L10n.T("preview.file_system_label_items"), entries.Count.ToString()),
-            (L10n.T("preview.file_system_label_files"), files.ToString()),
-            (L10n.T("preview.file_system_label_folders"), folders.ToString()),
-            (L10n.T("preview.file_system_label_modified"), directory.LastWriteTime.ToString("yyyy-MM-dd HH:mm")),
-            (L10n.T("preview.file_system_label_path"), path),
-        };
-        return rows;
+            rows.Add((L10n.T("preview.file_system_label_modified"), modified.ToString("g")));
+        }
+        rows.Add((L10n.T("preview.file_system_label_path"), single?.Path ?? L10n.T("preview.file_system_multiple_locations")));
+        if (snapshot.Selection.Count > 1)
+        {
+            rows.Add((L10n.T("preview.file_system_label_items"), L10n.Format("preview.file_system_item_count", snapshot.Selection.Count)));
+        }
+        else if (single is { Exists: true, IsFolder: true })
+        {
+            var folders = snapshot.Contents.Count(entry => entry.IsFolder);
+            rows.Add((L10n.T("preview.file_system_label_items"), L10n.Format("preview.file_system_item_count", snapshot.Contents.Count)));
+            rows.Add((L10n.T("preview.file_system_label_files"), L10n.Format("preview.file_system_file_count", snapshot.Contents.Count - folders)));
+            rows.Add((L10n.T("preview.file_system_label_folders"), L10n.Format("preview.file_system_folder_count", folders)));
+        }
+        InfoHost.Children.Add(BuildInfoCard(rows));
+        if (single is { IsFolder: true } || snapshot.Selection.Count > 1)
+        {
+            InfoHost.Children.Add(BuildContentsCard(snapshot.Contents));
+        }
     }
 
     private FrameworkElement BuildInfoCard(List<(string Label, string Value)> rows)
@@ -188,12 +181,16 @@ public partial class FilePreviewWindow : Window
                 FontSize = 12,
                 Foreground = (Brush)FindResource("Text.Secondary"),
             });
-            var valueText = new TextBlock
+            var valueText = new TextBox
             {
                 Text = value,
                 FontSize = 12,
                 Foreground = (Brush)FindResource("Text.Primary"),
-                TextTrimming = TextTrimming.CharacterEllipsis,
+                IsReadOnly = true,
+                TextWrapping = TextWrapping.Wrap,
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Padding = new Thickness(0),
             };
             if (label == L10n.T("preview.file_system_label_path"))
             {
@@ -206,7 +203,7 @@ public partial class FilePreviewWindow : Window
         return WrapCard(stack);
     }
 
-    private FrameworkElement BuildContentsCard(string directoryPath)
+    private FrameworkElement BuildContentsCard(IReadOnlyList<FilePreviewEntry> entries)
     {
         var stack = new StackPanel();
         stack.Children.Add(new TextBlock
@@ -217,96 +214,42 @@ public partial class FilePreviewWindow : Window
             Foreground = (Brush)FindResource("Text.Secondary"),
             Margin = new Thickness(0, 0, 0, 8),
         });
-        try
+        if (entries.Count == 0)
         {
-            var entries = new DirectoryInfo(directoryPath)
-                .EnumerateFileSystemInfos()
-                .OrderByDescending(e => e is DirectoryInfo)
-                .ThenBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase)
-                .ToList();
-            if (entries.Count == 0)
+            stack.Children.Add(new TextBlock
             {
-                stack.Children.Add(new TextBlock
-                {
-                    Text = L10n.T("preview.file_system_empty_directory"),
-                    FontSize = 12,
-                    Foreground = (Brush)FindResource("Text.Secondary"),
-                });
-            }
-            else
-            {
-                foreach (var entry in entries)
-                {
-                    var row = new Grid { Margin = new Thickness(0, 3, 0, 3) };
-                    row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                    row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-                    row.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-                    var glyph = new TextBlock
-                    {
-                        Text = entry is DirectoryInfo ? "\uE8B7" : "\uE8A5",
-                        FontSize = 12,
-                        Foreground = entry is DirectoryInfo
-                            ? new SolidColorBrush(Color.FromRgb(0xE0, 0xA3, 0x29))
-                            : new SolidColorBrush(Color.FromRgb(0x1F, 0x9E, 0x8C)),
-                        VerticalAlignment = VerticalAlignment.Center,
-                    };
-                    row.Children.Add(glyph);
-                    var name = new TextBlock
-                    {
-                        Text = entry.Name,
-                        FontSize = 12,
-                        Foreground = (Brush)FindResource("Text.Primary"),
-                        Margin = new Thickness(8, 0, 8, 0),
-                        TextTrimming = TextTrimming.CharacterEllipsis,
-                    };
-                    Grid.SetColumn(name, 1);
-                    row.Children.Add(name);
-                    if (entry is FileInfo fileInfo)
-                    {
-                        var size = new TextBlock
-                        {
-                            Text = FormatBytes(fileInfo.Length),
-                            FontSize = 11,
-                            Foreground = (Brush)FindResource("Text.Secondary"),
-                        };
-                        Grid.SetColumn(size, 2);
-                        row.Children.Add(size);
-                    }
-                    stack.Children.Add(row);
-                }
-            }
+                Text = L10n.T("preview.file_system_empty_directory"),
+                FontSize = 12,
+                Foreground = (Brush)FindResource("Text.Secondary"),
+            });
         }
-        catch (Exception)
+        else
         {
+            var list = new ListBox
+            {
+                ItemsSource = entries,
+                ItemTemplate = (DataTemplate)FindResource("FileEntryTemplate"),
+                MaxHeight = 340,
+                Background = Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Padding = new Thickness(0),
+            };
+            ScrollViewer.SetHorizontalScrollBarVisibility(list, ScrollBarVisibility.Disabled);
+            ScrollViewer.SetCanContentScroll(list, true);
+            VirtualizingPanel.SetVirtualizationMode(list, VirtualizationMode.Recycling);
+            stack.Children.Add(list);
         }
         return WrapCard(stack);
     }
 
-    private FrameworkElement WrapCard(FrameworkElement content) => new Border
+    private FrameworkElement WrapCard(FrameworkElement content, Brush? background = null) => new Border
     {
-        Background = (Brush)FindResource("SectionCard.Background"),
+        Background = background ?? (Brush)FindResource("SectionCard.Background"),
         CornerRadius = new CornerRadius(14),
         Padding = new Thickness(16, 12, 16, 12),
         Margin = new Thickness(0, 0, 0, 12),
         Child = content,
     };
-
-    private static string FormatBytes(long bytes)
-    {
-        if (bytes < 1024)
-        {
-            return $"{bytes} B";
-        }
-        if (bytes < 1024 * 1024)
-        {
-            return $"{bytes / 1024.0:0.#} KB";
-        }
-        if (bytes < 1024L * 1024 * 1024)
-        {
-            return $"{bytes / (1024.0 * 1024):0.#} MB";
-        }
-        return $"{bytes / (1024.0 * 1024 * 1024):0.##} GB";
-    }
 
     // ---- dual image-file view ----------------------------------------------------------
 
@@ -317,7 +260,6 @@ public partial class FilePreviewWindow : Window
         {
             ImageModeHost.Visibility = Visibility.Visible;
             InfoScroll.Visibility = Visibility.Collapsed;
-            FileActions.Visibility = Visibility.Collapsed;
             ToggleImageModeLabel.Text = L10n.T("preview.file_system_show_info");
             await LoadImagePreviewAsync();
         }
@@ -325,7 +267,6 @@ public partial class FilePreviewWindow : Window
         {
             ImageModeHost.Visibility = Visibility.Collapsed;
             InfoScroll.Visibility = Visibility.Visible;
-            FileActions.Visibility = Visibility.Visible;
             FavoriteLabel.Text = _item.IsFavorite ? L10n.T("menu.unfavorite") : L10n.T("menu.favorite");
             ToggleImageModeLabel.Text = L10n.T("preview.file_system_show_image");
         }
@@ -343,39 +284,38 @@ public partial class FilePreviewWindow : Window
             IsIndeterminate = true, Width = 160,
             HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
         };
-        try
+        var (bytes, bitmap) = await Task.Run(() => ReadImageFile(path));
+        await Dispatcher.InvokeAsync(() =>
         {
-            var png = await Task.Run(() =>
-            {
-                var bitmap = ClipboardWriter.DecodeBitmap(File.ReadAllBytes(path));
-                return bitmap is null ? null : ClipboardDecoder.EncodePng(bitmap);
-            });
+            _loadingImage = false;
             if (_closed)
             {
                 return;
             }
-            if (png is null)
+            if (bytes is null || bitmap is null)
             {
                 ShowImageUnavailable();
                 return;
             }
             var image = new ClipboardItem(
                 Guid.NewGuid(), _item.CreatedAt,
-                ClipboardContent.FromImage(png, Path.GetFileNameWithoutExtension(path), png.LongLength, previewOnly: false),
+                ClipboardContent.FromImage(bytes, Path.GetFileNameWithoutExtension(path), bytes.LongLength, previewOnly: false),
                 _item.Fingerprint, _item.Source, _item.SourceApp);
-            ImageModeHost.Content = new ImagePreviewWorkspace(_app, image, _item);
+            ImageModeHost.Content = new ImagePreviewWorkspace(_app, image, _item, bitmap);
+        });
+    }
+
+    private static (byte[]? Bytes, System.Windows.Media.Imaging.BitmapSource? Bitmap) ReadImageFile(string path)
+    {
+        try
+        {
+            var bytes = File.ReadAllBytes(path);
+            return (bytes, ClipboardWriter.DecodeBitmap(bytes));
         }
-        catch (Exception error)
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException)
         {
             App.UiLog($"Image-file preview failed: {error.GetType().Name}");
-            if (!_closed)
-            {
-                ShowImageUnavailable();
-            }
-        }
-        finally
-        {
-            _loadingImage = false;
+            return (null, null);
         }
     }
 
@@ -423,7 +363,10 @@ public partial class FilePreviewWindow : Window
 
     private void OnFavorite(object sender, RoutedEventArgs e)
     {
-        _app.Store.SetFavorite(_item, !_item.IsFavorite);
-        FavoriteLabel.Text = _item.IsFavorite ? L10n.T("menu.unfavorite") : L10n.T("menu.favorite");
+        _app.Store.SetFavorite(_item, !_app.Store.IsFavorite(_item));
+        UpdateFavoriteLabel();
     }
+
+    private void UpdateFavoriteLabel() =>
+        FavoriteLabel.Text = _app.Store.IsFavorite(_item) ? L10n.T("menu.unfavorite") : L10n.T("menu.favorite");
 }

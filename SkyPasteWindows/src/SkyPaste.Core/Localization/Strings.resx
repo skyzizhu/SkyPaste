@@ -57,7 +57,8 @@
   <data name="settings.lan_sync_status_synced" xml:space="preserve"><value>LAN Sync is on.</value></data>
   <data name="settings.lan_sync_status_error" xml:space="preserve"><value>Sync failed: %@</value></data>
   <data name="settings.auto_paste" xml:space="preserve"><value>Auto copy on selection</value></data>
-  <data name="settings.auto_paste_hint" xml:space="preserve"><value>When enabled, clicking an item in the list automatically copies it to the clipboard.</value></data>
+  <data name="settings.auto_paste_hint" xml:space="preserve"><value>Click an item to copy it. In the main panel, Enter pastes into the previous window.</value></data>
+  <data name="hotkey.requires_modifier" xml:space="preserve"><value>Add at least one modifier key to the shortcut.</value></data>
   <data name="settings.privacy_filter" xml:space="preserve"><value>Privacy content filtering</value></data>
   <data name="settings.privacy_filter_hint" xml:space="preserve"><value>When enabled, SkyPaste tries to ignore passwords, verification codes, bank card numbers, and key or token-like sensitive text.</value></data>
   <data name="settings.ignore_apps" xml:space="preserve"><value>Ignore Apps</value></data>

@@ -1,7 +1,8 @@
 <Window x:Class="SkyPaste.SettingsWindow"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-        Title="Preferences">
+        xmlns:primitives="clr-namespace:System.Windows.Controls.Primitives;assembly=PresentationFramework"
+        Title="Preferences" UseLayoutRounding="True" TextOptions.TextFormattingMode="Display">
     <Window.Resources>
         <Style TargetType="GroupBox">
             <Setter Property="Template">
@@ -27,8 +28,10 @@
                             Background="{DynamicResource Header.Background}" BorderBrush="{DynamicResource Card.Border}"
                             BorderThickness="1">
                     <StackPanel Orientation="Horizontal">
-                        <Border Width="44" Height="44" CornerRadius="10" Background="{DynamicResource AccentSoftBrush}">
-                            <Image Source="/SkyPaste;component/Assets/icon.ico" Width="44" Height="44" />
+                        <Border Width="44" Height="44" CornerRadius="10">
+                            <Border.Background>
+                                <ImageBrush ImageSource="/SkyPaste;component/Assets/icon.png" Stretch="UniformToFill" />
+                            </Border.Background>
                         </Border>
                         <StackPanel Margin="12,0,0,0" VerticalAlignment="Center">
                             <TextBlock Text="SkyPaste" FontSize="22" FontWeight="SemiBold"
@@ -44,7 +47,8 @@
                             <Grid Margin="0,4">
                                 <TextBlock x:Name="AppearanceLabel" Text="Theme" VerticalAlignment="Center"
                                            Foreground="{DynamicResource Text.Primary}" />
-                                <ComboBox x:Name="AppearanceMode" Width="180" HorizontalAlignment="Right"
+                                <ComboBox x:Name="AppearanceMode" Width="200" HorizontalAlignment="Right"
+                                          AutomationProperties.LabeledBy="{Binding ElementName=AppearanceLabel}"
                                           SelectionChanged="OnAppearanceChanged">
                                     <ComboBoxItem Content="Follow System" />
                                     <ComboBoxItem Content="Light Mode" />
@@ -54,37 +58,52 @@
                             <Grid Margin="0,4">
                                 <TextBlock x:Name="LanguageLabel" Text="Language" VerticalAlignment="Center"
                                            Foreground="{DynamicResource Text.Primary}" />
-                                <ComboBox x:Name="LanguageMode" Width="180" HorizontalAlignment="Right"
+                                <ComboBox x:Name="LanguageMode" Width="200" HorizontalAlignment="Right"
+                                          AutomationProperties.LabeledBy="{Binding ElementName=LanguageLabel}"
                                           SelectionChanged="OnLanguageChanged" />
                             </Grid>
                             <Grid Margin="0,4">
                                 <TextBlock x:Name="PanelPositionLabel" Text="Panel position" VerticalAlignment="Center"
                                            Foreground="{DynamicResource Text.Primary}" />
                                 <ComboBox x:Name="PanelPosition" Width="200" HorizontalAlignment="Right"
+                                          AutomationProperties.LabeledBy="{Binding ElementName=PanelPositionLabel}"
                                           SelectionChanged="OnPanelPositionChanged">
                                     <ComboBoxItem Content="Centered on screen" />
                                     <ComboBoxItem Content="Follow cursor" />
                                     <ComboBoxItem Content="Remember last position" />
                                 </ComboBox>
                             </Grid>
-                            <Grid Margin="0,4">
+                            <Border Height="1" Margin="0,9" Background="{DynamicResource Divider}" />
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
                                 <StackPanel>
                                     <TextBlock x:Name="LaunchAtLoginLabel" Text="Launch at login"
                                                Foreground="{DynamicResource Text.Primary}" />
-                                    <TextBlock x:Name="LaunchAtLoginHint" FontSize="10"
+                                    <TextBlock x:Name="LaunchAtLoginHint" FontSize="12" TextWrapping="Wrap"
                                                Foreground="{DynamicResource Text.Secondary}" />
                                 </StackPanel>
-                                <CheckBox x:Name="LaunchAtLoginToggle" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                <CheckBox x:Name="LaunchAtLoginToggle" Grid.Column="1" Margin="12,0,0,0"
+                                          AutomationProperties.LabeledBy="{Binding ElementName=LaunchAtLoginLabel}"
+                                          VerticalAlignment="Center"
                                           Checked="OnToggleChanged" Unchecked="OnToggleChanged" />
                             </Grid>
-                            <Grid Margin="0,4">
+                            <Grid Margin="0,5">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
                                 <StackPanel>
                                     <TextBlock x:Name="AutoPasteLabel" Text="Auto copy on selection"
                                                Foreground="{DynamicResource Text.Primary}" />
-                                    <TextBlock x:Name="AutoPasteHint" FontSize="10" TextWrapping="Wrap"
+                                    <TextBlock x:Name="AutoPasteHint" FontSize="12" TextWrapping="Wrap"
                                                Foreground="{DynamicResource Text.Secondary}" />
                                 </StackPanel>
-                                <CheckBox x:Name="AutoPasteToggle" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                <CheckBox x:Name="AutoPasteToggle" Grid.Column="1" Margin="12,0,0,0"
+                                          AutomationProperties.LabeledBy="{Binding ElementName=AutoPasteLabel}"
+                                          VerticalAlignment="Center"
                                           Checked="OnToggleChanged" Unchecked="OnToggleChanged" />
                             </Grid>
                         </StackPanel>
@@ -160,13 +179,15 @@
                                     <TextBlock x:Name="DeviceNameLabel" Text="Device name" VerticalAlignment="Center"
                                                Foreground="{DynamicResource Text.Primary}" />
                                     <TextBox x:Name="DeviceNameBox" Width="200" HorizontalAlignment="Right"
-                                             TextChanged="OnDeviceNameChanged" />
+                                             AutomationProperties.LabeledBy="{Binding ElementName=DeviceNameLabel}"
+                                             LostKeyboardFocus="OnDeviceNameFocusLost" KeyDown="OnDeviceNameKeyDown" />
                                 </Grid>
                                 <Grid Margin="0,4,0,0">
                                     <TextBlock x:Name="PortLabel" Text="Port" VerticalAlignment="Center"
                                                Foreground="{DynamicResource Text.Primary}" />
                                     <TextBox x:Name="PortBox" Width="200" HorizontalAlignment="Right"
-                                             TextChanged="OnPortChanged" />
+                                             AutomationProperties.LabeledBy="{Binding ElementName=PortLabel}"
+                                             LostKeyboardFocus="OnPortFocusLost" KeyDown="OnPortKeyDown" />
                                 </Grid>
                                 <Grid Margin="0,8,0,0">
                                     <StackPanel>
@@ -207,7 +228,9 @@
                             <TextBlock x:Name="MaxRecordsValue" Text="Max records: 200"
                                        Foreground="{DynamicResource Text.Primary}" />
                             <Slider x:Name="HistoryLimitSlider" Minimum="20" Maximum="1000" TickFrequency="20"
-                                    IsSnapToTickEnabled="True" Margin="0,6,0,0" ValueChanged="OnHistoryLimitChanged" />
+                                    IsSnapToTickEnabled="True" Margin="0,6,0,0" ValueChanged="OnHistoryLimitChanged"
+                                    primitives:Thumb.DragStarted="OnHistoryLimitDragStarted"
+                                    primitives:Thumb.DragCompleted="OnHistoryLimitDragCompleted" />
                             <TextBlock x:Name="HistoryHint" FontSize="10" TextWrapping="Wrap"
                                        Foreground="{DynamicResource Text.Secondary}" Margin="0,4,0,0" />
                             <TextBlock x:Name="IgnoreAppsLabel" Text="Ignore Apps" Margin="0,12,0,0"

@@ -15,6 +15,7 @@ public partial class SettingsWindow : Window
 {
     private readonly App _app;
     private bool _loading = true;
+    private bool _draggingHistoryLimit;
 
     public SettingsWindow(App app)
     {
@@ -344,30 +345,52 @@ public partial class SettingsWindow : Window
     private void UpdateHotKeyDisplay()
     {
         HotKeyDisplay.Text = L10n.Format("settings.current", _app.Settings.HotKeyDisplayText);
-        HotKeyWarning.Text = _app.HotKeys.IsRegistered
-            ? string.Empty
-            : L10n.T("hotkey.register_failed");
+        HotKeyWarning.Text = !_app.Settings.HasHotKeyModifier
+            ? L10n.T("hotkey.requires_modifier")
+            : _app.HotKeys.IsRegistered ? string.Empty : L10n.T("hotkey.register_failed");
     }
 
-    private void OnDeviceNameChanged(object sender, TextChangedEventArgs e)
+    private void OnDeviceNameFocusLost(object sender, KeyboardFocusChangedEventArgs e) => CommitDeviceName();
+
+    private void OnDeviceNameKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            CommitDeviceName();
+            e.Handled = true;
+        }
+    }
+
+    private void CommitDeviceName()
     {
         if (_loading)
         {
             return;
         }
         _app.Settings.DeviceName = DeviceNameBox.Text;
+        DeviceNameBox.Text = _app.Settings.DeviceName;
     }
 
-    private void OnPortChanged(object sender, TextChangedEventArgs e)
+    private void OnPortFocusLost(object sender, KeyboardFocusChangedEventArgs e) => CommitPort();
+
+    private void OnPortKeyDown(object sender, KeyEventArgs e)
     {
-        if (_loading)
+        if (e.Key == Key.Enter)
         {
-            return;
+            CommitPort();
+            e.Handled = true;
         }
-        if (int.TryParse(PortBox.Text, out var port))
+    }
+
+    private void CommitPort()
+    {
+        if (!_loading && int.TryParse(PortBox.Text, out var port) && port is >= 1024 and <= 65535
+            && port != _app.Settings.LanSyncPort)
         {
             _app.Settings.LanSyncPort = port;
+            UpdateQrPanel();
         }
+        PortBox.Text = _app.Settings.LanSyncPort.ToString();
     }
 
     private void OnHistoryLimitChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -378,8 +401,25 @@ public partial class SettingsWindow : Window
         }
         // Snap to steps of 20 between 20 and 1000 (mac Stepper semantics).
         var snapped = Math.Max(20, (int)Math.Round(e.NewValue / 20.0) * 20);
-        _app.Settings.HistoryLimit = snapped;
+        if (!_draggingHistoryLimit)
+        {
+            _app.Settings.HistoryLimit = snapped;
+        }
         MaxRecordsValue.Text = L10n.Format("settings.max_records", snapped);
+    }
+
+    private void OnHistoryLimitDragStarted(object sender, System.Windows.Controls.Primitives.DragStartedEventArgs e) =>
+        _draggingHistoryLimit = true;
+
+    private void OnHistoryLimitDragCompleted(object sender, System.Windows.Controls.Primitives.DragCompletedEventArgs e)
+    {
+        _draggingHistoryLimit = false;
+        if (e.Canceled)
+        {
+            HistoryLimitSlider.Value = _app.Settings.HistoryLimit;
+            return;
+        }
+        _app.Settings.HistoryLimit = (int)HistoryLimitSlider.Value;
     }
 
     private void SaveIgnoreApps()

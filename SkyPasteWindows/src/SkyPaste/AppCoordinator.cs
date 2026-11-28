@@ -70,7 +70,7 @@ public sealed class AppCoordinator
 
     public void ClosePanel()
     {
-        _mainWindow?.Hide();
+        _mainWindow?.ClosePanel();
     }
 
     /// <summary>Called by windows right before they appear (mac captureFrontApp).</summary>
@@ -119,12 +119,14 @@ public sealed class AppCoordinator
     // ---- copy / paste ---------------------------------------------------------
 
     /// <summary>Copy an item to the clipboard without closing anything.</summary>
-    public void CopyOnly(ClipboardItem item)
+    public bool CopyOnly(ClipboardItem item)
     {
-        if (TryWriteClipboard(() => ClipboardWriter.Write(_app.Store.RestoreFullResolutionItem(item))))
+        if (!TryWriteClipboard(() => ClipboardWriter.Write(_app.Store.RestoreFullResolutionItem(item))))
         {
-            _app.Toast.Show(L10n.T("menu.copy_success"));
+            return false;
         }
+        _app.Toast.Show(L10n.T("menu.copy_success"), compact: true);
+        return true;
     }
 
     public void Share(Window owner, ClipboardItem item)
@@ -165,21 +167,20 @@ public sealed class AppCoordinator
     /// <summary>Primary action: copy, close panel, restore previous app, send Ctrl+V.</summary>
     public void Paste(ClipboardItem item)
     {
-        if (!TryWriteClipboard(() => ClipboardWriter.Write(_app.Store.RestoreFullResolutionItem(item))))
+        if (!TryWriteClipboard(() => ClipboardWriter.Write(_app.Store.RestoreFullResolutionItem(item)), out var clipboardSequence))
         {
             return;
         }
-        var clipboardSequence = NativeMethods.GetClipboardSequenceNumber();
+        var previousWindow = _previousForegroundWindow;
         ClosePanel();
 
         // Focus + SendInput can block briefly and must not freeze the UI thread;
         // elevated target windows may refuse SetForegroundWindow -> degrade to
         // "copied only" with a hint instead of pasting into the wrong window.
-        var previousWindow = _previousForegroundWindow;
         Task.Run(() =>
         {
             var pasted = PasteBackService.RestoreAndPaste(previousWindow, clipboardSequence);
-            if (!pasted)
+            if (!pasted && NativeMethods.GetClipboardSequenceNumber() == clipboardSequence)
             {
                 _app.Dispatcher.BeginInvoke(() =>
                     _app.Toast.Show(L10n.T("paste.foreground_failed")));
@@ -193,8 +194,7 @@ public sealed class AppCoordinator
     {
         if (_trayPopover is { Visibility: Visibility.Visible })
         {
-            _trayPopover.Close();
-            _trayPopover = null;
+            CloseTrayPopover();
         }
         else
         {
@@ -212,6 +212,8 @@ public sealed class AppCoordinator
             popover.Activate();
         }
     }
+
+    internal void CloseTrayPopover() => _trayPopover?.Close();
 
     // ---- secondary windows -------------------------------------------------------
 
@@ -270,6 +272,7 @@ public sealed class AppCoordinator
             window.Show();
         }
         window.Activate();
+        ForceToFront(window);
     }
 
     public void ShowStatistics()
@@ -294,7 +297,12 @@ public sealed class AppCoordinator
     {
         if (_debugWindow is { Visibility: Visibility.Visible })
         {
+            if (_debugWindow.WindowState == WindowState.Minimized)
+            {
+                _debugWindow.WindowState = WindowState.Normal;
+            }
             _debugWindow.Activate();
+            ForceToFront(_debugWindow);
             return;
         }
         _debugWindow = new DebugWindow(_app) { Owner = ToolOwner };
@@ -347,6 +355,7 @@ public sealed class AppCoordinator
 
     public void OpenPaths(IReadOnlyList<string> paths)
     {
+        string? failedPath = null;
         foreach (var path in paths)
         {
             try
@@ -357,17 +366,23 @@ public sealed class AppCoordinator
                 }
                 else
                 {
-                    _app.Toast.Show(L10n.Format("open.missing_item_message", path));
+                    failedPath ??= path;
                 }
             }
             catch (Exception)
             {
+                failedPath ??= path;
             }
+        }
+        if (failedPath is not null)
+        {
+            _app.Toast.Show(L10n.Format("open.missing_item_message", failedPath));
         }
     }
 
     public void RevealInExplorer(IReadOnlyList<string> paths)
     {
+        string? failedPath = null;
         foreach (var path in paths)
         {
             try
@@ -387,12 +402,17 @@ public sealed class AppCoordinator
                 }
                 else
                 {
-                    _app.Toast.Show(L10n.Format("open.missing_item_message", path));
+                    failedPath ??= path;
                 }
             }
             catch (Exception)
             {
+                failedPath ??= path;
             }
+        }
+        if (failedPath is not null)
+        {
+            _app.Toast.Show(L10n.Format("open.missing_item_message", failedPath));
         }
     }
 
@@ -400,19 +420,22 @@ public sealed class AppCoordinator
     {
         if (paths.Count > 0 && TryWriteClipboard(() => Clipboard.SetText(string.Join(Environment.NewLine, paths))))
         {
-            _app.Toast.Show(L10n.T("menu.copy_success"));
+            _app.Toast.Show(L10n.T("menu.copy_success"), compact: true);
         }
     }
 
-    private bool TryWriteClipboard(Action write)
+    private bool TryWriteClipboard(Action write) => TryWriteClipboard(write, out _);
+
+    private bool TryWriteClipboard(Action write, out uint clipboardSequence)
     {
         try
         {
-            _app.Monitor.WriteWithoutCapture(write);
+            clipboardSequence = _app.Monitor.WriteWithoutCapture(write);
             return true;
         }
         catch (Exception error)
         {
+            clipboardSequence = 0;
             App.UiLog($"Clipboard write failed: {error.GetType().Name}");
             _app.Toast.Show(L10n.T("menu.copy_failed"));
             return false;

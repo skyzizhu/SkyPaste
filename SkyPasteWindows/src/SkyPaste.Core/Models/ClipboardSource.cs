@@ -36,4 +36,4 @@ public static class ClipboardSourceExtensions
 }
 
 /// <summary>Bundle/process identity of the app that produced a local clipboard item.</summary>
-public sealed record ClipboardSourceApp(string ProcessId, string Name);
+public sealed record ClipboardSourceApp(string ProcessId, string Name, string? ExecutablePath = null);

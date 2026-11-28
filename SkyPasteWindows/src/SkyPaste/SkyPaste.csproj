@@ -45,6 +45,9 @@
 
   <ItemGroup>
     <Resource Include="Assets\icon.ico" />
+    <Resource Include="Assets\icon.png" />
+    <None Include="..\..\..\LICENSE" Link="LICENSE" CopyToOutputDirectory="PreserveNewest"
+          CopyToPublishDirectory="PreserveNewest" />
     <None Update="app.manifest">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

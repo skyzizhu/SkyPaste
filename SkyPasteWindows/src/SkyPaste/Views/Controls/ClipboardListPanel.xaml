@@ -3,6 +3,76 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
              Focusable="True">
+    <UserControl.Resources>
+        <Style x:Key="ListMenu" TargetType="ContextMenu">
+            <Setter Property="MinWidth" Value="178" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Background" Value="{DynamicResource SectionCard.Background}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource Card.Border}" />
+            <Setter Property="UseLayoutRounding" Value="True" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="TextOptions.TextFormattingMode" Value="Display" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ContextMenu">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="1" CornerRadius="9" Padding="5"
+                                RenderOptions.ClearTypeHint="Enabled">
+                            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                <ItemsPresenter KeyboardNavigation.DirectionalNavigation="Cycle" />
+                            </ScrollViewer>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ListMenuEntry" TargetType="MenuItem">
+            <Setter Property="Foreground" Value="{DynamicResource Text.Primary}" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="EntryBackground" Background="Transparent" CornerRadius="6"
+                                MinHeight="32" Padding="10,5,14,5">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="25" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <ContentPresenter ContentSource="Icon" VerticalAlignment="Center" />
+                                <ContentPresenter Grid.Column="1" ContentSource="Header"
+                                                  RecognizesAccessKey="True" VerticalAlignment="Center" />
+                                <TextBlock x:Name="SelectionMark" Grid.Column="2" Text="&#xE73E;"
+                                           FontFamily="{DynamicResource GlyphFont}" FontSize="12"
+                                           Foreground="{DynamicResource AccentBrush}" Margin="12,0,0,0"
+                                           VerticalAlignment="Center" Visibility="Collapsed" />
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="EntryBackground" Property="Background" Value="{DynamicResource Row.Hover}" />
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="SelectionMark" Property="Visibility" Value="Visible" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="EntryBackground" Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="ListMenuSeparator" TargetType="Separator">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Separator">
+                        <Border Height="1" Margin="7,4" Background="{DynamicResource Divider}" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -14,23 +84,24 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Grid Grid.Row="0" Margin="16,14,16,0">
+        <Grid x:Name="PanelHeader" Grid.Row="0" Margin="16,14,16,0">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <Border Grid.Column="0" x:Name="BrandLogo" Width="38" Height="38" CornerRadius="9"
-                    Background="{DynamicResource AccentSoftBrush}">
-                <Image Source="/SkyPaste;component/Assets/icon.ico" Width="38" Height="38" />
+            <Border Grid.Column="0" x:Name="BrandLogo" Width="38" Height="38" CornerRadius="9">
+                <Border.Background>
+                    <ImageBrush ImageSource="/SkyPaste;component/Assets/icon.png" Stretch="UniformToFill" />
+                </Border.Background>
             </Border>
-            <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
+            <StackPanel x:Name="BrandText" Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center">
                 <TextBlock x:Name="HeaderTitle" Text="SkyPaste" FontSize="19" FontWeight="SemiBold"
                            Foreground="{DynamicResource Text.Primary}" />
                 <TextBlock x:Name="HeaderHint" FontSize="11" Foreground="{DynamicResource Text.Secondary}"
                            Margin="0,1,0,0" TextTrimming="CharacterEllipsis" />
             </StackPanel>
-            <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+            <StackPanel x:Name="HeaderActions" Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                 <Button x:Name="SearchToggle" Style="{DynamicResource IconIconButton}"
                         Click="OnSearchToggleClick">
                     <TextBlock x:Name="SearchToggleGlyph" Text="&#xE71E;" FontSize="12" FontFamily="{DynamicResource GlyphFont}" />
@@ -100,17 +171,12 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <ScrollViewer Grid.Column="0" HorizontalScrollBarVisibility="Hidden"
+            <ScrollViewer x:Name="FilterScroll" Grid.Column="0" HorizontalScrollBarVisibility="Hidden"
                           VerticalScrollBarVisibility="Disabled" PreviewMouseWheel="OnFilterScroll">
                 <StackPanel x:Name="FilterChips" Orientation="Horizontal" />
             </ScrollViewer>
             <Button x:Name="SourceMenuButton" Grid.Column="1" Margin="8,0,0,0"
-                    Style="{DynamicResource CapsuleButton}" Click="OnSourceMenuClick">
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock x:Name="SourceMenuGlyph" Text="&#xE8A9;" FontSize="12" FontFamily="{DynamicResource GlyphFont}" />
-                    <TextBlock x:Name="SourceMenuLabel" Margin="5,0,0,0" Text="Apps" FontSize="11" Visibility="Collapsed" />
-                </StackPanel>
-            </Button>
+                    Style="{DynamicResource CapsuleButton}" Click="OnSourceMenuClick" />
         </Grid>
 
         <!-- Content -->
@@ -125,6 +191,7 @@
         <!-- Footer -->
         <Grid Grid.Row="5" Margin="16,10,16,14">
             <WrapPanel x:Name="FooterNormal" />
+            <UniformGrid x:Name="TrayFooter" Rows="1" Columns="4" Visibility="Collapsed" />
             <WrapPanel x:Name="FooterBatch" Visibility="Collapsed" />
         </Grid>
     </Grid>

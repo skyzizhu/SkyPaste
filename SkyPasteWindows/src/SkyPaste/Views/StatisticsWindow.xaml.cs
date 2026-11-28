@@ -6,11 +6,14 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using SkyPaste.Core.Core;
 using SkyPaste.Core.Data;
 using SkyPaste.Core.Localization;
+using SkyPaste.Core.Models;
 using SkyPaste.Core.Services;
 
 using SkyPaste.Services;
+using SkyPaste.Views.Controls;
 
 namespace SkyPaste;
 
@@ -425,26 +428,48 @@ public partial class StatisticsWindow : Window
             return;
         }
         var totalAppCopies = snapshot.Apps.Sum(a => a.Count);
+        var retainedPaths = _app.Store.Items
+            .Select(item => item.SourceApp)
+            .OfType<ClipboardSourceApp>()
+            .Where(app => !string.IsNullOrWhiteSpace(app.ExecutablePath))
+            .GroupBy(app => app.ProcessId, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First().ExecutablePath, StringComparer.OrdinalIgnoreCase);
         foreach (var app in snapshot.Apps)
         {
             var fraction = totalAppCopies > 0 ? app.Count / (double)totalAppCopies : 0;
             var grid = new Grid { Margin = new Thickness(0, 4, 0, 4) };
+            grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = GridLength.Auto });
-            grid.Children.Add(new TextBlock
+            var isDevice = string.Equals(app.ProcessId, "device", StringComparison.OrdinalIgnoreCase)
+                || app.ProcessId.StartsWith("device:", StringComparison.OrdinalIgnoreCase);
+            var icon = SourceIcon.Create(isDevice ? null : new ClipboardSourceAppOption(app.ProcessId, app.Name,
+                app.ExecutablePath ?? retainedPaths.GetValueOrDefault(app.ProcessId)),
+                18, isDevice ? SourceIcon.DeviceGlyph : "\uE7F4");
+            icon.Margin = new Thickness(0, 0, 8, 0);
+            grid.Children.Add(icon);
+
+            var name = new TextBlock
             {
                 Text = app.Name,
                 FontSize = 12,
                 Foreground = (Brush)FindResource("Text.Primary"),
                 TextTrimming = TextTrimming.CharacterEllipsis,
-            });
-            grid.Children.Add(new TextBlock
+                VerticalAlignment = VerticalAlignment.Center,
+            };
+            Grid.SetColumn(name, 1);
+            grid.Children.Add(name);
+
+            var count = new TextBlock
             {
                 Text = $"{app.Count} · {fraction * 100:0.0}%",
                 FontSize = 11,
                 Foreground = (Brush)FindResource("Text.Secondary"),
-            });
-            Grid.SetColumn(grid.Children[1], 1);
+                VerticalAlignment = VerticalAlignment.Center,
+                Margin = new Thickness(6, 0, 0, 0),
+            };
+            Grid.SetColumn(count, 2);
+            grid.Children.Add(count);
             AppsHost.Children.Add(grid);
         }
     }
